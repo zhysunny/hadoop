@@ -420,6 +420,7 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
             if (dir.exists()) {
                 // 是否需要重新格式化
                 System.err.print("Re-format filesystem in " + dir + " ? (Y or N) ");
+                // 无法输入，有问题
                 if (!(System.in.read() == 'Y')) {
                     System.err.println("Format aborted.");
                     System.exit(1);

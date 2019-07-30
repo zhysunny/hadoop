@@ -98,6 +98,31 @@
                 </configuration>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <classpathPrefix>lib</classpathPrefix>
+                            <!-- 程序入口 -->
+                            <mainClass></mainClass>
+                        </manifest>
+                        <manifestEntries>
+                            <!-- 注意：这里不要换行，必须一行写完 -->
+                            <Class-Path>./</Class-Path>
+                        </manifestEntries>
+                    </archive>
+                    <excludes>
+                        <exclude>bin/**</exclude>
+                        <exclude>conf/**</exclude>
+                        <exclude>docs/**</exclude>
+                        <exclude>lib/**</exclude>
+                        <exclude>*.xml</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <!-- 打包不执行单元测试-->

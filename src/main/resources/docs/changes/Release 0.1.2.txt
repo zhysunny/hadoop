@@ -1,0 +1,16 @@
+Hadoop Change Log
+
+
+Release 0.1.1 - 2006-04-08
+
+ 1. 添加 CHANGES.txt，记录Hadoop的所有重要更改。(切割)  (cutting)
+ 2. 修正mapreduce .close()抛出IOException的错误，就像在close - able接口中声明的那样。
+ 这允许覆盖此方法的子类抛出异常。(切割)
+ 3. 修复hadoop - 117。路径名在JobConf.getLocalFile()中被错误地置换，导致许多映射临时文件无法删除。(Raghavendra Prabhu通过切割)
+ 4. 修复hadoop - 116。作业完成后清理作业提交文件。(切割)
+ 5. 修复hadoop - 125。修正了对窗口绝对路径的处理(剪切)
+
+Release 0.1.0 - 2006-04-01
+
+ 1. Hadoop的第一个版本。
+

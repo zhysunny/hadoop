@@ -235,7 +235,7 @@ public class NameNodeTest {
      */
     @Test
     public void testMain() throws Exception {
-        String[] args = new String[]{"-format"};
+        String[] args = new String[0];
         NameNode.main(args);
     }
 
