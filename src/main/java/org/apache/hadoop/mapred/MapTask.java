@@ -148,12 +148,14 @@ class MapTask extends Task {
     done(umbilical);
   }
 
+  @Override
   public void setConf(Configuration conf) {
     this.conf = conf;
     this.mapOutputFile = new MapOutputFile();
     this.mapOutputFile.setConf(conf);
   }
 
+  @Override
   public Configuration getConf() {
     return this.conf;
   }

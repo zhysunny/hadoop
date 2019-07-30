@@ -111,10 +111,12 @@ public class RPC {
       return buffer.toString();
     }
 
+    @Override
     public void setConf(Configuration conf) {
       this.conf = conf;
     }
 
+    @Override
     public Configuration getConf() {
       return this.conf;
     }

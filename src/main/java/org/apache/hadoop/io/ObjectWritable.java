@@ -244,10 +244,12 @@ public class ObjectWritable implements Writable, Configurable {
       
   }
 
+  @Override
   public void setConf(Configuration conf) {
     this.conf = conf;
   }
 
+  @Override
   public Configuration getConf() {
     return this.conf;
   }

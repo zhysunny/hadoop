@@ -1,247 +1,212 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
 
-<!-- Do not modify this file directly.  Instead, copy entries that you -->
-<!-- wish to modify from this file into hadoop-site.xml and change them -->
-<!-- there.  If hadoop-site.xml does not already exist, create it.      -->
-
+<!-- 不要直接修改这个文件。相反，将希望修改的条目从该文件复制到hadoop-site.xml，并在那里更改它们。如果hadoop-site.xml还不存在，那么创建它。 -->
 <configuration>
 
-<!-- i/o properties -->
+    <!-- i/o properties -->
 
-<property>
-  <name>io.sort.factor</name>
-  <value>10</value>
-  <description>The number of streams to merge at once while sorting
-  files.  This determines the number of open file handles.</description>
-</property>
+    <property>
+        <name>io.sort.factor</name>
+        <value>10</value>
+        <description>在排序文件时同时合并的流的数量。这决定了打开文件句柄的数量。</description>
+    </property>
 
-<property>
-  <name>io.sort.mb</name>
-  <value>100</value>
-  <description>The total amount of buffer memory to use while sorting 
-  files, in megabytes.  By default, gives each merge stream 1MB, which
-  should minimize seeks.</description>
-</property>
+    <property>
+        <name>io.sort.mb</name>
+        <value>100</value>
+        <description>在对文件进行排序时要使用的缓冲内存总量，单位为兆。
+            默认情况下，为每个合并流提供1MB的内存，这应该会使查找最小化。
+        </description>
+    </property>
 
-<property>
-  <name>io.file.buffer.size</name>
-  <value>4096</value>
-  <description>The size of buffer for use in sequence files.
-  The size of this buffer should probably be a multiple of hardware
-  page size (4096 on Intel x86), and it determines how much data is
-  buffered during read and write operations.</description>
-</property>
-  
-<property>
-  <name>io.bytes.per.checksum</name>
-  <value>512</value>
-  <description>The number of bytes per checksum.  Must not be larger than
-  io.file.buffer.size.</description>
-</property>
+    <property>
+        <name>io.file.buffer.size</name>
+        <value>4096</value>
+        <description>用于序列文件的缓冲区的大小。
+            这个缓冲区的大小应该是硬件页面大小的倍数(Intel x86上的4096)，它决定在读写操作期间缓冲多少数据。
+        </description>
+    </property>
 
-<property>
-  <name>io.skip.checksum.errors</name>
-  <value>false</value>
-  <description>If true, when a checksum error is encountered while
-  reading a sequence file, entries are skipped, instead of throwing an
-  exception.</description>
-</property>
-  
-<property>
-  <name>io.map.index.skip</name>
-  <value>0</value>
-  <description>Number of index entries to skip between each entry.
-  Zero by default. Setting this to values larger than zero can
-  facilitate opening large map files using less memory.</description>
-</property>
+    <property>
+        <name>io.bytes.per.checksum</name>
+        <value>512</value>
+        <description>每个校验和的字节数。不能大于 io.file.buffer.size.</description>
+    </property>
 
-<!-- file system properties -->
+    <property>
+        <name>io.skip.checksum.errors</name>
+        <value>false</value>
+        <description>如果为真，则当读取序列文件时遇到校验和错误时，将跳过条目，而不是抛出异常。</description>
+    </property>
 
-<property>
-  <name>fs.default.name</name>
-  <value>local</value>
-  <description>The name of the default file system.  Either the
-  literal string "local" or a host:port for DFS.</description>
-</property>
+    <property>
+        <name>io.map.index.skip</name>
+        <value>0</value>
+        <description>要在每个条目之间跳过的索引条目的数量。
+            默认为零。将此值设置为大于零的值可以方便地使用更少的内存打开大型映射文件。
+        </description>
+    </property>
 
-<property>
-  <name>dfs.datanode.port</name>
-  <value>50010</value>
-  <description>The port number that the dfs datanode server uses as a starting 
-	       point to look for a free port to listen on.
-</description>
-</property>
+    <!-- file system properties -->
 
-<property>
-  <name>dfs.name.dir</name>
-  <value>/tmp/hadoop/dfs/name</value>
-  <description>Determines where on the local filesystem the DFS name node
-      should store the name table.</description>
-</property>
+    <property>
+        <name>fs.default.name</name>
+        <value>local</value>
+        <description>默认文件系统的名称。主机:DFS的端口</description>
+    </property>
 
-<property>
-  <name>dfs.data.dir</name>
-  <value>/tmp/hadoop/dfs/data</value>
-  <description>Determines where on the local filesystem an DFS data node
-  should store its blocks.  If this is a comma- or space-delimited
-  list of directories, then data will be stored in all named
-  directories, typically on different devices.</description>
-</property>
+    <property>
+        <name>dfs.datanode.port</name>
+        <value>50010</value>
+        <description>dfs datanode服务器使用的端口号作为寻找空闲端口的起点。</description>
+    </property>
 
-<property>
-  <name>dfs.replication</name>
-  <value>3</value>
-  <description>How many copies we try to have at all times. The actual
-  number of replications is at max the number of datanodes in the
-  cluster.</description>
-</property>
+    <property>
+        <name>dfs.name.dir</name>
+        <value>tmp/hadoop/dfs/name</value>
+        <description>确定DFS名称节点应将名称表存储在本地文件系统的何处。</description>
+    </property>
 
-<property>
-  <name>dfs.df.interval</name>
-  <value>3000</value>
-  <description>Disk usage statistics refresh interval in msec.</description>
-</property>
+    <property>
+        <name>dfs.data.dir</name>
+        <value>tmp/hadoop/dfs/data</value>
+        <description>确定DFS数据节点应该将其块存储在本地文件系统的何处。
+            如果这是一个逗号或空格分隔的目录列表，那么数据将存储在所有命名目录中，通常存储在不同的设备上。
+        </description>
+    </property>
 
-<!-- map/reduce properties -->
+    <property>
+        <name>dfs.replication</name>
+        <value>3</value>
+        <description>我们每次都要复制多少份。实际的复制数量是集群中最大的数据节点数量。</description>
+    </property>
 
-<property>
-  <name>mapred.job.tracker</name>
-  <value>local</value>
-  <description>The host and port that the MapReduce job tracker runs
-  at.  If "local", then jobs are run in-process as a single map
-  and reduce task.
-  </description>
-</property>
+    <property>
+        <name>dfs.df.interval</name>
+        <value>3000</value>
+        <description>磁盘使用统计信息刷新间隔(毫秒)。</description>
+    </property>
 
-<property>
-  <name>mapred.job.tracker.info.port</name>
-  <value>50030</value>
-  <description>The port that the MapReduce job tracker info webserver runs at.
-  </description>
-</property>
+    <!-- map/reduce properties -->
 
-<property>
-  <name>mapred.task.tracker.output.port</name>
-  <value>50040</value>
-  <description>The port number that the MapReduce task tracker output server uses as a starting
-               point to look for a free port to listen on.
-  </description>
-</property>
+    <property>
+        <name>mapred.job.tracker</name>
+        <value>local</value>
+        <description>MapReduce作业跟踪器运行的主机和端口。
+            如果是“local”，那么作业将作为单个map和reduce任务在进程中运行。
+        </description>
+    </property>
 
-<property>
-  <name>mapred.task.tracker.report.port</name>
-  <value>50050</value>
-  <description>The port number that the MapReduce task tracker report server uses as a starting
-               point to look for a free port to listen on.
-  </description>
-</property>
+    <property>
+        <name>mapred.job.tracker.info.port</name>
+        <value>50030</value>
+        <description>MapReduce作业跟踪信息web服务器运行的端口。</description>
+    </property>
 
-<property>
-  <name>mapred.local.dir</name>
-  <value>/tmp/hadoop/mapred/local</value>
-  <description>The local directory where MapReduce stores intermediate
-  data files.  May be a space- or comma- separated list of
-  directories on different devices in order to spread disk i/o.
-  </description>
-</property>
+    <property>
+        <name>mapred.task.tracker.output.port</name>
+        <value>50040</value>
+        <description>MapReduce任务跟踪器输出服务器使用的端口号作为起点来查找要监听的空闲端口。</description>
+    </property>
 
-<property>
-  <name>mapred.system.dir</name>
-  <value>/tmp/hadoop/mapred/system</value>
-  <description>The shared directory where MapReduce stores control files.
-  </description>
-</property>
+    <property>
+        <name>mapred.task.tracker.report.port</name>
+        <value>50050</value>
+        <description>MapReduce任务跟踪器报表服务器使用的端口号作为起点，以查找要监听的空闲端口。</description>
+    </property>
 
-<property>
-  <name>mapred.temp.dir</name>
-  <value>/tmp/hadoop/mapred/temp</value>
-  <description>A shared directory for temporary files.
-  </description>
-</property>
+    <property>
+        <name>mapred.local.dir</name>
+        <value>tmp/hadoop/mapred/local</value>
+        <description>MapReduce存储中间数据文件的本地目录。
+            可以是在不同设备上以空格或逗号分隔的目录列表，以便分散磁盘i/o。
+        </description>
+    </property>
 
-<property>
-  <name>mapred.map.tasks</name>
-  <value>2</value>
-  <description>The default number of map tasks per job.  Typically set
-  to a prime several times greater than number of available hosts.
-  Ignored when mapred.job.tracker is "local".  
-  </description>
-</property>
+    <property>
+        <name>mapred.system.dir</name>
+        <value>tmp/hadoop/mapred/system</value>
+        <description>MapReduce存储控制文件的共享目录。</description>
+    </property>
 
-<property>
-  <name>mapred.reduce.tasks</name>
-  <value>1</value>
-  <description>The default number of reduce tasks per job.  Typically set
-  to a prime close to the number of available hosts.  Ignored when
-  mapred.job.tracker is "local".
-  </description>
-</property>
+    <property>
+        <name>mapred.temp.dir</name>
+        <value>tmp/hadoop/mapred/temp</value>
+        <description>MapReduce临时文件的共享目录。</description>
+    </property>
 
-<property>
-  <name>mapred.task.timeout</name>
-  <value>600000</value>
-  <description>The number of milliseconds before a task will be
-  terminated if it neither reads an input, writes an output, nor
-  updates its status string.
-  </description>
-</property>
+    <property>
+        <name>mapred.map.tasks</name>
+        <value>2</value>
+        <description>每个作业的默认映射任务数。通常设置为质数是可用主机数的几倍。
+            当mapred.job.tracker是“local”则忽略该配置
+        </description>
+    </property>
 
-<property>
-  <name>mapred.tasktracker.tasks.maximum</name>
-  <value>2</value>
-  <description>The maximum number of tasks that will be run
-  simultaneously by a task tracker.
-  </description>
-</property>
+    <property>
+        <name>mapred.reduce.tasks</name>
+        <value>1</value>
+        <description>每个作业减少任务的默认数量。通常设置为接近可用主机数量的素数。
+            当mapred.job.tracker是“local”则忽略该配置
+        </description>
+    </property>
 
-<property>
-  <name>mapred.child.java.opts</name>
-  <value>-Xmx200m</value>
-  <description>Java opts for the task tracker child processes.  Subsumes
-  'mapred.child.heap.size' (If a mapred.child.heap.size value is found
-  in a configuration, its maximum heap size will be used and a warning
-  emitted that heap.size has been deprecated). Also, the following symbols,
-  if present, will be interpolated: @taskid@ is replaced by current TaskID;
-  and @port@ will be replaced by mapred.task.tracker.report.port + 1 (A second
-  child will fail with a port-in-use if mapred.tasktracker.tasks.maximum is
-  greater than one). Any other occurrences of '@' will go unchanged. For
-  example, to enable verbose gc logging to a file named for the taskid in
-  /tmp and to set the heap maximum to be a gigabyte, pass a 'value' of:
+    <property>
+        <name>mapred.task.timeout</name>
+        <value>600000</value>
+        <description>如果任务既不读取输入，也不写入输出，也不更新其状态字符串，则任务终止前的毫秒数。</description>
+    </property>
 
-        -Xmx1024m -verbose:gc -Xloggc:/tmp/@taskid@.gc
-  </description>
-</property>
+    <property>
+        <name>mapred.tasktracker.tasks.maximum</name>
+        <value>2</value>
+        <description>tasktracker将同时运行的最大任务数。</description>
+    </property>
 
-<property>
-  <name>mapred.combine.buffer.size</name>
-  <value>100000</value>
-  <description>The number of entries the combining collector caches before
-  combining them and writing to disk.</description>
-</property>
+    <property>
+        <name>mapred.child.java.opts</name>
+        <value>-Xmx200m</value>
+        <description>子进程启动参数
+            Java opts for the task tracker child processes. Subsumes
+            'mapred.child.heap.size' (If a mapred.child.heap.size value is found
+            in a configuration, its maximum heap size will be used and a warning
+            emitted that heap.size has been deprecated). Also, the following symbols,
+            if present, will be interpolated: @taskid@ is replaced by current TaskID;
+            and @port@ will be replaced by mapred.task.tracker.report.port + 1 (A second
+            child will fail with a port-in-use if mapred.tasktracker.tasks.maximum is
+            greater than one). Any other occurrences of '@' will go unchanged. For
+            example, to enable verbose gc logging to a file named for the taskid in
+            /tmp and to set the heap maximum to be a gigabyte, pass a 'value' of:
+            -Xmx1024m -verbose:gc -Xloggc:/tmp/@taskid@.gc
+        </description>
+    </property>
 
-<property>
-  <name>mapred.speculative.execution</name>
-  <value>true</value>
-  <description>If true, then multiple instances of some map tasks may
-  be executed in parallel.</description>
-</property>
+    <property>
+        <name>mapred.combine.buffer.size</name>
+        <value>100000</value>
+        <description>合并收集器在合并和写入磁盘之前缓存的项数。</description>
+    </property>
 
-<property>
-  <name>mapred.min.split.size</name>
-  <value>0</value>
-  <description>The minimum size chunk that map input should be split
-  into.  Note that some file formats may have minimum split sizes that
-  take priority over this setting.</description>
-</property>
+    <property>
+        <name>mapred.speculative.execution</name>
+        <value>true</value>
+        <description>如果为真，则可以并行执行某些map任务的多个实例。</description>
+    </property>
+
+    <property>
+        <name>mapred.min.split.size</name>
+        <value>0</value>
+        <description>应该将映射输入分割为最小大小块。注意，某些文件格式可能具有最小的分割大小，优先于此设置。</description>
+    </property>
 
 
-<!-- ipc properties -->
+    <!-- ipc properties -->
 
-<property>
-  <name>ipc.client.timeout</name>
-  <value>60000</value>
-  <description>Defines the timeout for IPC calls in milliseconds.</description>
-</property>
+    <property>
+        <name>ipc.client.timeout</name>
+        <value>60000</value>
+        <description>定义IPC调用的超时(以毫秒为单位)。</description>
+    </property>
 
 </configuration>

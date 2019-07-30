@@ -307,12 +307,14 @@ class ReduceTask extends Task {
     return "part-" + NUMBER_FORMAT.format(partition);
   }
 
+  @Override
   public void setConf(Configuration conf) {
     this.conf = conf;
     this.mapOutputFile = new MapOutputFile();
     this.mapOutputFile.setConf(conf);
   }
 
+  @Override
   public Configuration getConf() {
     return this.conf;
   }
