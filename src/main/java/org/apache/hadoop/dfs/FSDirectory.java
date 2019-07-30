@@ -1,12 +1,12 @@
 /**
  * Copyright 2005 The Apache Software Foundation
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,7 +30,7 @@ import org.apache.hadoop.fs.FileUtil;
  *
  * It keeps the filename->blockset mapping always-current
  * and logged to disk.
- * 
+ *
  * @author Mike Cafarella
  *************************************************/
 class FSDirectory implements FSConstants {
@@ -66,14 +66,14 @@ class FSDirectory implements FSConstants {
          * @return
          */
         synchronized public boolean isDir() {
-          return (blocks == null);
+            return (blocks == null);
         }
 
         /**
          * This is the external interface
          */
         INode getNode(String target) {
-            if (! target.startsWith("/") || target.length() == 0) {
+            if (!target.startsWith("/") || target.length() == 0) {
                 return null;
             } else if (parent == null && "/".equals(target)) {
                 return this;
@@ -95,19 +95,19 @@ class FSDirectory implements FSConstants {
         /**
          */
         INode getNode(Vector components, int index) {
-            if (! name.equals((String) components.elementAt(index))) {
+            if (!name.equals((String) components.elementAt(index))) {
                 return null;
             }
-            if (index == components.size()-1) {
+            if (index == components.size() - 1) {
                 return this;
             }
 
             // Check with children
-            INode child = (INode) children.get(components.elementAt(index+1));
+            INode child = (INode) children.get(components.elementAt(index + 1));
             if (child == null) {
                 return null;
             } else {
-                return child.getNode(components, index+1);
+                return child.getNode(components, index + 1);
             }
         }
 
@@ -248,11 +248,13 @@ class FSDirectory implements FSConstants {
     DataOutputStream editlog = null;
     boolean ready = false;
 
-    /** Access an existing dfs name directory. */
+    /**
+     * Access an existing dfs name directory.
+     */
     public FSDirectory(File dir) throws IOException {
         File fullimage = new File(dir, "image");
-        if (! fullimage.exists()) {
-          throw new IOException("NameNode not formatted: " + dir);
+        if (!fullimage.exists()) {
+            throw new IOException("NameNode not formatted: " + dir);
         }
         File edits = new File(dir, "edits");
         if (loadFSImage(fullimage, edits)) {
@@ -266,18 +268,21 @@ class FSDirectory implements FSConstants {
         }
     }
 
-    /** Create a new dfs name directory.  Caution: this destroys all files
-     * in this filesystem. */
-    public static void format(File dir, Configuration conf)
-      throws IOException {
+    /**
+     * 格式化一个新的文件系统。销毁可能已经存在于此位置的任何文件系统。
+     * @param dir  namenode存储目录
+     * @param conf 配置类
+     * @throws IOException
+     */
+    public static void format(File dir, Configuration conf) throws IOException {
         File image = new File(dir, "image");
         File edits = new File(dir, "edits");
 
         if (!((!image.exists() || FileUtil.fullyDelete(image, conf)) &&
-              (!edits.exists() || edits.delete()) &&
-              image.mkdirs())) {
-          
-          throw new IOException("Unable to format: "+dir);
+                (!edits.exists() || edits.delete()) &&
+                image.mkdirs())) {
+            // 删除文件失败，抛出异常
+            throw new IOException("Unable to format: " + dir);
         }
     }
 
@@ -292,7 +297,7 @@ class FSDirectory implements FSConstants {
      * Block until the object is ready to be used.
      */
     void waitForReady() {
-        if (! ready) {
+        if (!ready) {
             synchronized (this) {
                 while (!ready) {
                     try {
@@ -368,7 +373,7 @@ class FSDirectory implements FSConstants {
 
     /**
      * Load an edit log, and apply the changes to the in-memory structure
-     *
+     * <p>
      * This is where we apply edits that we've been writing to disk all
      * along.
      */
@@ -382,40 +387,40 @@ class FSDirectory implements FSConstants {
                     byte opcode = in.readByte();
                     numEdits++;
                     switch (opcode) {
-                    case OP_ADD: {
-                        UTF8 name = new UTF8();
-                        name.readFields(in);
-                        ArrayWritable aw = new ArrayWritable(Block.class);
-                        aw.readFields(in);
-                        Writable writables[] = (Writable[]) aw.get();
-                        Block blocks[] = new Block[writables.length];
-                        System.arraycopy(writables, 0, blocks, 0, blocks.length);
-                        unprotectedAddFile(name, blocks);
-                        break;
-                    } 
-                    case OP_RENAME: {
-                        UTF8 src = new UTF8();
-                        UTF8 dst = new UTF8();
-                        src.readFields(in);
-                        dst.readFields(in);
-                        unprotectedRenameTo(src, dst);
-                        break;
-                    }
-                    case OP_DELETE: {
-                        UTF8 src = new UTF8();
-                        src.readFields(in);
-                        unprotectedDelete(src);
-                        break;
-                    }
-                    case OP_MKDIR: {
-                        UTF8 src = new UTF8();
-                        src.readFields(in);
-                        unprotectedMkdir(src.toString());
-                        break;
-                    }
-                    default: {
-                        throw new IOException("Never seen opcode " + opcode);
-                    }
+                        case OP_ADD: {
+                            UTF8 name = new UTF8();
+                            name.readFields(in);
+                            ArrayWritable aw = new ArrayWritable(Block.class);
+                            aw.readFields(in);
+                            Writable writables[] = (Writable[]) aw.get();
+                            Block blocks[] = new Block[writables.length];
+                            System.arraycopy(writables, 0, blocks, 0, blocks.length);
+                            unprotectedAddFile(name, blocks);
+                            break;
+                        }
+                        case OP_RENAME: {
+                            UTF8 src = new UTF8();
+                            UTF8 dst = new UTF8();
+                            src.readFields(in);
+                            dst.readFields(in);
+                            unprotectedRenameTo(src, dst);
+                            break;
+                        }
+                        case OP_DELETE: {
+                            UTF8 src = new UTF8();
+                            src.readFields(in);
+                            unprotectedDelete(src);
+                            break;
+                        }
+                        case OP_MKDIR: {
+                            UTF8 src = new UTF8();
+                            src.readFields(in);
+                            unprotectedMkdir(src.toString());
+                            break;
+                        }
+                        default: {
+                            throw new IOException("Never seen opcode " + opcode);
+                        }
                     }
                 }
             } finally {
@@ -449,13 +454,13 @@ class FSDirectory implements FSConstants {
         //
         // 1.  Move cur to old
         curFile.renameTo(oldFile);
-        
+
         // 2.  Move new to cur
         newFile.renameTo(curFile);
 
         // 3.  Remove pending-edits file (it's been integrated with newFile)
         edits.delete();
-        
+
         // 4.  Delete old
         oldFile.delete();
     }
@@ -493,7 +498,7 @@ class FSDirectory implements FSConstants {
             return false;
         }
     }
-    
+
     /**
      */
     boolean unprotectedAddFile(UTF8 name, Block blocks[]) {
@@ -524,7 +529,7 @@ class FSDirectory implements FSConstants {
     /**
      */
     boolean unprotectedRenameTo(UTF8 src, UTF8 dst) {
-        synchronized(rootDir) {
+        synchronized (rootDir) {
             INode removedNode = rootDir.getNode(src.toString());
             if (removedNode == null) {
                 return false;
@@ -569,7 +574,7 @@ class FSDirectory implements FSConstants {
                 // Remove the node from the namespace and GC all
                 // the blocks underneath the node.
                 //
-                if (! targetNode.removeNode()) {
+                if (!targetNode.removeNode()) {
                     return null;
                 } else {
                     Vector v = new Vector();
@@ -617,7 +622,7 @@ class FSDirectory implements FSConstants {
 
     /**
      * Get a listing of files given path 'src'
-     *
+     * <p>
      * This function is admittedly very inefficient right now.  We'll
      * make it better later.
      */
@@ -635,7 +640,7 @@ class FSDirectory implements FSConstants {
                 DFSFileInfo listing[] = new DFSFileInfo[contents.size()];
                 int i = 0;
                 for (Iterator it = contents.iterator(); it.hasNext(); i++) {
-                    listing[i] = new DFSFileInfo( (INode) it.next() );
+                    listing[i] = new DFSFileInfo((INode) it.next());
                 }
                 return listing;
             }
@@ -657,15 +662,15 @@ class FSDirectory implements FSConstants {
         }
     }
 
-    /** 
+    /**
      * Check whether the filepath could be created
      */
     public boolean isValidToCreate(UTF8 src) {
         String srcs = normalizePath(src);
         synchronized (rootDir) {
-            if (srcs.startsWith("/") && 
-                ! srcs.endsWith("/") && 
-                rootDir.getNode(srcs) == null) {
+            if (srcs.startsWith("/") &&
+                    !srcs.endsWith("/") &&
+                    rootDir.getNode(srcs) == null) {
                 return true;
             } else {
                 return false;

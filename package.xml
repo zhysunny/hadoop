@@ -8,32 +8,12 @@
         <format>tar.gz</format>
     </formats>
     <!-- 改为false不会出现两层相同的目录 -->
-    <includeBaseDirectory>false</includeBaseDirectory>
+    <includeBaseDirectory>true</includeBaseDirectory>
     <fileSets>
         <!-- target下*.jar打包在tar.gz的根目录 -->
         <fileSet>
             <directory>${basedir}/target</directory>
-            <outputDirectory>common</outputDirectory>
-            <includes>
-                <include>*.jar</include>
-            </includes>
-            <excludes>
-                <exclude>*-tests.jar</exclude>
-            </excludes>
-        </fileSet>
-        <fileSet>
-            <directory>${basedir}/zhysunny-io/target</directory>
-            <outputDirectory>common</outputDirectory>
-            <includes>
-                <include>*.jar</include>
-            </includes>
-            <excludes>
-                <exclude>*-tests.jar</exclude>
-            </excludes>
-        </fileSet>
-        <fileSet>
-            <directory>${basedir}/zhysunny-net/target</directory>
-            <outputDirectory>common</outputDirectory>
+            <outputDirectory>/</outputDirectory>
             <includes>
                 <include>*.jar</include>
             </includes>
@@ -44,7 +24,7 @@
     </fileSets>
     <dependencySets>
         <dependencySet>
-            <outputDirectory>common</outputDirectory>
+            <outputDirectory>lib</outputDirectory>
             <scope>runtime</scope>
             <excludes>
                 <!--<exclude>${project.name}-${project.version}</exclude> -->

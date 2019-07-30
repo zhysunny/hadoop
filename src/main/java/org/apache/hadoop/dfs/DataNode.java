@@ -1,12 +1,12 @@
 /**
  * Copyright 2005 The Apache Software Foundation
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -58,7 +58,7 @@ import java.util.logging.*;
  **********************************************************/
 public class DataNode implements FSConstants, Runnable {
     public static final Logger LOG = LogFormatter.getLogger("org.apache.hadoop.dfs.DataNode");
-  //
+    //
     // REMIND - mjc - I might bring "maxgigs" back so user can place 
     // artificial  limit on space
     //private static final long GIGABYTE = 1024 * 1024 * 1024;
@@ -66,9 +66,12 @@ public class DataNode implements FSConstants, Runnable {
     //
 
     /**
-     * Util method to build socket addr from string
+     * 方法从字符串构建socket地址
+     * @param s 只能是host:port
+     * @return
+     * @throws IOException
      */
-    public static InetSocketAddress createSocketAddr(String s) throws IOException {
+    public static InetSocketAddress createSocketAddr(String s) {
         String target = s;
         int colonIndex = target.indexOf(':');
         if (colonIndex < 0) {
@@ -76,7 +79,6 @@ public class DataNode implements FSConstants, Runnable {
         }
         String host = target.substring(0, colonIndex);
         int port = Integer.parseInt(target.substring(colonIndex + 1));
-
         return new InetSocketAddress(host, port);
     }
 
@@ -98,9 +100,9 @@ public class DataNode implements FSConstants, Runnable {
      * 'dataDir' is where the blocks are stored.
      */
     public DataNode(Configuration conf, String datadir) throws IOException {
-        this(InetAddress.getLocalHost().getHostName(), 
-             new File(datadir),
-             createSocketAddr(conf.get("fs.default.name", "local")), conf);
+        this(InetAddress.getLocalHost().getHostName(),
+                new File(datadir),
+                createSocketAddr(conf.get("fs.default.name", "local")), conf);
     }
 
     /**
@@ -127,11 +129,11 @@ public class DataNode implements FSConstants, Runnable {
         this.dataXceiveServer.start();
 
         long blockReportIntervalBasis =
-          conf.getLong("dfs.blockreport.intervalMsec", BLOCKREPORT_INTERVAL);
+                conf.getLong("dfs.blockreport.intervalMsec", BLOCKREPORT_INTERVAL);
         this.blockReportInterval =
-          blockReportIntervalBasis - new Random().nextInt((int)(blockReportIntervalBasis/10));
+                blockReportIntervalBasis - new Random().nextInt((int) (blockReportIntervalBasis / 10));
         this.datanodeStartupPeriod =
-          conf.getLong("dfs.datanode.startupMsec", DATANODE_STARTUP_PERIOD);
+                conf.getLong("dfs.datanode.startupMsec", DATANODE_STARTUP_PERIOD);
     }
 
     /**
@@ -139,7 +141,7 @@ public class DataNode implements FSConstants, Runnable {
      */
     public String getNamenode() {
         //return namenode.toString();
-	return "<namenode>";
+        return "<namenode>";
     }
 
     /**
@@ -187,8 +189,8 @@ public class DataNode implements FSConstants, Runnable {
                     namenode.sendHeartbeat(localName, data.getCapacity(), data.getRemaining());
                     //LOG.info("Just sent heartbeat, with name " + localName);
                     lastHeartbeat = now;
-		}
-		if (now - lastBlockReport > blockReportInterval) {
+                }
+                if (now - lastBlockReport > blockReportInterval) {
                     //
                     // Send latest blockinfo report if timer has expired.
                     // Get back a list of local block(s) that are obsolete
@@ -198,8 +200,8 @@ public class DataNode implements FSConstants, Runnable {
                     data.invalidate(toDelete);
                     lastBlockReport = now;
                     continue;
-		}
-		if (receivedBlockList.size() > 0) {
+                }
+                if (receivedBlockList.size() > 0) {
                     //
                     // Send newly-received blockids to namenode
                     //
@@ -208,41 +210,41 @@ public class DataNode implements FSConstants, Runnable {
                     namenode.blockReceived(localName, blockArray);
                 }
 
-		//
-		// Only perform block operations (transfer, delete) after 
-		// a startup quiet period.  The assumption is that all the
-		// datanodes will be started together, but the namenode may
-		// have been started some time before.  (This is esp. true in
-		// the case of network interruptions.)  So, wait for some time
-		// to pass from the time of connection to the first block-transfer.
-		// Otherwise we transfer a lot of blocks unnecessarily.
-		//
-		if (now - sendStart > datanodeStartupPeriod) {
-		    //
-		    // Check to see if there are any block-instructions from the
-		    // namenode that this datanode should perform.
-		    //
-		    BlockCommand cmd = namenode.getBlockwork(localName, xmitsInProgress);
-		    if (cmd != null && cmd.transferBlocks()) {
-			//
-			// Send a copy of a block to another datanode
-			//
-			Block blocks[] = cmd.getBlocks();
-			DatanodeInfo xferTargets[][] = cmd.getTargets();
-			
-			for (int i = 0; i < blocks.length; i++) {
-			    if (!data.isValidBlock(blocks[i])) {
-				String errStr = "Can't send invalid block " + blocks[i];
-				LOG.info(errStr);
-				namenode.errorReport(localName, errStr);
-				break;
-			    } else {
-				if (xferTargets[i].length > 0) {
-				    LOG.info("Starting thread to transfer block " + blocks[i] + " to " + xferTargets[i]);
-				    new Daemon(new DataTransfer(xferTargets[i], blocks[i])).start();
-				}
-			    }
-			}
+                //
+                // Only perform block operations (transfer, delete) after
+                // a startup quiet period.  The assumption is that all the
+                // datanodes will be started together, but the namenode may
+                // have been started some time before.  (This is esp. true in
+                // the case of network interruptions.)  So, wait for some time
+                // to pass from the time of connection to the first block-transfer.
+                // Otherwise we transfer a lot of blocks unnecessarily.
+                //
+                if (now - sendStart > datanodeStartupPeriod) {
+                    //
+                    // Check to see if there are any block-instructions from the
+                    // namenode that this datanode should perform.
+                    //
+                    BlockCommand cmd = namenode.getBlockwork(localName, xmitsInProgress);
+                    if (cmd != null && cmd.transferBlocks()) {
+                        //
+                        // Send a copy of a block to another datanode
+                        //
+                        Block blocks[] = cmd.getBlocks();
+                        DatanodeInfo xferTargets[][] = cmd.getTargets();
+
+                        for (int i = 0; i < blocks.length; i++) {
+                            if (!data.isValidBlock(blocks[i])) {
+                                String errStr = "Can't send invalid block " + blocks[i];
+                                LOG.info(errStr);
+                                namenode.errorReport(localName, errStr);
+                                break;
+                            } else {
+                                if (xferTargets[i].length > 0) {
+                                    LOG.info("Starting thread to transfer block " + blocks[i] + " to " + xferTargets[i]);
+                                    new Daemon(new DataTransfer(xferTargets[i], blocks[i])).start();
+                                }
+                            }
+                        }
                     } else if (cmd != null && cmd.invalidateBlocks()) {
                         //
                         // Some local block(s) are obsolete and can be 
@@ -269,13 +271,14 @@ public class DataNode implements FSConstants, Runnable {
 
     /**
      * Server used for receiving/sending a block of data.
-     * This is created to listen for requests from clients or 
-     * other DataNodes.  This small server does not use the 
+     * This is created to listen for requests from clients or
+     * other DataNodes.  This small server does not use the
      * Hadoop IPC mechanism.
      */
     class DataXceiveServer implements Runnable {
         boolean shouldListen = true;
         ServerSocket ss;
+
         public DataXceiveServer(ServerSocket ss) {
             this.ss = ss;
         }
@@ -294,6 +297,7 @@ public class DataNode implements FSConstants, Runnable {
                 LOG.info("Exiting DataXceiveServer due to " + ie.toString());
             }
         }
+
         public void kill() {
             this.shouldListen = false;
             try {
@@ -308,6 +312,7 @@ public class DataNode implements FSConstants, Runnable {
      */
     class DataXceiver implements Runnable {
         Socket s;
+
         public DataXceiver(Socket s) {
             this.s = s;
         }
@@ -408,9 +413,9 @@ public class DataNode implements FSConstants, Runnable {
 
                                     while (anotherChunk) {
                                         while (len > 0) {
-                                            int bytesRead = in.read(buf, 0, (int)Math.min(buf.length, len));
+                                            int bytesRead = in.read(buf, 0, (int) Math.min(buf.length, len));
                                             if (bytesRead < 0) {
-                                              throw new EOFException("EOF reading from "+s.toString());
+                                                throw new EOFException("EOF reading from " + s.toString());
                                             }
                                             if (bytesRead > 0) {
                                                 try {
@@ -531,7 +536,7 @@ public class DataNode implements FSConstants, Runnable {
                             //
                             // Write filelen of -1 if error
                             //
-                            if (! data.isValidBlock(b)) {
+                            if (!data.isValidBlock(b)) {
                                 out.writeLong(-1);
                             } else {
                                 //
@@ -601,7 +606,7 @@ public class DataNode implements FSConstants, Runnable {
                     in.close();
                 }
             } catch (IOException ie) {
-              LOG.log(Level.WARNING, "DataXCeiver", ie);
+                LOG.log(Level.WARNING, "DataXCeiver", ie);
             } finally {
                 try {
                     s.close();
@@ -622,7 +627,7 @@ public class DataNode implements FSConstants, Runnable {
         byte buf[];
 
         /**
-         * Connect to the first item in the target list.  Pass along the 
+         * Connect to the first item in the target list.  Pass along the
          * entire target list, the block, and the data.
          */
         public DataTransfer(DatanodeInfo targets[], Block b) throws IOException {
@@ -636,7 +641,7 @@ public class DataNode implements FSConstants, Runnable {
          * Do the deed, write the bytes
          */
         public void run() {
-	    xmitsInProgress++;
+            xmitsInProgress++;
             try {
                 Socket s = new Socket();
                 s.connect(curTarget, READ_TIMEOUT);
@@ -675,10 +680,10 @@ public class DataNode implements FSConstants, Runnable {
                 }
                 LOG.info("Transmitted block " + b + " to " + curTarget);
             } catch (IOException ie) {
-              LOG.log(Level.WARNING, "Failed to transfer "+b+" to "+curTarget, ie);
+                LOG.log(Level.WARNING, "Failed to transfer " + b + " to " + curTarget, ie);
             } finally {
-		xmitsInProgress--;
-	    }
+                xmitsInProgress--;
+            }
         }
     }
 
@@ -686,29 +691,30 @@ public class DataNode implements FSConstants, Runnable {
      * No matter what kind of exception we get, keep retrying to offerService().
      * That's the loop that connects to the NameNode and provides basic DataNode
      * functionality.
-     *
+     * <p>
      * Only stop when "shouldRun" is turned off (which can only happen at shutdown).
      */
     public void run() {
-        LOG.info("Starting DataNode in: "+data.data);
+        LOG.info("Starting DataNode in: " + data.data);
         while (shouldRun) {
             try {
                 offerService();
             } catch (Exception ex) {
                 LOG.info("Exception: " + ex);
-              if (shouldRun) {
-                LOG.info("Lost connection to namenode.  Retrying...");
-                try {
-                  Thread.sleep(5000);
-                } catch (InterruptedException ie) {
+                if (shouldRun) {
+                    LOG.info("Lost connection to namenode.  Retrying...");
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException ie) {
+                    }
                 }
-              }
             }
         }
-      LOG.info("Finishing DataNode in: "+data.data);
+        LOG.info("Finishing DataNode in: " + data.data);
     }
 
-    /** Start datanode daemons.
+    /**
+     * Start datanode daemons.
      * Start a datanode daemon for each comma separated data directory
      * specified in property dfs.data.dir
      */
@@ -716,67 +722,68 @@ public class DataNode implements FSConstants, Runnable {
         String[] dataDirs = conf.getStrings("dfs.data.dir");
         subThreadList = new Vector(dataDirs.length);
         for (int i = 0; i < dataDirs.length; i++) {
-          DataNode dn = makeInstanceForDir(dataDirs[i], conf);
-          if (dn != null) {
-            Thread t = new Thread(dn, "DataNode: "+dataDirs[i]);
-            t.setDaemon(true); // needed for JUnit testing
-            t.start();
-            subThreadList.add(t);
-          }
+            DataNode dn = makeInstanceForDir(dataDirs[i], conf);
+            if (dn != null) {
+                Thread t = new Thread(dn, "DataNode: " + dataDirs[i]);
+                t.setDaemon(true); // needed for JUnit testing
+                t.start();
+                subThreadList.add(t);
+            }
         }
     }
 
-  /** Start datanode daemons.
-   * Start a datanode daemon for each comma separated data directory
-   * specified in property dfs.data.dir and wait for them to finish.
-   * If this thread is specifically interrupted, it will stop waiting.
-   */
-  private static void runAndWait(Configuration conf) throws IOException {
-    run(conf);
+    /**
+     * Start datanode daemons.
+     * Start a datanode daemon for each comma separated data directory
+     * specified in property dfs.data.dir and wait for them to finish.
+     * If this thread is specifically interrupted, it will stop waiting.
+     */
+    private static void runAndWait(Configuration conf) throws IOException {
+        run(conf);
 
-    //  Wait for sub threads to exit
-    for (Iterator iterator = subThreadList.iterator(); iterator.hasNext();) {
-      Thread threadDataNode = (Thread) iterator.next();
-      try {
-        threadDataNode.join();
-      } catch (InterruptedException e) {
-        if (Thread.currentThread().isInterrupted()) {
-          // did someone knock?
-          return;
+        //  Wait for sub threads to exit
+        for (Iterator iterator = subThreadList.iterator(); iterator.hasNext(); ) {
+            Thread threadDataNode = (Thread) iterator.next();
+            try {
+                threadDataNode.join();
+            } catch (InterruptedException e) {
+                if (Thread.currentThread().isInterrupted()) {
+                    // did someone knock?
+                    return;
+                }
+            }
         }
-      }
     }
-  }
 
-  /**
-   * Make an instance of DataNode after ensuring that given data directory
-   * (and parent directories, if necessary) can be created.
-   * @param dataDir where the new DataNode instance should keep its files.
-   * @param conf Configuration instance to use.
-   * @return DataNode instance for given data dir and conf, or null if directory
-   * cannot be created.
-   * @throws IOException
-   */
-  static DataNode makeInstanceForDir(String dataDir, Configuration conf) throws IOException {
-    DataNode dn = null;
-    File data = new File(dataDir);
-    data.mkdirs();
-    if (!data.isDirectory()) {
-      LOG.warning("Can't start DataNode in non-directory: "+dataDir);
-      return null;
-    } else {
-      dn = new DataNode(conf, dataDir);
+    /**
+     * Make an instance of DataNode after ensuring that given data directory
+     * (and parent directories, if necessary) can be created.
+     * @param dataDir where the new DataNode instance should keep its files.
+     * @param conf    Configuration instance to use.
+     * @return DataNode instance for given data dir and conf, or null if directory
+     * cannot be created.
+     * @throws IOException
+     */
+    static DataNode makeInstanceForDir(String dataDir, Configuration conf) throws IOException {
+        DataNode dn = null;
+        File data = new File(dataDir);
+        data.mkdirs();
+        if (!data.isDirectory()) {
+            LOG.warning("Can't start DataNode in non-directory: " + dataDir);
+            return null;
+        } else {
+            dn = new DataNode(conf, dataDir);
+        }
+        return dn;
     }
-    return dn;
-  }
 
-  public String toString() {
-    return "DataNode{" +
-        "data=" + data +
-        ", localName='" + localName + "'" +
-        ", xmitsInProgress=" + xmitsInProgress +
-        "}";
-  }
+    public String toString() {
+        return "DataNode{" +
+                "data=" + data +
+                ", localName='" + localName + "'" +
+                ", xmitsInProgress=" + xmitsInProgress +
+                "}";
+    }
 
     /**
      */

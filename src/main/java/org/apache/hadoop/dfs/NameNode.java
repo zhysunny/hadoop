@@ -1,12 +1,12 @@
 /**
  * Copyright 2005 The Apache Software Foundation
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,10 +18,11 @@ package org.apache.hadoop.dfs;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.ipc.*;
 import org.apache.hadoop.conf.*;
-import org.apache.hadoop.util.LogFormatter;
+import org.apache.hadoop.util.ConfigConstants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.util.logging.*;
 
 /**********************************************************
  * NameNode serves as both directory namespace manager and
@@ -56,48 +57,52 @@ import java.util.logging.*;
  * @author Mike Cafarella
  **********************************************************/
 public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
-    public static final Logger LOG = LogFormatter.getLogger("org.apache.hadoop.dfs.NameNode");
+    private static final Logger LOGGER = LoggerFactory.getLogger(NameNode.class);
 
     private FSNamesystem namesystem;
     private Server server;
-    private int handlerCount = 2;
+    private int handlerCount;
 
-    /** only used for testing purposes  */
+    /**
+     * 仅用于测试目的
+     */
     private boolean stopRequested = false;
 
-    /** Format a new filesystem.  Destroys any filesystem that may already
-     * exist at this location.  **/
-    public static void format(Configuration conf) throws IOException {
-      FSDirectory.format(getDir(conf), conf);
-    }
-
     /**
-     * Create a NameNode at the default location
+     * 在默认位置创建一个NameNode
+     * @param conf
+     * @throws IOException
      */
     public NameNode(Configuration conf) throws IOException {
-        this(getDir(conf),
-             DataNode.createSocketAddr
-             (conf.get("fs.default.name", "local")).getPort(), conf);
+        this(getDir(conf), DataNode.createSocketAddr(conf.get(ConfigConstants.FS_DEFAULT_NAME, ConfigConstants.FS_DEFAULT_NAME_DEFAULT)).getPort(), conf);
     }
 
     /**
-     * Create a NameNode at the specified location and start it.
+     * 在指定的位置创建一个NameNode并启动它。
+     * @param dir  namenode存储目录
+     * @param port namenode端口
+     * @param conf 配置类
+     * @throws IOException
      */
     public NameNode(File dir, int port, Configuration conf) throws IOException {
         this.namesystem = new FSNamesystem(dir, conf);
-        this.handlerCount = conf.getInt("dfs.namenode.handler.count", 10);
+        this.handlerCount = conf.getInt(ConfigConstants.DFS_NAMENODE_HANDLER_COUNT, ConfigConstants.DFS_NAMENODE_HANDLER_COUNT_DEFAULT);
         this.server = RPC.getServer(this, port, handlerCount, false, conf);
         this.server.start();
     }
 
-    /** Return the configured directory where name data is stored. */
+    /**
+     * namenode数据存储目录
+     * @param conf
+     * @return
+     */
     private static File getDir(Configuration conf) {
-      return new File(conf.get("dfs.name.dir", "/tmp/hadoop/dfs/name"));
+        return new File(conf.get(ConfigConstants.DFS_NAME_DIR, ConfigConstants.DFS_NAME_DIR_DEFAULT));
     }
 
     /**
-     * Wait for service to finish.
-     * (Normally, it runs forever.)
+     * 等待服务完成。
+     * (正常情况下，它会一直运行下去。)
      */
     public void join() {
         try {
@@ -107,23 +112,24 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
     }
 
     /**
-     * Stop all NameNode threads and wait for all to finish.
-     * Package-only access since this is intended for JUnit testing.
-    */
+     * 停止所有NameNode线程，等待所有线程完成。
+     * 只有包访问，因为这是用于JUnit测试的。
+     */
     void stop() {
-      if (! stopRequested) {
-        stopRequested = true;
-        namesystem.close();
-        server.stop();
-        //this.join();
-      }
+        if (!stopRequested) {
+            stopRequested = true;
+            namesystem.close();
+            server.stop();
+        }
     }
 
     /////////////////////////////////////////////////////
     // ClientProtocol
     /////////////////////////////////////////////////////
+
     /**
      */
+    @Override
     public LocatedBlock[] open(String src) throws IOException {
         Object openResults[] = namesystem.open(new UTF8(src));
         if (openResults == null) {
@@ -141,6 +147,7 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
 
     /**
      */
+    @Override
     public LocatedBlock create(String src, String clientName, String clientMachine, boolean overwrite) throws IOException {
         Object results[] = namesystem.startFile(new UTF8(src), new UTF8(clientName), new UTF8(clientMachine), overwrite);
         if (results == null) {
@@ -154,6 +161,7 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
 
     /**
      */
+    @Override
     public LocatedBlock addBlock(String src, String clientMachine) throws IOException {
         int retries = 5;
         Object results[] = namesystem.getAdditionalBlock(new UTF8(src), new UTF8(clientMachine));
@@ -182,6 +190,7 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
      * These blocks are reported via the client instead of the datanode
      * to prevent weird heartbeat race conditions.
      */
+    @Override
     public void reportWrittenBlock(LocatedBlock lb) throws IOException {
         Block b = lb.getBlock();
         DatanodeInfo targets[] = lb.getLocations();
@@ -193,18 +202,23 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
     /**
      * The client needs to give up on the block.
      */
+    @Override
     public void abandonBlock(Block b, String src) throws IOException {
-        if (! namesystem.abandonBlock(b, new UTF8(src))) {
+        if (!namesystem.abandonBlock(b, new UTF8(src))) {
             throw new IOException("Cannot abandon block during write to " + src);
         }
     }
+
     /**
      */
+    @Override
     public void abandonFileInProgress(String src) throws IOException {
         namesystem.abandonFileInProgress(new UTF8(src));
     }
+
     /**
      */
+    @Override
     public boolean complete(String src, String clientName) throws IOException {
         int returnCode = namesystem.completeFile(new UTF8(src), new UTF8(clientName));
         if (returnCode == STILL_WAITING) {
@@ -215,8 +229,10 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
             throw new IOException("Could not complete write to file " + src + " by " + clientName);
         }
     }
+
     /**
      */
+    @Override
     public String[][] getHints(String src, long start, long len) throws IOException {
         UTF8 hosts[][] = namesystem.getDatanodeHints(new UTF8(src), start, len);
         if (hosts == null) {
@@ -232,38 +248,45 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
             return results;
         }
     }
+
     /**
      */
+    @Override
     public boolean rename(String src, String dst) throws IOException {
         return namesystem.renameTo(new UTF8(src), new UTF8(dst));
     }
 
     /**
      */
+    @Override
     public boolean delete(String src) throws IOException {
         return namesystem.delete(new UTF8(src));
     }
 
     /**
      */
+    @Override
     public boolean exists(String src) throws IOException {
         return namesystem.exists(new UTF8(src));
     }
 
     /**
      */
+    @Override
     public boolean isDir(String src) throws IOException {
         return namesystem.isDir(new UTF8(src));
     }
 
     /**
      */
+    @Override
     public boolean mkdirs(String src) throws IOException {
         return namesystem.mkdirs(new UTF8(src));
     }
 
     /**
      */
+    @Override
     public boolean obtainLock(String src, String clientName, boolean exclusive) throws IOException {
         int returnCode = namesystem.obtainLock(new UTF8(src), new UTF8(clientName), exclusive);
         if (returnCode == COMPLETE_SUCCESS) {
@@ -277,6 +300,7 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
 
     /**
      */
+    @Override
     public boolean releaseLock(String src, String clientName) throws IOException {
         int returnCode = namesystem.releaseLock(new UTF8(src), new UTF8(clientName));
         if (returnCode == COMPLETE_SUCCESS) {
@@ -290,18 +314,21 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
 
     /**
      */
+    @Override
     public void renewLease(String clientName) throws IOException {
-        namesystem.renewLease(new UTF8(clientName));        
+        namesystem.renewLease(new UTF8(clientName));
     }
 
     /**
      */
+    @Override
     public DFSFileInfo[] getListing(String src) throws IOException {
         return namesystem.getListing(new UTF8(src));
     }
 
     /**
      */
+    @Override
     public long[] getStats() throws IOException {
         long results[] = new long[2];
         results[0] = namesystem.totalCapacity();
@@ -311,6 +338,7 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
 
     /**
      */
+    @Override
     public DatanodeInfo[] getDatanodeReport() throws IOException {
         DatanodeInfo results[] = namesystem.datanodeReport();
         if (results == null || results.length == 0) {
@@ -322,17 +350,21 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
     ////////////////////////////////////////////////////////////////
     // DatanodeProtocol
     ////////////////////////////////////////////////////////////////
+
     /**
      */
+    @Override
     public void sendHeartbeat(String sender, long capacity, long remaining) {
         namesystem.gotHeartbeat(new UTF8(sender), capacity, remaining);
     }
 
+    @Override
     public Block[] blockReport(String sender, Block blocks[]) {
-        LOG.info("Block report from "+sender+": "+blocks.length+" blocks.");
+        LOGGER.info("Block report from " + sender + ": " + blocks.length + " blocks.");
         return namesystem.processReport(blocks, new UTF8(sender));
     }
 
+    @Override
     public void blockReceived(String sender, Block blocks[]) {
         for (int i = 0; i < blocks.length; i++) {
             namesystem.blockReceived(blocks[i], new UTF8(sender));
@@ -341,6 +373,7 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
 
     /**
      */
+    @Override
     public void errorReport(String sender, String msg) {
         // Log error message from datanode
         //LOG.info("Report from " + sender + ": " + msg);
@@ -350,6 +383,7 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
      * Return a block-oriented command for the datanode to execute.
      * This will be either a transfer or a delete operation.
      */
+    @Override
     public BlockCommand getBlockwork(String sender, int xmitsInProgress) {
         //
         // Ask to perform pending transfers, if any
@@ -373,22 +407,29 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
     }
 
     /**
+     * namenode启动函数
+     * @param argv
+     * @throws Exception
      */
     public static void main(String argv[]) throws Exception {
         Configuration conf = new Configuration();
 
         if (argv.length == 1 && argv[0].equals("-format")) {
-          File dir = getDir(conf);
-          if (dir.exists()) {
-            System.err.print("Re-format filesystem in " + dir +" ? (Y or N) ");
-            if (!(System.in.read() == 'Y')) {
-              System.err.println("Format aborted.");
-              System.exit(1);
+            // -format格式化namenode磁盘
+            File dir = getDir(conf);
+            if (dir.exists()) {
+                // 是否需要重新格式化
+                System.err.print("Re-format filesystem in " + dir + " ? (Y or N) ");
+                if (!(System.in.read() == 'Y')) {
+                    System.err.println("Format aborted.");
+                    System.exit(1);
+                }
             }
-          }
-          format(conf);
-          System.err.println("Formatted "+dir);
-          System.exit(0);
+            // 格式化一个新的文件系统。销毁可能已经存在于此位置的任何文件系统。
+            // 删除image和edits文件
+            FSDirectory.format(dir, conf);
+            System.err.println("Formatted：" + dir);
+            System.exit(0);
         }
 
         NameNode namenode = new NameNode(conf);
