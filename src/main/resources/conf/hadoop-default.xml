@@ -51,12 +51,6 @@
     <!-- file system properties -->
 
     <property>
-        <name>fs.default.name</name>
-        <value>localhost:8020</value>
-        <description>默认文件系统的名称。主机:DFS的端口</description>
-    </property>
-
-    <property>
         <name>dfs.datanode.port</name>
         <value>50010</value>
         <description>dfs datanode服务器使用的端口号作为寻找空闲端口的起点。</description>

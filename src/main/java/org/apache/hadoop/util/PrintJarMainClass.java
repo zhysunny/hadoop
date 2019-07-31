@@ -25,9 +25,6 @@ import java.util.jar.*;
  */
 public class PrintJarMainClass {
 
-    /**
-     * @param args
-     */
     public static void main(String[] args) {
         try {
             JarFile jarFile = new JarFile(args[0]);

@@ -19,9 +19,9 @@ package org.apache.hadoop.util;
 import java.util.ArrayList;
 
 /**
- * 帮助生成进度报告的实用程序。
- * 应用程序构建一个由{@link Progress}实例组成的层次结构，每个实例建模一个执行阶段。
- * root是用{@link #Progress()}构造的。
+ * 帮助生成进度报告的实用程序。<br/>
+ * 应用程序构建一个由{@link Progress}实例组成的层次结构，每个实例建模一个执行阶段。<br/>
+ * root是用{@link #Progress()}构造的。<br/>
  * 子阶段的节点是通过调用{@link #addPhase()}创建的。
  * @author 章云
  * @date 2019/7/30 22:29
@@ -99,7 +99,8 @@ public class Progress {
      */
     public float get() {
         Progress node = this;
-        while (node.parent != null) {                 // find the root
+        // find the root
+        while (node.parent != null) {
             node = parent;
         }
         return node.getInternal();

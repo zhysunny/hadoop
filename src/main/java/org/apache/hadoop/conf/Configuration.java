@@ -32,9 +32,9 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 /**
- * 提供对配置参数的访问。配置由资源指定。资源包含一组name/value对。
- * 每个资源都是由字符串或文件命名的。如果使用字符串命名，则将检查类路径以查找具有该名称的文件。如果是文件，则直接检查文件系统，而不需要引用类路径。
- * 配置资源有两种类型:default和final。首先加载默认值，最后加载最终值，从而覆盖默认值。
+ * 提供对配置参数的访问。配置由资源指定。资源包含一组name/value对。<br/>
+ * 每个资源都是由字符串或文件命名的。如果使用字符串命名，则将检查类路径以查找具有该名称的文件。如果是文件，则直接检查文件系统，而不需要引用类路径。<br/>
+ * 配置资源有两种类型:default和final。首先加载默认值，最后加载最终值，从而覆盖默认值。<br/>
  * Hadoop的默认资源是字符串“hadoop-default.xml”。它的最终资源是字符串“hadoop-site.xml”。Hadoop上构建的其他工具可能指定额外的资源。
  * @author 章云
  * @date 2019/7/30 8:55
@@ -351,8 +351,8 @@ public class Configuration {
     }
 
     /**
-     * 返回name属性的值对应的数组，数组元素是目录
-     * 如果name属性的值包含多个目录，则根据path's hash code选择一个目录。
+     * 返回name属性的值对应的数组，数组元素是目录<br/>
+     * 如果name属性的值包含多个目录，则根据path's hash code选择一个目录。<br/>
      * 如果所选目录不存在，则尝试创建它。
      * @param name
      * @param path

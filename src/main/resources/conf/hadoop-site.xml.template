@@ -4,5 +4,9 @@
 <!-- Put site-specific property overrides in this file. -->
 
 <configuration>
-
+    <property>
+        <name>fs.default.name</name>
+        <value>host:port</value>
+        <description>默认文件系统的名称。主机:DFS的端口</description>
+    </property>
 </configuration>

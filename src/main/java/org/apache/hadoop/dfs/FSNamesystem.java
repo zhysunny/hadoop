@@ -1,12 +1,12 @@
 /**
  * Copyright 2005 The Apache Software Foundation
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,84 +18,78 @@ package org.apache.hadoop.dfs;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.*;
-import java.util.logging.*;
 
-/***************************************************
- * FSNamesystem does the actual bookkeeping work for the
- * DataNode.
- *
- * It tracks several important tables.
- *
- * 1)  valid fsname --> blocklist  (kept on disk, logged)
- * 2)  Set of all valid blocks (inverted #1)
- * 3)  block --> machinelist (kept in memory, rebuilt dynamically from reports)
- * 4)  machine --> blocklist (inverted #2)
- * 5)  LRU cache of updated-heartbeat machines
- ***************************************************/
-class FSNamesystem implements FSConstants {
-    public static final Logger LOG = LogFormatter.getLogger("org.apache.hadoop.fs.FSNamesystem");
+/**
+ * fsnamessystem为DataNode做实际的簿记工作。<br/>
+ * 它跟踪几个重要的表。<br/>
+ * 1)有效fsname——>块列表(保存在磁盘上，已记录)<br/>
+ * 2)所有有效块的集合(倒排#1)<br/>
+ * 3)块 ——> 机器列表(保存在内存中，根据报表动态重建)<br/>
+ * 4)机器 ——> 块列表(倒排#2)<br/>
+ * 5)更新心跳机的LRU缓存
+ * @author 章云
+ * @date 2019/7/31 10:54
+ */
+public class FSNamesystem implements FSConstants {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FSNamesystem.class);
 
-    //
-    // Stores the correct file name hierarchy
-    //
+    /**
+     * 存储正确的文件名层次结构
+     */
     FSDirectory dir;
 
-    //
-    // Stores the block-->datanode(s) map.  Updated only in response
-    // to client-sent information.
-    //
-    TreeMap blocksMap = new TreeMap();
+    /**
+     * 存储块——>datanode(s)映射。仅在响应客户端发送的信息时更新。
+     */
+    TreeMap<Block, TreeSet<DatanodeInfo>> blocksMap = new TreeMap<Block, TreeSet<DatanodeInfo>>();
 
-    //
-    // Stores the datanode-->block map.  Done by storing a 
-    // set of datanode info objects, sorted by name.  Updated only in
-    // response to client-sent information.
-    //
-    TreeMap datanodeMap = new TreeMap();
+    /**
+     * 存储datanode——>块映射。通过存储一组按名称排序的datanode信息对象来完成。仅在响应客户端发送的信息时更新。
+     */
+    TreeMap<UTF8, DatanodeInfo> datanodeMap = new TreeMap<UTF8, DatanodeInfo>();
 
-    //
-    // Keeps a Vector for every named machine.  The Vector contains
-    // blocks that have recently been invalidated and are thought to live
-    // on the machine in question.
-    //
-    TreeMap recentInvalidateSets = new TreeMap();
+    /**
+     * 为每个命名的机器保存一个向量。该向量包含最近已失效的块，并且被认为存在于所讨论的机器上。
+     */
+    TreeMap<UTF8, Vector<Block>> recentInvalidateSets = new TreeMap<UTF8, Vector<Block>>();
 
-    //
-    // Keeps a TreeSet for every named node.  Each treeset contains
-    // a list of the blocks that are "extra" at that location.  We'll
-    // eventually remove these extras.
-    //
-    TreeMap excessReplicateMap = new TreeMap();
+    /**
+     * 为每个命名节点保留一个树集。每个树集包含在该位置的“额外”块的列表。我们最终会删除这些额外的内容。
+     */
+    TreeMap<UTF8, TreeSet<Block>> excessReplicateMap = new TreeMap<UTF8, TreeSet<Block>>();
 
-    //
-    // Keeps track of files that are being created, plus the
-    // blocks that make them up.
-    //
-    TreeMap pendingCreates = new TreeMap();
+    /**
+     * 跟踪正在创建的文件，以及组成这些文件的块。
+     */
+    TreeMap<UTF8, Vector<Block>> pendingCreates = new TreeMap<UTF8, Vector<Block>>();
 
-    //
-    // Keeps track of the blocks that are part of those pending creates
-    //
-    TreeSet pendingCreateBlocks = new TreeSet();
+    /**
+     * 跟踪作为挂起创建的一部分的块
+     */
+    TreeSet<Block> pendingCreateBlocks = new TreeSet<Block>();
 
-    //
-    // Stats on overall usage
-    //
+    /**
+     * 总使用量统计
+     */
     long totalCapacity = 0, totalRemaining = 0;
 
-    //
+    /**
+     * 随机数对象
+     */
     Random r = new Random();
 
-    //
-    // Stores a set of datanode info objects, sorted by heartbeat
-    //
-    TreeSet heartbeats = new TreeSet(new Comparator() {
-        public int compare(Object o1, Object o2) {
-            DatanodeInfo d1 = (DatanodeInfo) o1;
-            DatanodeInfo d2 = (DatanodeInfo) o2;            
+    /**
+     * 存储一组按心跳排序的DatanodeInfo对象
+     */
+    TreeSet<DatanodeInfo> heartbeats = new TreeSet<DatanodeInfo>(new Comparator<DatanodeInfo>() {
+        @Override
+        public int compare(DatanodeInfo d1, DatanodeInfo d2) {
+            // datanode最后修改时间升序排序
             long lu1 = d1.lastUpdate();
             long lu2 = d2.lastUpdate();
             if (lu1 < lu2) {
@@ -108,44 +102,72 @@ class FSNamesystem implements FSConstants {
         }
     });
 
-    //
-    // Store set of Blocks that need to be replicated 1 or more times.
-    // We also store pending replication-orders.
-    //
-    private TreeSet neededReplications = new TreeSet();
-    private TreeSet pendingReplications = new TreeSet();
-
-    //
-    // Used for handling lock-leases
-    //
-    private TreeMap leases = new TreeMap();
-    private TreeSet sortedLeases = new TreeSet();
-
-    //
-    // Threaded object that checks to see if we have been
-    // getting heartbeats from all clients. 
-    //
+    /**
+     * 存储一组需要复制1次或多次的块。
+     */
+    private TreeSet<Block> neededReplications = new TreeSet<Block>();
+    /**
+     * 存储等待复制的副本。
+     */
+    private TreeSet<Block> pendingReplications = new TreeSet<Block>();
+    /**
+     * 用于处理锁租赁
+     */
+    private TreeMap<UTF8, Lease> leases = new TreeMap<UTF8, Lease>();
+    /**
+     * 锁排序
+     */
+    private TreeSet<Lease> sortedLeases = new TreeSet<Lease>();
+    /**
+     * 线程对象，检查我们是否从所有客户端获得心跳。
+     */
     HeartbeatMonitor hbmon = null;
+    /**
+     * 锁监控
+     */
     LeaseMonitor lmon = null;
+    /**
+     * 守护线程，心跳监控，锁监控
+     */
     Daemon hbthread = null, lmthread = null;
+    /**
+     * 文件系统是否正在运行中
+     */
     boolean fsRunning = true;
+    /**
+     * 系统开始时间，程序启动时间
+     */
     long systemStart = 0;
+    /**
+     * 配置类
+     */
     private Configuration conf;
-
-    //  DESIRED_REPLICATION is how many copies we try to have at all times
+    /**
+     * DESIRED_REPLICATION是我们在任何时候都有多少个副本
+     */
     private int desiredReplication;
-    //  The maximum number of replicates we should allow for a single block
+    /**
+     * 对于单个块，我们应该允许的最大副本数
+     */
     private int maxReplication;
-    //  How many outgoing replication streams a given node should have at one time
+    /**
+     * 给定节点一次应该有多少输出复制流
+     */
     private int maxReplicationStreams;
-    // MIN_REPLICATION is how many copies we need in place or else we disallow the write
+    /**
+     * MIN_REPLICATION是我们需要多少个副本，否则我们不允许写入
+     */
     private int minReplication;
-    // HEARTBEAT_RECHECK is how often a datanode sends its hearbeat
+    /**
+     * HEARTBEAT_RECHECK是datanode发送它的心跳频率(毫秒)(默认1秒)
+     */
     private int heartBeatRecheck;
 
     /**
-     * dir is where the filesystem directory state 
-     * is stored
+     * 实例化
+     * @param dir  文件系统目录状态存储的位置
+     * @param conf
+     * @throws IOException
      */
     public FSNamesystem(File dir, Configuration conf) throws IOException {
         this.dir = new FSDirectory(dir);
@@ -155,31 +177,31 @@ class FSNamesystem implements FSConstants {
         lmthread.start();
         this.systemStart = System.currentTimeMillis();
         this.conf = conf;
-        
         this.desiredReplication = conf.getInt("dfs.replication", 3);
         this.maxReplication = desiredReplication;
         this.maxReplicationStreams = conf.getInt("dfs.max-repl-streams", 2);
         this.minReplication = 1;
-        this.heartBeatRecheck= 1000;
+        this.heartBeatRecheck = 1000;
     }
 
-    /** Close down this filesystem manager.
+    /**
+     * Close down this filesystem manager.
      * Causes heartbeat and lease daemons to stop; waits briefly for
      * them to finish, but a short timeout returns control back to caller.
      */
     public void close() {
-      synchronized (this) {
-        fsRunning = false;
-      }
+        synchronized (this) {
+            fsRunning = false;
+        }
         try {
             hbthread.join(3000);
         } catch (InterruptedException ie) {
         } finally {
-          // using finally to ensure we also wait for lease daemon
-          try {
-            lmthread.join(3000);
-          } catch (InterruptedException ie) {
-          }
+            // using finally to ensure we also wait for lease daemon
+            try {
+                lmthread.join(3000);
+            } catch (InterruptedException ie) {
+            }
         }
     }
 
@@ -188,11 +210,12 @@ class FSNamesystem implements FSConstants {
     // These methods are called by HadoopFS clients
     //
     /////////////////////////////////////////////////////////
+
     /**
      * The client wants to open the given filename.  Return a
      * list of (block,machineArray) pairs.  The sequence of unique blocks
      * in the list indicates all the blocks that make up the filename.
-     *
+     * <p>
      * The client should choose one of the machines from the machineArray
      * at random.
      */
@@ -224,8 +247,8 @@ class FSNamesystem implements FSConstants {
 
     /**
      * The client would like to create a new block for the indicated
-     * filename.  Return an array that consists of the block, plus a set 
-     * of machines.  The first on this list should be where the client 
+     * filename.  Return an array that consists of the block, plus a set
+     * of machines.  The first on this list should be where the client
      * writes data.  Subsequent items in the list must be provided in
      * the connection to the first datanode.
      * @return Return an array that consists of the block, plus a set
@@ -236,7 +259,7 @@ class FSNamesystem implements FSConstants {
         Object results[] = null;
         if (pendingCreates.get(src) == null) {
             boolean fileValid = dir.isValidToCreate(src);
-            if (overwrite && ! fileValid) {
+            if (overwrite && !fileValid) {
                 delete(src);
                 fileValid = true;
             }
@@ -247,8 +270,8 @@ class FSNamesystem implements FSConstants {
                 // Get the array of replication targets 
                 DatanodeInfo targets[] = chooseTargets(this.desiredReplication, null, clientMachine);
                 if (targets.length < this.minReplication) {
-                    LOG.warning("Target-length is " + targets.length +
-                        ", below MIN_REPLICATION (" + this.minReplication+ ")");
+                    LOGGER.warn("Target-length is " + targets.length +
+                            ", below MIN_REPLICATION (" + this.minReplication + ")");
                     return null;
                 }
 
@@ -272,10 +295,10 @@ class FSNamesystem implements FSConstants {
                 results[0] = allocateBlock(src);
                 results[1] = targets;
             } else { // ! fileValid
-              LOG.warning("Cannot start file because it is invalid. src=" + src);
+                LOGGER.warn("Cannot start file because it is invalid. src=" + src);
             }
         } else {
-            LOG.warning("Cannot start file because pendingCreates is non-null. src=" + src);
+            LOGGER.warn("Cannot start file because pendingCreates is non-null. src=" + src);
         }
         return results;
     }
@@ -286,7 +309,7 @@ class FSNamesystem implements FSConstants {
      * of the block, plus a set of machines.  The first on this list should
      * be where the client writes data.  Subsequent items in the list must
      * be provided in the connection to the first datanode.
-     *
+     * <p>
      * Make sure the previous blocks have been reported by datanodes and
      * are replicated.  Will return an empty 2-elt array if we want the
      * client to "try again later".
@@ -345,14 +368,14 @@ class FSNamesystem implements FSConstants {
     /**
      * Finalize the created file and make it world-accessible.  The
      * FSNamesystem will already know the blocks that make up the file.
-     * Before we return, we make sure that all the file's blocks have 
+     * Before we return, we make sure that all the file's blocks have
      * been reported by datanodes and are replicated correctly.
      */
     public synchronized int completeFile(UTF8 src, UTF8 holder) {
         if (dir.getFile(src) != null || pendingCreates.get(src) == null) {
-	    LOG.info("Failed to complete " + src + "  because dir.getFile()==" + dir.getFile(src) + " and " + pendingCreates.get(src));
+            LOGGER.info("Failed to complete " + src + "  because dir.getFile()==" + dir.getFile(src) + " and " + pendingCreates.get(src));
             return OPERATION_FAILED;
-        } else if (! checkFileProgress(src)) {
+        } else if (!checkFileProgress(src)) {
             return STILL_WAITING;
         } else {
             Vector pendingVector = (Vector) pendingCreates.get(src);
@@ -379,7 +402,7 @@ class FSNamesystem implements FSConstants {
                     }
                 }
             }
-            
+
             //
             // Now we can add the (name,blocks) tuple to the filesystem
             //
@@ -394,7 +417,7 @@ class FSNamesystem implements FSConstants {
                     Lease lease = (Lease) leases.get(holder);
                     if (lease != null) {
                         lease.completedCreate(src);
-                        if (! lease.hasLocks()) {
+                        if (!lease.hasLocks()) {
                             leases.remove(holder);
                             sortedLeases.remove(lease);
                         }
@@ -414,7 +437,7 @@ class FSNamesystem implements FSConstants {
                     TreeSet containingNodes = (TreeSet) blocksMap.get(pendingBlocks[i]);
                     if (containingNodes.size() < this.desiredReplication) {
                         synchronized (neededReplications) {
-                            LOG.info("Completed file " + src + ", at holder " + holder + ".  There is/are only " + containingNodes.size() + " copies of block " + pendingBlocks[i] + ", so replicating up to " + this.desiredReplication);
+                            LOGGER.info("Completed file " + src + ", at holder " + holder + ".  There is/are only " + containingNodes.size() + " copies of block " + pendingBlocks[i] + ", so replicating up to " + this.desiredReplication);
                             neededReplications.add(pendingBlocks[i]);
                         }
                     }
@@ -423,7 +446,7 @@ class FSNamesystem implements FSConstants {
             } else {
                 System.out.println("AddFile() for " + src + " failed");
             }
-	    LOG.info("Dropped through on file add....");
+            LOGGER.info("Dropped through on file add....");
         }
 
         return OPERATION_FAILED;
@@ -582,7 +605,7 @@ class FSNamesystem implements FSConstants {
                     DatanodeInfo cur = (DatanodeInfo) it.next();
                     v.add(cur.getHost());
                 }
-                hosts[i-startBlock] = (UTF8[]) v.toArray(new UTF8[v.size()]);
+                hosts[i - startBlock] = (UTF8[]) v.toArray(new UTF8[v.size()]);
             }
             return hosts;
         }
@@ -605,9 +628,11 @@ class FSNamesystem implements FSConstants {
             this.holder = holder;
             renew();
         }
+
         public void renew() {
             this.lastUpdate = System.currentTimeMillis();
         }
+
         public boolean expired() {
             if (System.currentTimeMillis() - lastUpdate > LEASE_PERIOD) {
                 return true;
@@ -615,21 +640,27 @@ class FSNamesystem implements FSConstants {
                 return false;
             }
         }
+
         public void obtained(UTF8 src) {
             locks.add(src);
         }
+
         public void released(UTF8 src) {
             locks.remove(src);
         }
+
         public void startedCreate(UTF8 src) {
             creates.add(src);
         }
+
         public void completedCreate(UTF8 src) {
             creates.remove(src);
         }
+
         public boolean hasLocks() {
             return (locks.size() + creates.size()) > 0;
         }
+
         public void releaseLocks() {
             for (Iterator it = locks.iterator(); it.hasNext(); ) {
                 UTF8 src = (UTF8) it.next();
@@ -645,12 +676,14 @@ class FSNamesystem implements FSConstants {
 
         /**
          */
+        @Override
         public String toString() {
             return "[Lease.  Holder: " + holder.toString() + ", heldlocks: " + locks.size() + ", pendingcreates: " + creates.size() + "]";
         }
 
         /**
          */
+        @Override
         public int compareTo(Object o) {
             Lease l1 = (Lease) this;
             Lease l2 = (Lease) o;
@@ -665,24 +698,26 @@ class FSNamesystem implements FSConstants {
             }
         }
     }
+
     /******************************************************
      * LeaseMonitor checks for leases that have expired,
      * and disposes of them.
      ******************************************************/
     class LeaseMonitor implements Runnable {
+        @Override
         public void run() {
             while (fsRunning) {
                 synchronized (FSNamesystem.this) {
                     synchronized (leases) {
                         Lease top;
                         while ((sortedLeases.size() > 0) &&
-                               ((top = (Lease) sortedLeases.first()) != null)) {
+                                ((top = (Lease) sortedLeases.first()) != null)) {
                             if (top.expired()) {
                                 top.releaseLocks();
                                 leases.remove(top.holder);
-                                LOG.info("Removing lease " + top + ", leases remaining: " + sortedLeases.size());
+                                LOGGER.info("Removing lease " + top + ", leases remaining: " + sortedLeases.size());
                                 if (!sortedLeases.remove(top)) {
-                                    LOG.info("Unknown failure trying to remove " + top + " from lease set.");
+                                    LOGGER.info("Unknown failure trying to remove " + top + " from lease set.");
                                 }
                             } else {
                                 break;
@@ -731,7 +766,7 @@ class FSNamesystem implements FSConstants {
                 Lease lease = (Lease) leases.get(holder);
                 if (lease != null) {
                     lease.released(src);
-                    if (! lease.hasLocks()) {
+                    if (!lease.hasLocks()) {
                         leases.remove(holder);
                         sortedLeases.remove(lease);
                     }
@@ -740,9 +775,11 @@ class FSNamesystem implements FSConstants {
         }
         return result;
     }
+
     private int internalReleaseLock(UTF8 src, UTF8 holder) {
         return dir.releaseLock(src, holder);
     }
+
     private void internalReleaseCreate(UTF8 src) {
         Vector v = (Vector) pendingCreates.remove(src);
         for (Iterator it2 = v.iterator(); it2.hasNext(); ) {
@@ -778,6 +815,7 @@ class FSNamesystem implements FSConstants {
     // These methods are called by datanodes
     //
     /////////////////////////////////////////////////////////
+
     /**
      * The given node has reported in.  This method should:
      * 1) Record the heartbeat, so the datanode isn't timed out
@@ -791,7 +829,7 @@ class FSNamesystem implements FSConstants {
                 DatanodeInfo nodeinfo = (DatanodeInfo) datanodeMap.get(name);
 
                 if (nodeinfo == null) {
-                    LOG.info("Got brand-new heartbeat from " + name);
+                    LOGGER.info("Got brand-new heartbeat from " + name);
                     nodeinfo = new DatanodeInfo(name, capacity, remaining);
                     datanodeMap.put(name, nodeinfo);
                     capacityDiff = capacity;
@@ -815,6 +853,7 @@ class FSNamesystem implements FSConstants {
     class HeartbeatMonitor implements Runnable {
         /**
          */
+        @Override
         public void run() {
             while (fsRunning) {
                 heartbeatCheck();
@@ -835,9 +874,9 @@ class FSNamesystem implements FSConstants {
             DatanodeInfo nodeInfo = null;
 
             while ((heartbeats.size() > 0) &&
-                   ((nodeInfo = (DatanodeInfo) heartbeats.first()) != null) &&
-                   (nodeInfo.lastUpdate() < System.currentTimeMillis() - EXPIRE_INTERVAL)) {
-                LOG.info("Lost heartbeat for " + nodeInfo.getName());
+                    ((nodeInfo = (DatanodeInfo) heartbeats.first()) != null) &&
+                    (nodeInfo.lastUpdate() < System.currentTimeMillis() - EXPIRE_INTERVAL)) {
+                LOGGER.info("Lost heartbeat for " + nodeInfo.getName());
 
                 heartbeats.remove(nodeInfo);
                 synchronized (datanodeMap) {
@@ -859,9 +898,9 @@ class FSNamesystem implements FSConstants {
             }
         }
     }
-    
+
     /**
-     * The given node is reporting all its blocks.  Use this info to 
+     * The given node is reporting all its blocks.  Use this info to
      * update the (machine-->blocklist) and (block-->machinelist) tables.
      */
     public synchronized Block[] processReport(Block newReport[], UTF8 name) {
@@ -878,7 +917,7 @@ class FSNamesystem implements FSConstants {
         Block oldReport[] = node.getBlocks();
         while (oldReport != null && newReport != null && oldPos < oldReport.length && newPos < newReport.length) {
             int cmp = oldReport[oldPos].compareTo(newReport[newPos]);
-            
+
             if (cmp == 0) {
                 // Do nothing, blocks are the same
                 oldPos++;
@@ -925,8 +964,8 @@ class FSNamesystem implements FSConstants {
         for (Iterator it = node.getBlockIterator(); it.hasNext(); ) {
             Block b = (Block) it.next();
 
-            if (! dir.isValidBlock(b) && ! pendingCreateBlocks.contains(b)) {
-                LOG.info("Obsoleting block " + b);
+            if (!dir.isValidBlock(b) && !pendingCreateBlocks.contains(b)) {
+                LOGGER.info("Obsoleting block " + b);
                 obsolete.add(b);
             }
         }
@@ -934,7 +973,7 @@ class FSNamesystem implements FSConstants {
     }
 
     /**
-     * Modify (block-->datanode) map.  Remove block from set of 
+     * Modify (block-->datanode) map.  Remove block from set of
      * needed replications if this takes care of the problem.
      */
     synchronized void addStoredBlock(Block block, DatanodeInfo node) {
@@ -943,10 +982,10 @@ class FSNamesystem implements FSConstants {
             containingNodes = new TreeSet();
             blocksMap.put(block, containingNodes);
         }
-        if (! containingNodes.contains(node)) {
+        if (!containingNodes.contains(node)) {
             containingNodes.add(node);
         } else {
-            LOG.info("Redundant addStoredBlock request received for block " + block + " on node " + node);
+            LOGGER.info("Redundant addStoredBlock request received for block " + block + " on node " + node);
         }
 
         synchronized (neededReplications) {
@@ -955,7 +994,7 @@ class FSNamesystem implements FSConstants {
                     neededReplications.remove(block);
                     pendingReplications.remove(block);
                 } else if (containingNodes.size() < this.desiredReplication) {
-                    if (! neededReplications.contains(block)) {
+                    if (!neededReplications.contains(block)) {
                         neededReplications.add(block);
                     }
                 }
@@ -969,23 +1008,23 @@ class FSNamesystem implements FSConstants {
                 for (Iterator it = containingNodes.iterator(); it.hasNext(); ) {
                     DatanodeInfo cur = (DatanodeInfo) it.next();
                     TreeSet excessBlocks = (TreeSet) excessReplicateMap.get(cur.getName());
-                    if (excessBlocks == null || ! excessBlocks.contains(block)) {
+                    if (excessBlocks == null || !excessBlocks.contains(block)) {
                         nonExcess.add(cur);
                     }
                 }
                 if (nonExcess.size() > this.maxReplication) {
-                    chooseExcessReplicates(nonExcess, block, this.maxReplication);    
+                    chooseExcessReplicates(nonExcess, block, this.maxReplication);
                 }
             }
         }
     }
 
     /**
-     * We want a max of "maxReps" replicates for any block, but we now have too many.  
+     * We want a max of "maxReps" replicates for any block, but we now have too many.
      * In this method, copy enough nodes from 'srcNodes' into 'dstNodes' such that:
-     *
+     * <p>
      * srcNodes.size() - dstNodes.size() == maxReps
-     *
+     * <p>
      * For now, we choose nodes randomly.  In the future, we might enforce some
      * kind of policy (like making sure replicates are spread across racks).
      */
@@ -1021,12 +1060,12 @@ class FSNamesystem implements FSConstants {
     }
 
     /**
-     * Modify (block-->datanode) map.  Possibly generate 
+     * Modify (block-->datanode) map.  Possibly generate
      * replication tasks, if the removed block is still valid.
      */
     synchronized void removeStoredBlock(Block block, DatanodeInfo node) {
         TreeSet containingNodes = (TreeSet) blocksMap.get(block);
-        if (containingNodes == null || ! containingNodes.contains(node)) {
+        if (containingNodes == null || !containingNodes.contains(node)) {
             throw new IllegalArgumentException("No machine mapping found for block " + block + ", which should be at node " + node);
         }
         containingNodes.remove(node);
@@ -1128,17 +1167,16 @@ class FSNamesystem implements FSConstants {
     /**
      * Return with a list of Block/DataNodeInfo sets, indicating
      * where various Blocks should be copied, ASAP.
-     *
+     * <p>
      * The Array that we return consists of two objects:
      * The 1st elt is an array of Blocks.
      * The 2nd elt is a 2D array of DatanodeInfo objs, identifying the
-     *     target sequence for the Block at the appropriate index.
-     *
+     * target sequence for the Block at the appropriate index.
      */
     public synchronized Object[] pendingTransfers(DatanodeInfo srcNode, int xmitsInProgress) {
         synchronized (neededReplications) {
             Object results[] = null;
-	    int scheduledXfers = 0;
+            int scheduledXfers = 0;
 
             if (neededReplications.size() > 0) {
                 //
@@ -1157,7 +1195,7 @@ class FSNamesystem implements FSConstants {
                     }
 
                     Block block = (Block) it.next();
-                    if (! dir.isValidBlock(block)) {
+                    if (!dir.isValidBlock(block)) {
                         it.remove();
                     } else {
                         TreeSet containingNodes = (TreeSet) blocksMap.get(block);
@@ -1167,7 +1205,7 @@ class FSNamesystem implements FSConstants {
                                 // Build items to return
                                 replicateBlocks.add(block);
                                 replicateTargetSets.add(targets);
-				scheduledXfers += targets.length;
+                                scheduledXfers += targets.length;
                             }
                         }
                     }
@@ -1191,7 +1229,7 @@ class FSNamesystem implements FSConstants {
                             pendingReplications.add(block);
                         }
 
-			LOG.info("Pending transfer (block " + block.getBlockName() + ") from " + srcNode.getName() + " to " + targets.length + " destinations");
+                        LOGGER.info("Pending transfer (block " + block.getBlockName() + ") from " + srcNode.getName() + " to " + targets.length + " destinations");
                     }
 
                     //
@@ -1204,7 +1242,7 @@ class FSNamesystem implements FSConstants {
 
                     results = new Object[2];
                     results[0] = replicateBlocks.toArray(new Block[replicateBlocks.size()]);
-                    results[1]  = targetMatrix;
+                    results[1] = targetMatrix;
                 }
             }
             return results;
@@ -1215,8 +1253,8 @@ class FSNamesystem implements FSConstants {
      * Get a certain number of targets, if possible.
      * If not, return as many as we can.
      * @param desiredReplicates number of duplicates wanted.
-     * @param forbiddenNodes of DatanodeInfo instances that should not be
-     * considered targets.
+     * @param forbiddenNodes    of DatanodeInfo instances that should not be
+     *                          considered targets.
      * @return array of DatanodeInfo instances uses as targets.
      */
     DatanodeInfo[] chooseTargets(int desiredReplicates, TreeSet forbiddenNodes, UTF8 clientMachine) {
@@ -1238,9 +1276,9 @@ class FSNamesystem implements FSConstants {
     /**
      * Choose a target from available machines, excepting the
      * given ones.
-     *
-     * Right now it chooses randomly from available boxes.  In future could 
-     * choose according to capacity and load-balancing needs (or even 
+     * <p>
+     * Right now it chooses randomly from available boxes.  In future could
+     * choose according to capacity and load-balancing needs (or even
      * network-topology, to avoid inter-switch traffic).
      * @param forbidden1 DatanodeInfo targets not allowed, null allowed.
      * @param forbidden2 DatanodeInfo targets not allowed, null allowed.
@@ -1253,7 +1291,7 @@ class FSNamesystem implements FSConstants {
         //
         int totalMachines = datanodeMap.size();
         if (totalMachines == 0) {
-            LOG.warning("While choosing target, totalMachines is " + totalMachines);
+            LOGGER.warn("While choosing target, totalMachines is " + totalMachines);
             return null;
         }
 
@@ -1280,12 +1318,12 @@ class FSNamesystem implements FSConstants {
         Vector targetList = new Vector();
         for (Iterator it = datanodeMap.values().iterator(); it.hasNext(); ) {
             DatanodeInfo node = (DatanodeInfo) it.next();
-            if (! forbiddenMachines.contains(node.getHost())) {
+            if (!forbiddenMachines.contains(node.getHost())) {
                 targetList.add(node);
             }
         }
         Collections.shuffle(targetList);
-        
+
         //
         // Now pick one
         //
@@ -1326,13 +1364,13 @@ class FSNamesystem implements FSConstants {
                     return node;
                 }
             }
-            LOG.warning("Could not find any nodes with sufficient capacity");
+            LOGGER.warn("Could not find any nodes with sufficient capacity");
             return null;
         } else {
-            LOG.warning("Zero targets found, forbidden1.size=" +
-                ( forbidden1 != null ? forbidden1.size() : 0 ) +
-                " forbidden2.size()=" +
-                ( forbidden2 != null ? forbidden2.size() : 0 ));
+            LOGGER.warn("Zero targets found, forbidden1.size=" +
+                    (forbidden1 != null ? forbidden1.size() : 0) +
+                    " forbidden2.size()=" +
+                    (forbidden2 != null ? forbidden2.size() : 0));
             return null;
         }
     }
