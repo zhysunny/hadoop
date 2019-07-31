@@ -35,6 +35,72 @@ public class ConfigConstants {
     public static final String DFS_NAME_DIR = "dfs.name.dir";
     public static final String DFS_NAME_DIR_DEFAULT = "tmp/hadoop/dfs/name";
 
+    public static final String DFS_DATA_DIR = "dfs.data.dir";
+    public static final String DFS_DATA_DIR_DEFAULT = "tmp/hadoop/dfs/data";
+
+    public static final String DFS_DATANODE_PORT = "dfs.datanode.port";
+    public static final int DFS_DATANODE_PORT_DEFAULT = 50010;
+
+    public static final String DFS_REPLICATION = "dfs.replication";
+    public static final int DFS_REPLICATION_DEFAULT = 3;
+
+    public static final String DFS_DF_INTERVAL = "dfs.df.interval";
+    public static final int DFS_DF_INTERVAL_DEFAULT = 3000;
+
+    /*********************************** map/reduce properties ***********************************************/
+
+    public static final String MAPRED_JOB_TRACKER = "mapred.job.tracker";
+    public static final String MAPRED_JOB_TRACKER_DEFAULT = "local";
+
+    public static final String MAPRED_JOB_TRACKER_INFO_PORT = "mapred.job.tracker.info.port";
+    public static final int MAPRED_JOB_TRACKER_INFO_PORT_DEFAULT = 50030;
+
+    public static final String MAPRED_TASK_TRACKER_OUTPUT_PORT = "mapred.task.tracker.output.port";
+    public static final int MAPRED_TASK_TRACKER_OUTPUT_PORT_DEFAULT = 50040;
+
+    public static final String MAPRED_TASK_TRACKER_REPORT_PORT = "mapred.task.tracker.report.port";
+    public static final int MAPRED_TASK_TRACKER_REPORT_PORT_DEFAULT = 50050;
+
+    public static final String MAPRED_LOCAL_DIR = "mapred.local.dir";
+    public static final String MAPRED_LOCAL_DIR_DEFAULT = "tmp/hadoop/mapred/local";
+
+    public static final String MAPRED_SYSTEM_DIR = "mapred.system.dir";
+    public static final String MAPRED_SYSTEM_DIR_DEFAULT = "tmp/hadoop/mapred/system";
+
+    public static final String MAPRED_TEMP_DIR = "mapred.temp.dir";
+    public static final String MAPRED_TEMP_DIR_DEFAULT = "tmp/hadoop/mapred/temp";
+
+    public static final String MAPRED_MAP_TASKS = "mapred.map.tasks";
+    public static final int MAPRED_MAP_TASKS_DEFAULT = 2;
+
+    public static final String MAPRED_REDUCE_TASKS = "mapred.reduce.tasks";
+    public static final int MAPRED_REDUCE_TASKS_DEFAULT = 1;
+
+    public static final String MAPRED_TASK_TIMEOUT = "mapred.task.timeout";
+    public static final int MAPRED_TASK_TIMEOUT_DEFAULT = 600000;
+
+    public static final String MAPRED_TASKTRACKER_TASKS_MAXIMUM = "mapred.tasktracker.tasks.maximum";
+    public static final int MAPRED_TASKTRACKER_TASKS_MAXIMUM_DEFAULT = 2;
+
+    public static final String MAPRED_CHILD_JAVA_OPTS = "mapred.child.java.opts";
+    public static final String MAPRED_CHILD_JAVA_OPTS_DEFAULT = "-Xmx200m";
+
+    public static final String MAPRED_COMBINE_BUFFER_SIZE = "mapred.combine.buffer.size";
+    public static final int MAPRED_COMBINE_BUFFER_SIZE_DEFAULT = 100000;
+
+    public static final String MAPRED_SPECULATIVE_EXECUTION = "mapred.speculative.execution";
+    public static final boolean MAPRED_SPECULATIVE_EXECUTION_DEFAULT = true;
+
+    public static final String MAPRED_MIN_SPLIT_SIZE = "mapred.min.split.size";
+    public static final int MAPRED_MIN_SPLIT_SIZE_DEFAULT = 0;
+
+    /*********************************** ipc properties ***********************************************/
+
+    public static final String IPC_CLIENT_TIMEOUT = "ipc.client.timeout";
+    public static final int IPC_CLIENT_TIMEOUT_DEFAULT = 60000;
+
+    /*********************************** other properties ***********************************************/
+
     public static final String DFS_NAMENODE_HANDLER_COUNT = "dfs.namenode.handler.count";
     public static final int DFS_NAMENODE_HANDLER_COUNT_DEFAULT = 10;
 

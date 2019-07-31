@@ -6,7 +6,7 @@
 
     <groupId>org.apache.hadoop</groupId>
     <artifactId>hadoop</artifactId>
-    <version>0.1.2-dev</version>
+    <version>0.1.2</version>
     <packaging>jar</packaging>
 
     <properties>
