@@ -20,8 +20,9 @@ import java.io.*;
 import java.util.*;
 import java.nio.channels.*;
 
-import org.apache.hadoop.fs.DF;
+import org.apache.hadoop.fs.df.DF;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.df.DFFactory;
 
 /****************************************************************
  * Implement the FileSystem API for the native filesystem.
@@ -366,7 +367,7 @@ public class LocalFileSystem extends FileSystem {
         f = makeAbsolute(f).getCanonicalFile();
       
         // find highest writable parent dir of f on the same device
-        String device = new DF(f.toString(), getConf()).getMount();
+        String device = DFFactory.getDF(f.toString(), getConf()).getMount();
         File parent = f.getParentFile();
         File dir;
         do {

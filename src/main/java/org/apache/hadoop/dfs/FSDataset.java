@@ -20,6 +20,8 @@ import java.util.*;
 
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.conf.*;
+import org.apache.hadoop.fs.df.DF;
+import org.apache.hadoop.fs.df.DFFactory;
 
 /**************************************************
  * FSDataset manages a set of data blocks.  Each block
@@ -192,7 +194,7 @@ class FSDataset implements FSConstants {
      * An FSDataset has a directory where it loads its data files.
      */
     public FSDataset(File dir, Configuration conf) throws IOException {
-        diskUsage = new DF( dir.getCanonicalPath(), conf); 
+        diskUsage = DFFactory.getDF(dir.getCanonicalPath(), conf);
         this.data = new File(dir, "data");
         if (! data.exists()) {
             data.mkdirs();
