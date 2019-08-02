@@ -30,7 +30,7 @@ public class ConfigConstants {
     /*********************************** file system properties ***********************************************/
 
     public static final String FS_DEFAULT_NAME = "fs.default.name";
-    public static final String FS_DEFAULT_NAME_DEFAULT = "localhost:8020";
+    public static final String FS_DEFAULT_NAME_DEFAULT = "local";
 
     public static final String DFS_NAME_DIR = "dfs.name.dir";
     public static final String DFS_NAME_DIR_DEFAULT = "tmp/hadoop/dfs/name";

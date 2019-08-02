@@ -479,6 +479,7 @@ class DFSClient implements FSConstants {
         /**
          * Seek to a new arbitrary location
          */
+        @Override
         public synchronized void seek(long targetPos) throws IOException {
             if (targetPos >= filelen) {
                 throw new IOException("Cannot seek after EOF");
@@ -489,6 +490,7 @@ class DFSClient implements FSConstants {
 
         /**
          */
+        @Override
         public synchronized long getPos() throws IOException {
             return pos;
         }
@@ -639,6 +641,7 @@ class DFSClient implements FSConstants {
         /**
          * We're referring to the file pos here
          */
+        @Override
         public synchronized long getPos() throws IOException {
             return filePos;
         }

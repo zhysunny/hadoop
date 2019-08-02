@@ -15,6 +15,7 @@
  */
  package org.apache.hadoop.mapred;
 
+import org.apache.hadoop.exception.FSError;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.ipc.*;

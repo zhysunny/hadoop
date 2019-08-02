@@ -16,8 +16,8 @@
 package org.apache.hadoop.mapred;
 
 import org.apache.hadoop.conf.*;
+import org.apache.hadoop.exception.FSError;
 import org.apache.hadoop.util.LogFormatter;
-import org.apache.hadoop.fs.*;
 
 import java.io.*;
 import java.util.jar.*;

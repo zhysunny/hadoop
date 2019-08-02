@@ -47,8 +47,10 @@ public class DistributedFileSystem extends FileSystem {
       this.name = namenode.getHostName() + ":" + namenode.getPort();
     }
 
+    @Override
     public String getName() { return name; }
 
+    @Override
     public File getWorkingDirectory() {
       return workingDir;
     }
@@ -61,6 +63,7 @@ public class DistributedFileSystem extends FileSystem {
       }
     }
     
+    @Override
     public void setWorkingDirectory(File dir) {
       workingDir = makeAbsolute(dir);
     }
@@ -70,14 +73,17 @@ public class DistributedFileSystem extends FileSystem {
       return new UTF8(path);
     }
 
+    @Override
     public String[][] getFileCacheHints(File f, long start, long len) throws IOException {
       return dfs.getHints(getPath(f), start, len);
     }
 
+    @Override
     public FSInputStream openRaw(File f) throws IOException {
       return dfs.open(getPath(f));
     }
 
+    @Override
     public FSOutputStream createRaw(File f, boolean overwrite)
       throws IOException {
       return dfs.create(getPath(f), overwrite);
@@ -86,6 +92,7 @@ public class DistributedFileSystem extends FileSystem {
     /**
      * Rename files/dirs
      */
+    @Override
     public boolean renameRaw(File src, File dst) throws IOException {
       return dfs.rename(getPath(src), getPath(dst));
     }
@@ -93,14 +100,17 @@ public class DistributedFileSystem extends FileSystem {
     /**
      * Get rid of File f, whether a true file or dir.
      */
+    @Override
     public boolean deleteRaw(File f) throws IOException {
         return dfs.delete(getPath(f));
     }
 
+    @Override
     public boolean exists(File f) throws IOException {
         return dfs.exists(getPath(f));
     }
 
+    @Override
     public boolean isDirectory(File f) throws IOException {
         if (f instanceof DFSFile) {
           return ((DFSFile)f).isDirectory();
@@ -108,12 +118,14 @@ public class DistributedFileSystem extends FileSystem {
         return dfs.isDirectory(getPath(f));
     }
 
+    @Override
     public boolean isAbsolute(File f) {
       return f.isAbsolute() ||
         f.getPath().startsWith("/") ||
         f.getPath().startsWith("\\");
     }
 
+    @Override
     public long getLength(File f) throws IOException {
         if (f instanceof DFSFile) {
           return ((DFSFile)f).length();
@@ -123,6 +135,7 @@ public class DistributedFileSystem extends FileSystem {
         return info[0].getLen();
     }
 
+    @Override
     public File[] listFilesRaw(File f) throws IOException {
         DFSFileInfo info[] = dfs.listFiles(getPath(f));
         if (info == null) {
@@ -136,22 +149,27 @@ public class DistributedFileSystem extends FileSystem {
         }
     }
 
+    @Override
     public void mkdirs(File f) throws IOException {
         dfs.mkdirs(getPath(f));
     }
 
+    @Override
     public void lock(File f, boolean shared) throws IOException {
         dfs.lock(getPath(f), ! shared);
     }
 
+    @Override
     public void release(File f) throws IOException {
         dfs.release(getPath(f));
     }
 
+    @Override
     public void moveFromLocalFile(File src, File dst) throws IOException {
         doFromLocalFile(src, dst, true);
     }
 
+    @Override
     public void copyFromLocalFile(File src, File dst) throws IOException {
         doFromLocalFile(src, dst, false);
     }
@@ -198,6 +216,7 @@ public class DistributedFileSystem extends FileSystem {
             localFs.delete(src);
     }
 
+    @Override
     public void copyToLocalFile(File src, File dst) throws IOException {
         if (dst.exists()) {
             if (! dst.isDirectory()) {
@@ -239,6 +258,7 @@ public class DistributedFileSystem extends FileSystem {
         }
     }
 
+    @Override
     public File startLocalOutput(File fsOutputFile, File tmpLocalFile) throws IOException {
         if (exists(fsOutputFile)) {
             copyToLocalFile(fsOutputFile, tmpLocalFile);
@@ -249,6 +269,7 @@ public class DistributedFileSystem extends FileSystem {
     /**
      * Move completed local data to DFS destination
      */
+    @Override
     public void completeLocalOutput(File fsOutputFile, File tmpLocalFile) throws IOException {
         moveFromLocalFile(tmpLocalFile, fsOutputFile);
     }
@@ -256,6 +277,7 @@ public class DistributedFileSystem extends FileSystem {
     /**
      * Fetch remote DFS file, place at tmpLocalFile
      */
+    @Override
     public File startLocalInput(File fsInputFile, File tmpLocalFile) throws IOException {
         copyToLocalFile(fsInputFile, tmpLocalFile);
         return tmpLocalFile;
@@ -264,6 +286,7 @@ public class DistributedFileSystem extends FileSystem {
     /**
      * We're done with the local stuff, so delete it
      */
+    @Override
     public void completeLocalInput(File localFile) throws IOException {
         // Get rid of the local copy - we don't need it anymore.
         FileUtil.fullyDelete(localFile, getConf());
@@ -301,6 +324,7 @@ public class DistributedFileSystem extends FileSystem {
       return path.toString();
     }
 
+    @Override
     public void reportChecksumFailure(File f, FSInputStream in,
                                       long start, long length, int crc) {
       
@@ -312,6 +336,7 @@ public class DistributedFileSystem extends FileSystem {
       // no data is lost. a task may fail, but on retry it should succeed.
     }
 
+    @Override
     public long getBlockSize() {
       return dfs.BLOCK_SIZE;
     }

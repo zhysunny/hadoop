@@ -1,12 +1,12 @@
 /**
  * Copyright 2005 The Apache Software Foundation
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.fs;
+package org.apache.hadoop.exception;
 
-import java.io.IOException;
-
-/** Thrown for checksum errors. */
-public class ChecksumException extends IOException {
-  public ChecksumException(String description) {
-    super(description);
-  }
+/**
+ * 为意外的文件系统错误抛出，假定反映本机文件系统中的磁盘错误。
+ * @author 章云
+ * @date 2019/8/2 11:56
+ */
+public class FSError extends Error {
+    public FSError(Throwable cause) {
+        super(cause);
+    }
 }

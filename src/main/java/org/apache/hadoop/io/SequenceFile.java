@@ -23,6 +23,7 @@ import java.net.InetAddress;
 import java.rmi.server.UID;
 import java.security.MessageDigest;
 
+import org.apache.hadoop.exception.ChecksumException;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.conf.*;
@@ -30,7 +31,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 支持二进制键/值对的平面文件。
+ * 支持二进制键/值对的平面文件。<br/>
+ * 三个静态内部类，Writer,Reader,Sorter
  * @author 章云
  * @date 2019/8/1 16:50
  */
@@ -39,6 +41,7 @@ public class SequenceFile {
     private static final Logger LOGGER = LoggerFactory.getLogger(SequenceFile.class);
 
     private SequenceFile() {
+        // 不允许公共实例化
     }
 
     /**

@@ -230,7 +230,6 @@ public class DFSShell {
         String cmd = argv[i++];
         try {
             DFSShell tc = new DFSShell(fs);
-
             if ("-put".equals(cmd) || "-copyFromLocal".equals(cmd)) {
                 tc.copyFromLocal(new File(argv[i++]), argv[i++]);
             } else if ("-moveFromLocal".equals(cmd)) {

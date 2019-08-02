@@ -1,12 +1,12 @@
 /**
  * Copyright 2005 The Apache Software Foundation
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,61 +18,58 @@ package org.apache.hadoop.fs;
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import java.util.logging.*;
 
 import org.apache.hadoop.dfs.*;
 import org.apache.hadoop.conf.*;
-import org.apache.hadoop.util.LogFormatter;
+import org.apache.hadoop.util.ConfigConstants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/****************************************************************
- * An abstract base class for a fairly generic filesystem.  It
- * may be implemented as a distributed filesystem, or as a "local"
- * one that reflects the locally-connected disk.  The local version
- * exists for small Hadopp instances and for testing.
- *
- * <p>
- *
- * All user code that may potentially use the Hadoop Distributed
- * File System should be written to use a FileSystem object.  The
- * Hadoop DFS is a multi-machine system that appears as a single
- * disk.  It's useful because of its fault tolerance and potentially
- * very large capacity.
- * 
- * <p>
- * The local implementation is {@link LocalFileSystem} and distributed
- * implementation is {@link DistributedFileSystem}.
- * @author Mike Cafarella
- *****************************************************************/
+/**
+ * 一个相当通用的文件系统的抽象基类。<br/>
+ * 它可以作为分布式文件系统实现，也可以作为反映本地连接磁盘的“本地”文件系统实现。<br/>
+ * 本地版本用于小型Hadopp实例和测试。<br/>
+ * 所有可能使用Hadoop分布式文件系统的用户代码都应该编写为使用文件系统对象。<br/>
+ * Hadoop DFS是一个多机器系统，它以单个磁盘的形式出现。<br/>
+ * 这是有用的，因为它的容错能力和潜在的非常大的容量。<br/>
+ * 本地实现是{@link LocalFileSystem}，分布式实现是{@link DistributedFileSystem}。
+ * @author 章云
+ * @date 2019/8/2 14:00
+ */
 public abstract class FileSystem extends Configured {
-    public static final Logger LOG = LogFormatter.getLogger("org.apache.hadoop.dfs.DistributedFileSystem");
+    private static final Logger LOGGER = LoggerFactory.getLogger(FileSystem.class);
 
-    private static final HashMap NAME_TO_FS = new HashMap();
+    private static final HashMap<String, FileSystem> NAME_TO_FS = new HashMap<String, FileSystem>();
+
     /**
-     * Parse the cmd-line args, starting at i.  Remove consumed args
-     * from array.  We expect param in the form:
-     * '-local | -dfs <namenode:port>'
-     *
-     * @deprecated use fs.default.name config option instead
+     * 解析cmd行参数，从i开始。从数组中删除已使用的参数。我们期望参数的形式:'-local | -dfs <namenode:port>' <br/>
+     * 以后使用fs.default.name配置选项（已过时）
+     * @param argv
+     * @param i
+     * @param conf
+     * @return
+     * @throws IOException
      */
     public static FileSystem parseArgs(String argv[], int i, Configuration conf) throws IOException {
-        /**
         if (argv.length - i < 1) {
             throw new IOException("Must indicate filesystem type for DFS");
         }
-        */
         int orig = i;
         FileSystem fs = null;
         String cmd = argv[i];
         if ("-dfs".equals(cmd)) {
+            // 分布式文件系统
             i++;
             InetSocketAddress addr = DataNode.createSocketAddr(argv[i++]);
             fs = new DistributedFileSystem(addr, conf);
         } else if ("-local".equals(cmd)) {
+            // 本地文件系统
             i++;
             fs = new LocalFileSystem(conf);
         } else {
+            // 使用fs.default.name配置选项
             fs = get(conf);                          // using default
-            LOG.info("No FS indicated, using default:"+fs.getName());
+            LOGGER.info("No FS indicated, using default:" + fs.getName());
 
         }
         System.arraycopy(argv, i, argv, orig, argv.length - i);
@@ -82,327 +79,434 @@ public abstract class FileSystem extends Configured {
         return fs;
     }
 
-    /** Returns the configured filesystem implementation.*/
+    /**
+     * 返回配置的文件系统实现。
+     * @param conf
+     * @return
+     * @throws IOException
+     */
     public static FileSystem get(Configuration conf) throws IOException {
-      return getNamed(conf.get("fs.default.name", "local"), conf);
+        return getNamed(conf.get(ConfigConstants.FS_DEFAULT_NAME, ConfigConstants.FS_DEFAULT_NAME_DEFAULT), conf);
     }
 
-    /** Returns a name for this filesystem, suitable to pass to {@link
-     * FileSystem#getNamed(String,Configuration)}.*/
+    /**
+     * 返回此文件系统的名称，适合传递给{@link FileSystem #getNamed(String, Configuration)}。
+     * @return
+     */
     public abstract String getName();
-  
-    /** Returns a named filesystem.  Names are either the string "local" or a
-     * host:port pair, naming an DFS name server.*/
+
+    /**
+     * 返回指定的文件系统。名称可以是字符串“local”，也可以是主机:端口对，用于命名DFS名称服务器。
+     * @param name
+     * @param conf
+     * @return
+     * @throws IOException
+     */
     public static FileSystem getNamed(String name, Configuration conf) throws IOException {
-      FileSystem fs = (FileSystem)NAME_TO_FS.get(name);
-      if (fs == null) {
-        if ("local".equals(name)) {
-          fs = new LocalFileSystem(conf);
-        } else {
-          fs = new DistributedFileSystem(DataNode.createSocketAddr(name), conf);
+        FileSystem fs = NAME_TO_FS.get(name);
+        if (fs == null) {
+            if ("local".equals(name)) {
+                fs = new LocalFileSystem(conf);
+            } else {
+                fs = new DistributedFileSystem(DataNode.createSocketAddr(name), conf);
+            }
+            NAME_TO_FS.put(name, fs);
         }
-        NAME_TO_FS.put(name, fs);
-      }
-      return fs;
+        return fs;
     }
 
-    /** Return the name of the checksum file associated with a file.*/
-    public static File getChecksumFile(File file) {
-      return new File(file.getParentFile(), "."+file.getName()+".crc");
+    /**
+     * 返回与文件关联的校验文件的名称。
+     * @param file
+     * @return
+     */
+    public File getChecksumFile(File file) {
+        return new File(file.getParentFile(), "." + file.getName() + ".crc");
     }
 
-    /** Return true iff file is a checksum file name.*/
+    /**
+     * 如果文件是校验文件名，返回true。
+     * @param file
+     * @return
+     */
     public static boolean isChecksumFile(File file) {
-      String name = file.getName();
-      return name.startsWith(".") && name.endsWith(".crc");
+        String name = file.getName();
+        return name.startsWith(".") && name.endsWith(".crc");
     }
 
     ///////////////////////////////////////////////////////////////
-    // FileSystem
+    // 文件系统
     ///////////////////////////////////////////////////////////////
 
     protected FileSystem(Configuration conf) {
-      super(conf);
+        super(conf);
     }
 
     /**
-     * Return a 2D array of size 1x1 or greater, containing hostnames 
-     * where portions of the given file can be found.  For a nonexistent 
-     * file or regions, null will be returned.
-     *
-     * This call is most helpful with DFS, where it returns 
-     * hostnames of machines that contain the given file.
-     *
-     * The FileSystem will simply return an elt containing 'localhost'.
+     * 返回一个大小为1x1或更大的2D数组，其中包含可以找到给定文件部分内容的主机名。<br/>
+     * 对于不存在的文件或区域，将返回null。<br/>
+     * 这个调用对DFS最有帮助，它返回包含给定文件的机器的主机名。<br/>
+     * 文件系统将简单地返回一个包含“localhost”的名字。
+     * @param file
+     * @param start
+     * @param len
+     * @return
+     * @throws IOException
      */
-    public abstract String[][] getFileCacheHints(File f, long start, long len) throws IOException;
+    public abstract String[][] getFileCacheHints(File file, long start, long len) throws IOException;
 
     /**
-     * Opens an FSDataInputStream at the indicated File.
-     * @param f the file name to open
-     * @param bufferSize the size of the buffer to be used.
+     * 在指定的文件上打开FSDataInputStream。
+     * @param file       要打开的文件名
+     * @param bufferSize 要使用的缓冲区的大小。
+     * @return
+     * @throws IOException
      */
-    public FSDataInputStream open(File f, int bufferSize) throws IOException {
-      return new FSDataInputStream(this, f, bufferSize, getConf());
-    }
-    
-    /**
-     * Opens an FSDataInputStream at the indicated File.
-     * @param f the file to open
-     */
-    public FSDataInputStream open(File f) throws IOException {
-      return new FSDataInputStream(this, f, getConf());
+    public FSDataInputStream open(File file, int bufferSize) throws IOException {
+        return new FSDataInputStream(this, file, bufferSize, getConf());
     }
 
     /**
-     * Opens an InputStream for the indicated File, whether local
-     * or via DFS.
+     * 在指定的文件上打开FSDataInputStream。
+     * @param file 要打开的文件名
+     * @return
+     * @throws IOException
      */
-    public abstract FSInputStream openRaw(File f) throws IOException;
-
-    /**
-     * Opens an FSDataOutputStream at the indicated File.
-     * Files are overwritten by default.
-     */
-    public FSDataOutputStream create(File f) throws IOException {
-      return create(f, true, getConf().getInt("io.file.buffer.size", 4096));
+    public FSDataInputStream open(File file) throws IOException {
+        return new FSDataInputStream(this, file, getConf());
     }
 
     /**
-     * Opens an FSDataOutputStream at the indicated File.
-     * @param f the file name to open
-     * @param overwrite if a file with this name already exists, then if true,
-     *   the file will be overwritten, and if false an error will be thrown.
-     * @param bufferSize the size of the buffer to be used.
+     * 为指定的文件打开InputStream，无论是本地文件还是通过DFS。
+     * @param file
+     * @return
+     * @throws IOException
      */
-    public FSDataOutputStream create(File f, boolean overwrite,
-                                      int bufferSize) throws IOException {
-      return new FSDataOutputStream(this, f, overwrite, getConf(), bufferSize);
-    }
-
-    /** Opens an OutputStream at the indicated File.
-     * @param f the file name to open
-     * @param overwrite if a file with this name already exists, then if true,
-     *   the file will be overwritten, and if false an error will be thrown.
-     */
-    public abstract FSOutputStream createRaw(File f, boolean overwrite)
-      throws IOException;
+    public abstract FSInputStream openRaw(File file) throws IOException;
 
     /**
-     * Creates the given File as a brand-new zero-length file.  If
-     * create fails, or if it already existed, return false.
+     * 在指定的文件上打开FSDataOutputStream。<br/>
+     * 默认情况下文件被覆盖。
+     * @param file 要打开的文件
+     * @return
+     * @throws IOException
      */
-    public boolean createNewFile(File f) throws IOException {
-        if (exists(f)) {
+    public FSDataOutputStream create(File file) throws IOException {
+        return create(file, true, getConf().getInt(ConfigConstants.IO_FILE_BUFFER_SIZE, ConfigConstants.IO_FILE_BUFFER_SIZE_DEFAULT));
+    }
+
+    /**
+     * 在指定的文件上打开FSDataOutputStream。
+     * @param file       要打开的文件
+     * @param overwrite  如果该名称的文件已经存在，那么如果为真，将覆盖该文件，如果为假，将抛出错误。
+     * @param bufferSize 要使用的缓冲区的大小。
+     * @return
+     * @throws IOException
+     */
+    public FSDataOutputStream create(File file, boolean overwrite, int bufferSize) throws IOException {
+        return new FSDataOutputStream(this, file, overwrite, getConf(), bufferSize);
+    }
+
+    /**
+     * 在指定的文件处打开OutputStream。
+     * @param file      要打开的文件
+     * @param overwrite 如果该名称的文件已经存在，那么如果为真，将覆盖该文件，如果为假，将抛出错误。
+     * @return
+     * @throws IOException
+     */
+    public abstract FSOutputStream createRaw(File file, boolean overwrite) throws IOException;
+
+    /**
+     * 将给定文件创建为一个全新的零长度文件。<br/>
+     * 如果create失败，或者它已经存在，返回false。
+     * @param file
+     * @return
+     * @throws IOException
+     */
+    public boolean createNewFile(File file) throws IOException {
+        if (exists(file)) {
             return false;
         } else {
-            OutputStream out = createRaw(f, false);
-            try {
-            } finally {
-              out.close();
-            }
+            OutputStream out = createRaw(file, false);
+            out.close();
             return true;
         }
     }
 
     /**
-     * Renames File src to File dst.  Can take place on local fs
-     * or remote DFS.
+     * 将文件src重命名为文件dst。可以在本地fs或远程DFS上发生。
+     * @param src
+     * @param dst
+     * @return
+     * @throws IOException
      */
     public boolean rename(File src, File dst) throws IOException {
-      if (isDirectory(src)) {
-        return renameRaw(src, dst);
-      } else {
+        if (isDirectory(src)) {
+            return renameRaw(src, dst);
+        } else {
+            boolean value = renameRaw(src, dst);
+            File checkFile = getChecksumFile(src);
+            if (exists(checkFile)) {
+                // 尝试重命名校验文件
+                renameRaw(checkFile, getChecksumFile(dst));
+            }
+            return value;
+        }
 
-        boolean value = renameRaw(src, dst);
-
-        File checkFile = getChecksumFile(src);
-        if (exists(checkFile))
-          renameRaw(checkFile, getChecksumFile(dst)); // try to rename checksum
-
-        return value;
-      }
-      
     }
 
     /**
-     * Renames File src to File dst.  Can take place on local fs
-     * or remote DFS.
+     * 将文件src重命名为文件dst。可以在本地fs或远程DFS上发生。
+     * @param src
+     * @param dst
+     * @return
+     * @throws IOException
      */
     public abstract boolean renameRaw(File src, File dst) throws IOException;
 
     /**
-     * Deletes File
+     * 删除文件
+     * @param file
+     * @return
+     * @throws IOException
      */
-    public boolean delete(File f) throws IOException {
-      if (isDirectory(f)) {
-        return deleteRaw(f);
-      } else {
-        deleteRaw(getChecksumFile(f));            // try to delete checksum
-        return deleteRaw(f);
-      }
+    public boolean delete(File file) throws IOException {
+        if (isDirectory(file)) {
+            return deleteRaw(file);
+        } else {
+            // 尝试删除校验文件
+            deleteRaw(getChecksumFile(file));
+            return deleteRaw(file);
+        }
     }
 
     /**
-     * Deletes File
+     * 删除文件
+     * @param file
+     * @return
+     * @throws IOException
      */
-    public abstract boolean deleteRaw(File f) throws IOException;
+    public abstract boolean deleteRaw(File file) throws IOException;
 
     /**
-     * Check if exists
+     * 校验文件是否存在
+     * @param file
+     * @return
+     * @throws IOException
      */
-    public abstract boolean exists(File f) throws IOException;
+    public abstract boolean exists(File file) throws IOException;
 
-    /** True iff the named path is a directory. */
-    public abstract boolean isDirectory(File f) throws IOException;
+    /**
+     * 如果指定的路径是目录，则为True。
+     * @param file
+     * @return
+     * @throws IOException
+     */
+    public abstract boolean isDirectory(File file) throws IOException;
 
-    /** True iff the named path is a regular file. */
-    public boolean isFile(File f) throws IOException {
-        if (exists(f) && ! isDirectory(f)) {
+    /**
+     * 如果指定的路径是常规文件，则为True。
+     * @param file
+     * @return
+     * @throws IOException
+     */
+    public boolean isFile(File file) throws IOException {
+        if (exists(file) && !isDirectory(file)) {
             return true;
         } else {
             return false;
         }
     }
-    
-    /** True iff the named path is absolute. */
-    public abstract boolean isAbsolute(File f);
 
-    /** The number of bytes in a file. */
-    public abstract long getLength(File f) throws IOException;
+    /**
+     * 如果指定的路径是绝对路径，则为True。
+     * @param file
+     * @return
+     */
+    public abstract boolean isAbsolute(File file);
 
-    /** List files in a directory. */
-    public File[] listFiles(File f) throws IOException {
-      return listFiles(f, new FileFilter() {
-          public boolean accept(File file) {
-            return !isChecksumFile(file);
-          }
+    /**
+     * 文件中的字节数。
+     * @param file
+     * @return
+     * @throws IOException
+     */
+    public abstract long getLength(File file) throws IOException;
+
+    /**
+     * 列出目录中的文件。
+     * @param file
+     * @return
+     * @throws IOException
+     */
+    public File[] listFiles(File file) throws IOException {
+        return listFiles(file, new FileFilter() {
+            @Override
+            public boolean accept(File file) {
+                // 只接受非校验文件
+                return !isChecksumFile(file);
+            }
         });
     }
 
-    /** List files in a directory. */
-    public abstract File[] listFilesRaw(File f) throws IOException;
+    /**
+     * 列出目录中的文件。
+     * @param file
+     * @return
+     * @throws IOException
+     */
+    public abstract File[] listFilesRaw(File file) throws IOException;
 
-    /** Filter files in a directory. */
-    public File[] listFiles(File f, FileFilter filter) throws IOException {
-        Vector results = new Vector();
-        File listing[] = listFilesRaw(f);
+    /**
+     * 过滤目录中的文件。
+     * @param file
+     * @param filter
+     * @return
+     * @throws IOException
+     */
+    public File[] listFiles(File file, FileFilter filter) throws IOException {
+        Vector<File> results = new Vector<File>();
+        File[] listing = listFilesRaw(file);
         if (listing != null) {
-          for (int i = 0; i < listing.length; i++) {
-            if (filter.accept(listing[i])) {
-              results.add(listing[i]);
+            for (int i = 0; i < listing.length; i++) {
+                if (filter.accept(listing[i])) {
+                    results.add(listing[i]);
+                }
             }
-          }
         }
-        return (File[]) results.toArray(new File[results.size()]);
+        return results.toArray(new File[results.size()]);
     }
 
     /**
-     * Set the current working directory for the given file system.
-     * All relative paths will be resolved relative to it.
+     * 为给定的文件系统设置当前工作目录。<br/>
+     * 所有相对路径都将相对于它进行解析。
      * @param new_dir
      */
     public abstract void setWorkingDirectory(File new_dir);
-    
+
     /**
-     * Get the current working directory for the given file system
-     * @return the directory pathname
+     * 获取给定文件系统的当前工作目录
+     * @return 目录路径名
      */
     public abstract File getWorkingDirectory();
-    
-    /**
-     * Make the given file and all non-existent parents into
-     * directories.
-     */
-    public abstract void mkdirs(File f) throws IOException;
 
     /**
-     * Obtain a lock on the given File
+     * 创建给定的文件，可以创建多级目录
+     * @param file
+     * @throws IOException
      */
-    public abstract void lock(File f, boolean shared) throws IOException;
+    public abstract void mkdirs(File file) throws IOException;
 
     /**
-     * Release the lock
+     * 获取给定文件上的锁
+     * @param file
+     * @param shared
+     * @throws IOException
      */
-    public abstract void release(File f) throws IOException;
+    public abstract void lock(File file, boolean shared) throws IOException;
 
     /**
-     * The src file is on the local disk.  Add it to FS at
-     * the given dst name and the source is kept intact afterwards
+     * 释放锁
+     * @param file
+     * @throws IOException
+     */
+    public abstract void release(File file) throws IOException;
+
+    /**
+     * src文件位于本地磁盘上。<br/>
+     * 以给定的dst名称将其添加到FS中，然后原文件将保持完整
+     * @param src
+     * @param dst
+     * @throws IOException
      */
     public abstract void copyFromLocalFile(File src, File dst) throws IOException;
 
     /**
-     * The src file is on the local disk.  Add it to FS at
-     * the given dst name, removing the source afterwards.
+     * src文件位于本地磁盘上。<br/>
+     * 以给定的dst名称将其添加到FS，然后删除原文件。
+     * @param src
+     * @param dst
+     * @throws IOException
      */
     public abstract void moveFromLocalFile(File src, File dst) throws IOException;
 
     /**
-     * The src file is under FS2, and the dst is on the local disk.
-     * Copy it from FS control to the local dst name.
+     * src文件位于FS2之下，dst位于本地磁盘上。<br/>
+     * 将它从FS控件复制到本地dst名称。
+     * @param src
+     * @param dst
+     * @throws IOException
      */
     public abstract void copyToLocalFile(File src, File dst) throws IOException;
 
-    /**
-     * the same as copyToLocalFile(File src, File dst), except that
-     * the source is removed afterward.
-     */
-    // not implemented yet
-    //public abstract void moveToLocalFile(File src, File dst) throws IOException;
+    // 没有实现的
+    // public abstract void moveToLocalFile(File src, File dst) throws IOException;
 
     /**
-     * Returns a local File that the user can write output to.  The caller
-     * provides both the eventual FS target name and the local working
-     * file.  If the FS is local, we write directly into the target.  If
-     * the FS is remote, we write into the tmp local area.
+     * 与copyToLocalFile(文件src，文件dst)相同，只是后面会删除源文件。<br/>
+     * 返回用户可以写入输出的本地文件。<br/>
+     * 调用者提供最终的FS目标名称和本地工作文件。<br/>
+     * 如果FS是本地的，我们直接写入目标。<br/>
+     * 如果FS是远程的，我们写入tmp本地区域。
+     * @param fsOutputFile
+     * @param tmpLocalFile
+     * @return
+     * @throws IOException
      */
     public abstract File startLocalOutput(File fsOutputFile, File tmpLocalFile) throws IOException;
 
     /**
-     * Called when we're all done writing to the target.  A local FS will
-     * do nothing, because we've written to exactly the right place.  A remote
-     * FS will copy the contents of tmpLocalFile to the correct target at
-     * fsOutputFile.
+     * 当我们完成对目标的写入时调用。<br/>
+     * 一个本地FS什么也做不了，因为我们已经写到了正确的位置。<br/>
+     * 远程FS将tmpLocalFile的内容复制到fsOutputFile的正确目标。
+     * @param fsOutputFile
+     * @param tmpLocalFile
+     * @throws IOException
      */
     public abstract void completeLocalOutput(File fsOutputFile, File tmpLocalFile) throws IOException;
 
     /**
-     * Returns a local File that the user can read from.  The caller 
-     * provides both the eventual FS target name and the local working
-     * file.  If the FS is local, we read directly from the source.  If
-     * the FS is remote, we write data into the tmp local area.
+     * 返回用户可以从中读取的本地文件。<br/>
+     * 调用者提供最终的FS目标名称和本地工作文件。<br/>
+     * 如果FS是本地的，则直接从源读取。<br/>
+     * 如果FS是远程的，我们将数据写入tmp本地区域。
+     * @param fsInputFile
+     * @param tmpLocalFile
+     * @return
+     * @throws IOException
      */
     public abstract File startLocalInput(File fsInputFile, File tmpLocalFile) throws IOException;
 
     /**
-     * Called when we're all done writing to the target.  A local FS will
-     * do nothing, because we've written to exactly the right place.  A remote
-     * FS will copy the contents of tmpLocalFile to the correct target at
-     * fsOutputFile.
+     * 当我们完成对目标的写入时调用。<br/>
+     * 一个本地FS什么也做不了，因为我们已经写到了正确的位置。<br/>
+     * 远程FS将tmpLocalFile的内容复制到fsOutputFile的正确目标。
+     * @param localFile
+     * @throws IOException
      */
     public abstract void completeLocalInput(File localFile) throws IOException;
 
     /**
-     * No more filesystem operations are needed.  Will
-     * release any held locks.
+     * 不再需要文件系统操作。<br/>
+     * 将释放任何持有的锁。
+     * @throws IOException
      */
     public abstract void close() throws IOException;
 
     /**
-     * Report a checksum error to the file system.
-     * @param f the file name containing the error
-     * @param in the stream open on the file
-     * @param start the position of the beginning of the bad data in the file
-     * @param length the length of the bad data in the file
-     * @param crc the expected CRC32 of the data
+     * 向文件系统报告校验和错误。
+     * @param file   包含错误的文件名
+     * @param in     打开的文件流
+     * @param start  文件中坏数据开始的位置
+     * @param length 文件中坏数据的长度
+     * @param crc    数据的预期CRC32
      */
-    public abstract void reportChecksumFailure(File f, FSInputStream in,
-                                               long start, long length,
-                                               int crc);
+    public abstract void reportChecksumFailure(File file, FSInputStream in, long start, long length, int crc);
 
-    /** Return the number of bytes that large input files should be optimally
-     * be split into to minimize i/o time. */
+    /**
+     * 返回大输入文件的最佳分割字节数，以最小化i/o时间。
+     * @return
+     */
     public abstract long getBlockSize();
 
 }
