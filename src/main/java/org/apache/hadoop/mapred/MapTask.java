@@ -29,6 +29,7 @@ class MapTask extends Task {
     WritableFactories.setFactory
       (MapTask.class,
        new WritableFactory() {
+         @Override
          public Writable newInstance() { return new MapTask(); }
        });
   }

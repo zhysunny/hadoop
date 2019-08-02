@@ -34,6 +34,7 @@ class BlockCommand implements Writable {
       WritableFactories.setFactory
         (BlockCommand.class,
          new WritableFactory() {
+           @Override
            public Writable newInstance() { return new BlockCommand(); }
          });
     }

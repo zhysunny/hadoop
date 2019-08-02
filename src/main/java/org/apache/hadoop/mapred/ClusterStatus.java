@@ -18,6 +18,7 @@ public class ClusterStatus implements Writable {
     WritableFactories.setFactory
       (ClusterStatus.class,
        new WritableFactory() {
+         @Override
          public Writable newInstance() { return new ClusterStatus(); }
        });
     }

@@ -32,6 +32,7 @@ class Block implements Writable, Comparable {
       WritableFactories.setFactory
         (Block.class,
          new WritableFactory() {
+           @Override
            public Writable newInstance() { return new Block(); }
          });
     }

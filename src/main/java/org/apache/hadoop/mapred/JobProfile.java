@@ -32,6 +32,7 @@ class JobProfile implements Writable {
       WritableFactories.setFactory
         (JobProfile.class,
          new WritableFactory() {
+           @Override
            public Writable newInstance() { return new JobProfile(); }
          });
     }

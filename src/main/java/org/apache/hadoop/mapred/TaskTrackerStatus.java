@@ -34,6 +34,7 @@ class TaskTrackerStatus implements Writable {
       WritableFactories.setFactory
         (TaskTrackerStatus.class,
          new WritableFactory() {
+           @Override
            public Writable newInstance() { return new TaskTrackerStatus(); }
          });
     }

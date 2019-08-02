@@ -30,6 +30,7 @@ class DFSFileInfo implements Writable {
       WritableFactories.setFactory
         (DFSFileInfo.class,
          new WritableFactory() {
+           @Override
            public Writable newInstance() { return new DFSFileInfo(); }
          });
     }

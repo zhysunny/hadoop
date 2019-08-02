@@ -92,6 +92,7 @@ public class BooleanWritable implements WritableComparable {
             super(BooleanWritable.class);
         }
 
+        @Override
         public int compare(byte[] b1, int s1, int l1,
                            byte[] b2, int s2, int l2) {
             boolean a = (readInt(b1, s1) == 1) ? true : false;

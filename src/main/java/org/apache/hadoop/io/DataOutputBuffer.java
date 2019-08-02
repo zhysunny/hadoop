@@ -1,12 +1,12 @@
 /**
  * Copyright 2005 The Apache Software Foundation
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,74 +18,97 @@ package org.apache.hadoop.io;
 
 import java.io.*;
 
-/** A reusable {@link DataOutput} implementation that writes to an in-memory
- * buffer.
- *
- * <p>This saves memory over creating a new DataOutputStream and
- * ByteArrayOutputStream each time data is written.
- *
- * <p>Typical usage is something like the following:<pre>
- *
+/**
+ * 一个可重用的{@link DataOutput}实现，它写入内存缓冲区。<br/>
+ * 这节省了每次写入数据时创建新的DataOutputStream和ByteArrayOutputStream的内存。<br/>
+ * 典型的用法如下:
+ * <pre>
  * DataOutputBuffer buffer = new DataOutputBuffer();
  * while (... loop condition ...) {
- *   buffer.reset();
- *   ... write buffer using DataOutput methods ...
- *   byte[] data = buffer.getData();
- *   int dataLength = buffer.getLength();
- *   ... write data to its ultimate destination ...
+ *     buffer.reset();
+ *     ... write buffer using DataOutput methods ...
+ *     byte[] data = buffer.getData();
+ *     int dataLength = buffer.getLength();
+ *     ... write data to its ultimate destination ...
  * }
  * </pre>
- *  
- * @author Doug Cutting
+ * @author 章云
+ * @date 2019/8/1 11:08
  */
 public class DataOutputBuffer extends DataOutputStream {
 
-  private static class Buffer extends ByteArrayOutputStream {
-    public byte[] getData() { return buf; }
-    public int getLength() { return count; }
-    public void reset() { count = 0; }
+    private static class Buffer extends ByteArrayOutputStream {
+        public byte[] getData() {
+            return buf;
+        }
 
-    public void write(DataInput in, int len) throws IOException {
-      int newcount = count + len;
-      if (newcount > buf.length) {
-        byte newbuf[] = new byte[Math.max(buf.length << 1, newcount)];
-        System.arraycopy(buf, 0, newbuf, 0, count);
-        buf = newbuf;
-      }
-      in.readFully(buf, count, len);
-      count = newcount;
+        public int getLength() {
+            return count;
+        }
+
+        @Override
+        public void reset() {
+            count = 0;
+        }
+
+        public void write(DataInput in, int len) throws IOException {
+            int newCount = count + len;
+            if (newCount > buf.length) {
+                byte newbuf[] = new byte[Math.max(buf.length << 1, newCount)];
+                System.arraycopy(buf, 0, newbuf, 0, count);
+                buf = newbuf;
+            }
+            in.readFully(buf, count, len);
+            count = newCount;
+        }
     }
-  }
 
-  private Buffer buffer;
-  
-  /** Constructs a new empty buffer. */
-  public DataOutputBuffer() {
-    this(new Buffer());
-  }
-  
-  private DataOutputBuffer(Buffer buffer) {
-    super(buffer);
-    this.buffer = buffer;
-  }
+    private Buffer buffer;
 
-  /** Returns the current contents of the buffer.
-   *  Data is only valid to {@link #getLength()}.
-   */
-  public byte[] getData() { return buffer.getData(); }
+    /**
+     * 构造一个新的空缓冲区。
+     */
+    public DataOutputBuffer() {
+        this(new Buffer());
+    }
 
-  /** Returns the length of the valid data currently in the buffer. */
-  public int getLength() { return buffer.getLength(); }
+    private DataOutputBuffer(Buffer buffer) {
+        super(buffer);
+        this.buffer = buffer;
+    }
 
-  /** Resets the buffer to empty. */
-  public DataOutputBuffer reset() {
-    this.written = 0;
-    buffer.reset();
-    return this;
-  }
+    /**
+     * 返回缓冲区的当前内容。<br/>
+     * 数据只对{@link #getLength()}有效。
+     * @return
+     */
+    public byte[] getData() {
+        return buffer.getData();
+    }
 
-  /** Writes bytes from a DataInput directly into the buffer. */
-  public void write(DataInput in, int length) throws IOException {
-    buffer.write(in, length);
-  }
+    /**
+     * 返回缓冲区中当前有效数据的长度。
+     */
+    public int getLength() {
+        return buffer.getLength();
+    }
+
+    /**
+     * 将缓冲区重置为空。
+     */
+    public DataOutputBuffer reset() {
+        this.written = 0;
+        buffer.reset();
+        return this;
+    }
+
+    /**
+     * 将DataInput中的字节直接写入缓冲区。
+     * @param in
+     * @param length
+     * @throws IOException
+     */
+    public void write(DataInput in, int length) throws IOException {
+        buffer.write(in, length);
+    }
 }

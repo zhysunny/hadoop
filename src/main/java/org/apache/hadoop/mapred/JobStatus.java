@@ -32,6 +32,7 @@ class JobStatus implements Writable {
       WritableFactories.setFactory
         (JobStatus.class,
          new WritableFactory() {
+           @Override
            public Writable newInstance() { return new JobStatus(); }
          });
     }

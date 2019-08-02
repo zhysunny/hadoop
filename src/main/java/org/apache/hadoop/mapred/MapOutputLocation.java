@@ -29,6 +29,7 @@ class MapOutputLocation implements Writable {
       WritableFactories.setFactory
         (MapOutputLocation.class,
          new WritableFactory() {
+           @Override
            public Writable newInstance() { return new MapOutputLocation(); }
          });
     }

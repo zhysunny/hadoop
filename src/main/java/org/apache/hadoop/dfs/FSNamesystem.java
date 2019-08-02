@@ -177,17 +177,16 @@ public class FSNamesystem implements FSConstants {
         lmthread.start();
         this.systemStart = System.currentTimeMillis();
         this.conf = conf;
-        this.desiredReplication = conf.getInt("dfs.replication", 3);
+        this.desiredReplication = conf.getInt(ConfigConstants.DFS_REPLICATION, ConfigConstants.DFS_REPLICATION_DEFAULT);
         this.maxReplication = desiredReplication;
-        this.maxReplicationStreams = conf.getInt("dfs.max-repl-streams", 2);
+        this.maxReplicationStreams = conf.getInt(ConfigConstants.DFS_MAX_REPL_STREAMS, ConfigConstants.DFS_MAX_REPL_STREAMS_DEFAULT);
         this.minReplication = 1;
         this.heartBeatRecheck = 1000;
     }
 
     /**
-     * Close down this filesystem manager.
-     * Causes heartbeat and lease daemons to stop; waits briefly for
-     * them to finish, but a short timeout returns control back to caller.
+     * 关闭这个文件系统管理器。<br/>
+     * 导致heartbeat和租约守护进程停止;短暂地等待它们完成，但短暂的超时将控制权返回给调用者。
      */
     public void close() {
         synchronized (this) {
@@ -207,7 +206,7 @@ public class FSNamesystem implements FSConstants {
 
     /////////////////////////////////////////////////////////
     //
-    // These methods are called by HadoopFS clients
+    // 这些方法由HadoopFS客户机调用
     //
     /////////////////////////////////////////////////////////
 

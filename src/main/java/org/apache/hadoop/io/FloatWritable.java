@@ -69,6 +69,7 @@ public class FloatWritable implements WritableComparable {
       super(FloatWritable.class);
     }
 
+    @Override
     public int compare(byte[] b1, int s1, int l1,
                        byte[] b2, int s2, int l2) {
       float thisValue = readFloat(b1, s1);

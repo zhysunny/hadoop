@@ -146,6 +146,7 @@ public class MD5Hash implements WritableComparable {
       super(MD5Hash.class);
     }
 
+    @Override
     public int compare(byte[] b1, int s1, int l1,
                        byte[] b2, int s2, int l2) {
       return compareBytes(b1, s1, MD5_LEN, b2, s2, MD5_LEN);

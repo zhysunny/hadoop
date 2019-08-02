@@ -31,6 +31,7 @@ class LocatedBlock implements Writable {
       WritableFactories.setFactory
         (LocatedBlock.class,
          new WritableFactory() {
+           @Override
            public Writable newInstance() { return new LocatedBlock(); }
          });
     }

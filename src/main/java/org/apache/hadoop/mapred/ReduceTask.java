@@ -32,6 +32,7 @@ class ReduceTask extends Task {
     WritableFactories.setFactory
       (ReduceTask.class,
        new WritableFactory() {
+         @Override
          public Writable newInstance() { return new ReduceTask(); }
        });
   }
@@ -153,7 +154,7 @@ class ReduceTask extends Task {
       reducePhase.set(in.getPosition()*progPerByte); // update progress
       reportProgress(umbilical);
 
-      Writable lastKey = key;                     // save previous key
+      WritableComparable lastKey = key;                     // save previous key
       try {
         key = (WritableComparable)in.getKeyClass().newInstance();
         value = (Writable)in.getValueClass().newInstance();

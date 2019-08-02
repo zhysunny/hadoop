@@ -104,4 +104,7 @@ public class ConfigConstants {
     public static final String DFS_NAMENODE_HANDLER_COUNT = "dfs.namenode.handler.count";
     public static final int DFS_NAMENODE_HANDLER_COUNT_DEFAULT = 10;
 
+    public static final String DFS_MAX_REPL_STREAMS = "dfs.max-repl-streams";
+    public static final int DFS_MAX_REPL_STREAMS_DEFAULT = 2;
+
 }

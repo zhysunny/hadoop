@@ -33,6 +33,7 @@ class MapOutputFile implements Writable, Configurable {
       WritableFactories.setFactory
         (MapOutputFile.class,
          new WritableFactory() {
+           @Override
            public Writable newInstance() { return new MapOutputFile(); }
          });
     }

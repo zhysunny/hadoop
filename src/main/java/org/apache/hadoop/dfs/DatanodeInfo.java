@@ -33,6 +33,7 @@ class DatanodeInfo implements Writable, Comparable {
       WritableFactories.setFactory
         (DatanodeInfo.class,
          new WritableFactory() {
+           @Override
            public Writable newInstance() { return new DatanodeInfo(); }
          });
     }
