@@ -1,9 +1,5 @@
 package org.apache.hadoop.fs.df;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.df.DF;
-import org.apache.hadoop.util.ConfigConstants;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
