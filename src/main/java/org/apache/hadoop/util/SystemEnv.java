@@ -1,5 +1,7 @@
 package org.apache.hadoop.util;
 
+import java.util.Locale;
+
 /**
  * 系统环境，分windows和Linux
  * @author 章云
@@ -7,7 +9,7 @@ package org.apache.hadoop.util;
  */
 public class SystemEnv {
 
-    private static final String systemEnv = System.getProperty("os.name");
+    private static final String systemEnv = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
     private static final String WINDOWS = "windows";
     private static final String LINUX = "linux";
 
