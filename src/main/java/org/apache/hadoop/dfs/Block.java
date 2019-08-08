@@ -1,12 +1,12 @@
 /**
  * Copyright 2005 The Apache Software Foundation
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,26 +20,28 @@ import org.apache.hadoop.io.*;
 import java.io.*;
 import java.util.*;
 
-/**************************************************
- * A Block is a Hadoop FS primitive, identified by a 
- * long.
- *
- * @author Mike Cafarella
- **************************************************/
+/**
+ * 块是Hadoop FS原语，由long标识。
+ * @author 章云
+ * @date 2019/8/8 20:29
+ */
 class Block implements Writable, Comparable {
 
-    static {                                      // register a ctor
-      WritableFactories.setFactory
-        (Block.class,
-         new WritableFactory() {
-           @Override
-           public Writable newInstance() { return new Block(); }
-         });
+    static {
+        WritableFactories.setFactory(Block.class, new WritableFactory() {
+            @Override
+            public Writable newInstance() {
+                return new Block();
+            }
+        });
     }
 
     static Random r = new Random();
 
     /**
+     * 是否是block文件
+     * @param f
+     * @return
      */
     public static boolean isBlockFilename(File f) {
         if (f.getName().startsWith("blk_")) {
@@ -52,22 +54,20 @@ class Block implements Writable, Comparable {
     long blkid;
     long len;
 
-    /**
-     */
     public Block() {
         this.blkid = r.nextLong();
         this.len = 0;
     }
 
-    /**
-     */
     public Block(long blkid, long len) {
         this.blkid = blkid;
         this.len = len;
     }
 
     /**
-     * Find the blockid from the given filename
+     * 从给定的文件名中找到blockid
+     * @param f
+     * @param len f.length()
      */
     public Block(File f, long len) {
         String name = f.getName();
@@ -76,29 +76,23 @@ class Block implements Writable, Comparable {
         this.len = len;
     }
 
-    /**
-     */
     public long getBlockId() {
         return blkid;
     }
 
-    /**
-     */
     public String getBlockName() {
         return "blk_" + String.valueOf(blkid);
     }
 
-    /**
-     */
     public long getNumBytes() {
         return len;
     }
+
     public void setNumBytes(long len) {
         this.len = len;
     }
 
-    /**
-     */
+    @Override
     public String toString() {
         return getBlockName();
     }
@@ -106,11 +100,13 @@ class Block implements Writable, Comparable {
     /////////////////////////////////////
     // Writable
     /////////////////////////////////////
+    @Override
     public void write(DataOutput out) throws IOException {
         out.writeLong(blkid);
         out.writeLong(len);
     }
 
+    @Override
     public void readFields(DataInput in) throws IOException {
         this.blkid = in.readLong();
         this.len = in.readLong();
@@ -119,7 +115,9 @@ class Block implements Writable, Comparable {
     /////////////////////////////////////
     // Comparable
     /////////////////////////////////////
+    @Override
     public int compareTo(Object o) {
+        // blkid升序排序
         Block b = (Block) o;
         if (getBlockId() < b.getBlockId()) {
             return -1;
@@ -129,8 +127,16 @@ class Block implements Writable, Comparable {
             return 1;
         }
     }
+
+    @Override
     public boolean equals(Object o) {
         Block b = (Block) o;
+        // blkid相等，两个对象就相等
         return (this.compareTo(b) == 0);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(this.blkid);
     }
 }

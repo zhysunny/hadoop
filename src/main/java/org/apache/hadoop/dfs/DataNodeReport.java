@@ -4,43 +4,65 @@ import java.util.Date;
 
 import org.apache.hadoop.io.UTF8;
 
-/** A report on the status of a DataNode.
- *
- * @see DistributedFileSystem#getDataNodeStats
+/**
+ * 关于数据节点状态的报告信息。
+ * @author 章云
+ * @date 2019/8/8 21:02
  */
 public class DataNodeReport {
-  String name;
-  String host;
-  long capacity;
-  long remaining;
-  long lastUpdate;
-  
-  /** The name of the datanode. */
-  public String getName() { return name; }
+    String name;
+    String host;
+    long capacity;
+    long remaining;
+    long lastUpdate;
 
-  /** The hostname of the datanode. */
-  public String getHost() { return host; }
+    /**
+     * The name of the datanode.
+     */
+    public String getName() {
+        return name;
+    }
 
-  /** The raw capacity. */
-  public long getCapacity() { return capacity; }
+    /**
+     * The hostname of the datanode.
+     */
+    public String getHost() {
+        return host;
+    }
 
-  /** The raw free space. */
-  public long getRemaining() { return remaining; }
+    /**
+     * The raw capacity.
+     */
+    public long getCapacity() {
+        return capacity;
+    }
 
-  /** The time when this information was accurate. */
-  public long getLastUpdate() { return lastUpdate; }
+    /**
+     * The raw free space.
+     */
+    public long getRemaining() {
+        return remaining;
+    }
 
-  public String toString() {
-    StringBuffer buffer = new StringBuffer();
-    long c = getCapacity();
-    long r = getRemaining();
-    long u = c - r;
-    buffer.append("Name: "+name+"\n");
-    buffer.append("Total raw bytes: "+c+" ("+DFSShell.byteDesc(c)+")"+"\n");
-    buffer.append("Used raw bytes: "+u+" ("+DFSShell.byteDesc(u)+")"+"\n");
-    buffer.append("% used: "+DFSShell.limitDecimal(((1.0*u)/c)*100,2)+"%"+"\n");
-    buffer.append("Last contact: "+new Date(lastUpdate)+"\n");
-    return buffer.toString();
-  }
+    /**
+     * The time when this information was accurate.
+     */
+    public long getLastUpdate() {
+        return lastUpdate;
+    }
+
+    @Override
+    public String toString() {
+        StringBuffer buffer = new StringBuffer();
+        long c = getCapacity();
+        long r = getRemaining();
+        long u = c - r;
+        buffer.append("Name: " + name + "\n");
+        buffer.append("Total raw bytes: " + c + " (" + DFSShell.byteDesc(c) + ")" + "\n");
+        buffer.append("Used raw bytes: " + u + " (" + DFSShell.byteDesc(u) + ")" + "\n");
+        buffer.append("% used: " + DFSShell.limitDecimal(((1.0 * u) / c) * 100, 2) + "%" + "\n");
+        buffer.append("Last contact: " + new Date(lastUpdate) + "\n");
+        return buffer.toString();
+    }
 
 }
