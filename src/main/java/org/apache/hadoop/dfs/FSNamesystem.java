@@ -196,7 +196,7 @@ public class FSNamesystem implements FSConstants {
             hbthread.join(3000);
         } catch (InterruptedException ie) {
         } finally {
-            // using finally to ensure we also wait for lease daemon
+            // 使用finally来确保我们还在等待租赁守护进程
             try {
                 lmthread.join(3000);
             } catch (InterruptedException ie) {
@@ -211,33 +211,29 @@ public class FSNamesystem implements FSConstants {
     /////////////////////////////////////////////////////////
 
     /**
-     * The client wants to open the given filename.  Return a
-     * list of (block,machineArray) pairs.  The sequence of unique blocks
-     * in the list indicates all the blocks that make up the filename.
-     * <p>
-     * The client should choose one of the machines from the machineArray
-     * at random.
+     * 客户端想要打开给定的文件名。
+     * 返回(block,machineArray)对的列表。
+     * 列表中唯一块的序列表示组成文件名的所有块。
+     * 客户应从机器射线中随机选择一台机器。
      */
     public Object[] open(UTF8 src) {
-        Object results[] = null;
-        Block blocks[] = dir.getFile(src);
+        Object[] results = null;
+        Block[] blocks = dir.getFile(src);
         if (blocks != null) {
             results = new Object[2];
-            DatanodeInfo machineSets[][] = new DatanodeInfo[blocks.length][];
-
+            DatanodeInfo[][] machineSets = new DatanodeInfo[blocks.length][];
             for (int i = 0; i < blocks.length; i++) {
-                TreeSet containingNodes = (TreeSet) blocksMap.get(blocks[i]);
+                TreeSet<DatanodeInfo> containingNodes = blocksMap.get(blocks[i]);
                 if (containingNodes == null) {
                     machineSets[i] = new DatanodeInfo[0];
                 } else {
                     machineSets[i] = new DatanodeInfo[containingNodes.size()];
                     int j = 0;
-                    for (Iterator it = containingNodes.iterator(); it.hasNext(); j++) {
-                        machineSets[i][j] = (DatanodeInfo) it.next();
+                    for (Iterator<DatanodeInfo> it = containingNodes.iterator(); it.hasNext(); j++) {
+                        machineSets[i][j] = it.next();
                     }
                 }
             }
-
             results[0] = blocks;
             results[1] = machineSets;
         }
@@ -245,39 +241,33 @@ public class FSNamesystem implements FSConstants {
     }
 
     /**
-     * The client would like to create a new block for the indicated
-     * filename.  Return an array that consists of the block, plus a set
-     * of machines.  The first on this list should be where the client
-     * writes data.  Subsequent items in the list must be provided in
-     * the connection to the first datanode.
-     * @return Return an array that consists of the block, plus a set
-     * of machines, or null if src is invalid for creation (based on
-     * {@link FSDirectory#isValidToCreate(UTF8)}.
+     * 客户端希望为指定的文件名创建一个新块。
+     * 返回一个由块和一组机器组成的数组。
+     * 这个列表中的第一个应该是客户机写入数据的地方。
+     * 必须在连接到第一个datanode时提供列表中的后续项。
+     * @return 返回一个由块和一组机器组成的数组，如果src对于创建无效则返回null(基于{@link FSDirectory#isValidToCreate(UTF8)})。
      */
     public synchronized Object[] startFile(UTF8 src, UTF8 holder, UTF8 clientMachine, boolean overwrite) {
-        Object results[] = null;
+        Object[] results = null;
         if (pendingCreates.get(src) == null) {
             boolean fileValid = dir.isValidToCreate(src);
             if (overwrite && !fileValid) {
                 delete(src);
                 fileValid = true;
             }
-
             if (fileValid) {
                 results = new Object[2];
-
-                // Get the array of replication targets 
-                DatanodeInfo targets[] = chooseTargets(this.desiredReplication, null, clientMachine);
+                // 获取复制目标数组
+                DatanodeInfo[] targets = chooseTargets(this.desiredReplication, null, clientMachine);
                 if (targets.length < this.minReplication) {
                     LOGGER.warn("Target-length is " + targets.length +
                             ", below MIN_REPLICATION (" + this.minReplication + ")");
                     return null;
                 }
-
-                // Reserve space for this pending file
+                // 为这个挂起的文件保留空间
                 pendingCreates.put(src, new Vector());
                 synchronized (leases) {
-                    Lease lease = (Lease) leases.get(holder);
+                    Lease lease = leases.get(holder);
                     if (lease == null) {
                         lease = new Lease(holder);
                         leases.put(holder, lease);
@@ -289,11 +279,10 @@ public class FSNamesystem implements FSConstants {
                     }
                     lease.startedCreate(src);
                 }
-
-                // Create next block
+                // 创建下一个块
                 results[0] = allocateBlock(src);
                 results[1] = targets;
-            } else { // ! fileValid
+            } else {
                 LOGGER.warn("Cannot start file because it is invalid. src=" + src);
             }
         } else {
@@ -303,32 +292,25 @@ public class FSNamesystem implements FSConstants {
     }
 
     /**
-     * The client would like to obtain an additional block for the indicated
-     * filename (which is being written-to).  Return an array that consists
-     * of the block, plus a set of machines.  The first on this list should
-     * be where the client writes data.  Subsequent items in the list must
-     * be provided in the connection to the first datanode.
-     * <p>
-     * Make sure the previous blocks have been reported by datanodes and
-     * are replicated.  Will return an empty 2-elt array if we want the
-     * client to "try again later".
+     * 客户端想要为指定的文件名获得一个额外的块(正在被写入到)。
+     * 返回一个由块和一组机器组成的数组。
+     * 这个列表中的第一个应该是客户机写入数据的地方。
+     * 必须在连接到第一个datanode时提供列表中的后续项。
+     * 确保前面的块已经被datanode报告并被复制。
+     * 如果我们希望客户端“稍后重试”，将返回一个空的2-elt数组。
      */
     public synchronized Object[] getAdditionalBlock(UTF8 src, UTF8 clientMachine) {
-        Object results[] = null;
+        Object[] results = null;
         if (dir.getFile(src) == null && pendingCreates.get(src) != null) {
             results = new Object[2];
-
-            //
-            // If we fail this, bad things happen!
-            //
+            // 如果我们失败了，坏事就会发生!
             if (checkFileProgress(src)) {
-                // Get the array of replication targets 
-                DatanodeInfo targets[] = chooseTargets(this.desiredReplication, null, clientMachine);
+                // 获取复制目标数组
+                DatanodeInfo[] targets = chooseTargets(this.desiredReplication, null, clientMachine);
                 if (targets.length < this.minReplication) {
                     return null;
                 }
-
-                // Create next block
+                // 创建下一个块
                 results[0] = allocateBlock(src);
                 results[1] = targets;
             }
@@ -337,16 +319,14 @@ public class FSNamesystem implements FSConstants {
     }
 
     /**
-     * The client would like to let go of the given block
+     * 客户端希望释放给定的块
      */
     public synchronized boolean abandonBlock(Block b, UTF8 src) {
-        //
-        // Remove the block from the pending creates list
-        //
-        Vector pendingVector = (Vector) pendingCreates.get(src);
+        // 从pending create列表中删除该块
+        Vector<Block> pendingVector = pendingCreates.get(src);
         if (pendingVector != null) {
-            for (Iterator it = pendingVector.iterator(); it.hasNext(); ) {
-                Block cur = (Block) it.next();
+            for (Iterator<Block> it = pendingVector.iterator(); it.hasNext(); ) {
+                Block cur = it.next();
                 if (cur.compareTo(b) == 0) {
                     pendingCreateBlocks.remove(cur);
                     it.remove();
@@ -358,17 +338,16 @@ public class FSNamesystem implements FSConstants {
     }
 
     /**
-     * Abandon the entire file in progress
+     * 放弃正在处理的整个文件
      */
-    public synchronized void abandonFileInProgress(UTF8 src) throws IOException {
+    public synchronized void abandonFileInProgress(UTF8 src) {
         internalReleaseCreate(src);
     }
 
     /**
-     * Finalize the created file and make it world-accessible.  The
-     * FSNamesystem will already know the blocks that make up the file.
-     * Before we return, we make sure that all the file's blocks have
-     * been reported by datanodes and are replicated correctly.
+     * 完成创建的文件，并使其可访问。
+     * fsnamessystem将已经知道组成文件的块。
+     * 在返回之前，我们要确保datanode已经报告了文件的所有块，并且正确地复制了它们。
      */
     public synchronized int completeFile(UTF8 src, UTF8 holder) {
         if (dir.getFile(src) != null || pendingCreates.get(src) == null) {
@@ -377,43 +356,32 @@ public class FSNamesystem implements FSConstants {
         } else if (!checkFileProgress(src)) {
             return STILL_WAITING;
         } else {
-            Vector pendingVector = (Vector) pendingCreates.get(src);
-            Block pendingBlocks[] = (Block[]) pendingVector.toArray(new Block[pendingVector.size()]);
-
-            //
-            // We have the pending blocks, but they won't have
-            // length info in them (as they were allocated before
-            // data-write took place).  So we need to add the correct
-            // length info to each
-            //
-            // REMIND - mjc - this is very inefficient!  We should
-            // improve this!
-            //
+            Vector<Block> pendingVector = pendingCreates.get(src);
+            Block[] pendingBlocks = pendingVector.toArray(new Block[pendingVector.size()]);
+            // 我们有挂起的块，但是它们没有长度信息(因为它们是在数据写入之前分配的)。
+            // 所以我们需要添加正确的长度信息到每个提醒- mjc -这是非常低效的!
+            // 我们应该改进这一点!
             for (int i = 0; i < pendingBlocks.length; i++) {
                 Block b = pendingBlocks[i];
-                TreeSet containingNodes = (TreeSet) blocksMap.get(b);
-                DatanodeInfo node = (DatanodeInfo) containingNodes.first();
-                for (Iterator it = node.getBlockIterator(); it.hasNext(); ) {
-                    Block cur = (Block) it.next();
+                TreeSet<DatanodeInfo> containingNodes = blocksMap.get(b);
+                DatanodeInfo node = containingNodes.first();
+                for (Iterator<Block> it = node.getBlockIterator(); it.hasNext(); ) {
+                    Block cur = it.next();
                     if (b.getBlockId() == cur.getBlockId()) {
                         b.setNumBytes(cur.getNumBytes());
                         break;
                     }
                 }
             }
-
-            //
-            // Now we can add the (name,blocks) tuple to the filesystem
-            //
+            // 现在我们可以将(名称、块)元组添加到文件系统中
             if (dir.addFile(src, pendingBlocks)) {
-                // The file is no longer pending
+                // 该文件不再挂起
                 pendingCreates.remove(src);
                 for (int i = 0; i < pendingBlocks.length; i++) {
                     pendingCreateBlocks.remove(pendingBlocks[i]);
                 }
-
                 synchronized (leases) {
-                    Lease lease = (Lease) leases.get(holder);
+                    Lease lease = leases.get(holder);
                     if (lease != null) {
                         lease.completedCreate(src);
                         if (!lease.hasLocks()) {
@@ -422,18 +390,11 @@ public class FSNamesystem implements FSConstants {
                         }
                     }
                 }
-
-                //
-                // REMIND - mjc - this should be done only after we wait a few secs.
-                // The namenode isn't giving datanodes enough time to report the
-                // replicated blocks that are automatically done as part of a client
-                // write.
-                //
-
-                // Now that the file is real, we need to be sure to replicate
-                // the blocks.
+                //提醒-mjc-这应该只在我们等待几秒钟后才做。
+                // namenode没有给datanode足够的时间来报告作为客户端写的一部分自动完成的复制块。
+                //既然文件是真实的，我们需要确保复制这些块。
                 for (int i = 0; i < pendingBlocks.length; i++) {
-                    TreeSet containingNodes = (TreeSet) blocksMap.get(pendingBlocks[i]);
+                    TreeSet<DatanodeInfo> containingNodes = blocksMap.get(pendingBlocks[i]);
                     if (containingNodes.size() < this.desiredReplication) {
                         synchronized (neededReplications) {
                             LOGGER.info("Completed file " + src + ", at holder " + holder + ".  There is/are only " + containingNodes.size() + " copies of block " + pendingBlocks[i] + ", so replicating up to " + this.desiredReplication);
@@ -452,26 +413,25 @@ public class FSNamesystem implements FSConstants {
     }
 
     /**
-     * Allocate a block at the given pending filename
+     * 在给定的挂起文件名处分配一个块
      */
     synchronized Block allocateBlock(UTF8 src) {
         Block b = new Block();
-        Vector v = (Vector) pendingCreates.get(src);
+        Vector<Block> v = pendingCreates.get(src);
         v.add(b);
         pendingCreateBlocks.add(b);
         return b;
     }
 
     /**
-     * Check that the indicated file's blocks are present and
-     * replicated.  If not, return false.
+     * 检查所指示文件的块是否存在并已复制。
+     * 如果没有，返回false。
      */
     synchronized boolean checkFileProgress(UTF8 src) {
-        Vector v = (Vector) pendingCreates.get(src);
-
-        for (Iterator it = v.iterator(); it.hasNext(); ) {
-            Block b = (Block) it.next();
-            TreeSet containingNodes = (TreeSet) blocksMap.get(b);
+        Vector<Block> v = pendingCreates.get(src);
+        for (Iterator<Block> it = v.iterator(); it.hasNext(); ) {
+            Block b = it.next();
+            TreeSet<DatanodeInfo> containingNodes = blocksMap.get(b);
             if (containingNodes == null || containingNodes.size() < this.minReplication) {
                 return false;
             }
@@ -480,40 +440,37 @@ public class FSNamesystem implements FSConstants {
     }
 
     ////////////////////////////////////////////////////////////////
-    // Here's how to handle block-copy failure during client write:
-    // -- As usual, the client's write should result in a streaming
-    // backup write to a k-machine sequence.
-    // -- If one of the backup machines fails, no worries.  Fail silently.
-    // -- Before client is allowed to close and finalize file, make sure
-    // that the blocks are backed up.  Namenode may have to issue specific backup
-    // commands to make up for earlier datanode failures.  Once all copies
-    // are made, edit namespace and return to client.
+    // 这里是如何处理块复制失败在客户端写:
+    // ——与往常一样，客户机的写操作应该导致对k-machine序列的流备份写操作。
+    // ——如果其中一台备份机器发生故障，不用担心。默默的失败。
+    // ——在允许客户端关闭和完成文件之前，请确保已备份了这些块。
+    // Namenode可能必须发出特定的备份命令来弥补早期的datanode故障。
+    // 复制完成后，编辑名称空间并返回给客户机。
     ////////////////////////////////////////////////////////////////
 
     /**
-     * Change the indicated filename.
+     * 更改指定的文件名。
      */
     public boolean renameTo(UTF8 src, UTF8 dst) {
         return dir.renameTo(src, dst);
     }
 
     /**
-     * Remove the indicated filename from the namespace.  This may
-     * invalidate some blocks that make up the file.
+     * 从命名空间中删除指定的文件名。
+     * 这可能会使组成文件的一些块失效。
      */
     public synchronized boolean delete(UTF8 src) {
-        Block deletedBlocks[] = (Block[]) dir.delete(src);
+        Block[] deletedBlocks = dir.delete(src);
         if (deletedBlocks != null) {
             for (int i = 0; i < deletedBlocks.length; i++) {
                 Block b = deletedBlocks[i];
-
-                TreeSet containingNodes = (TreeSet) blocksMap.get(b);
+                TreeSet<DatanodeInfo> containingNodes = blocksMap.get(b);
                 if (containingNodes != null) {
-                    for (Iterator it = containingNodes.iterator(); it.hasNext(); ) {
-                        DatanodeInfo node = (DatanodeInfo) it.next();
-                        Vector invalidateSet = (Vector) recentInvalidateSets.get(node.getName());
+                    for (Iterator<DatanodeInfo> it = containingNodes.iterator(); it.hasNext(); ) {
+                        DatanodeInfo node = it.next();
+                        Vector<Block> invalidateSet = recentInvalidateSets.get(node.getName());
                         if (invalidateSet == null) {
-                            invalidateSet = new Vector();
+                            invalidateSet = new Vector<Block>();
                             recentInvalidateSets.put(node.getName(), invalidateSet);
                         }
                         invalidateSet.add(b);
@@ -521,12 +478,11 @@ public class FSNamesystem implements FSConstants {
                 }
             }
         }
-
         return (deletedBlocks != null);
     }
 
     /**
-     * Return whether the given filename exists
+     * 返回给定文件名是否存在
      */
     public boolean exists(UTF8 src) {
         if (dir.getFile(src) != null || dir.isDir(src)) {
@@ -537,40 +493,34 @@ public class FSNamesystem implements FSConstants {
     }
 
     /**
-     * Whether the given name is a directory
+     * 给定名称是否为目录
      */
     public boolean isDir(UTF8 src) {
         return dir.isDir(src);
     }
 
     /**
-     * Create all the necessary directories
+     * 创建所有必要的目录
      */
     public boolean mkdirs(UTF8 src) {
         return dir.mkdirs(src);
     }
 
     /**
-     * Figure out a few hosts that are likely to contain the
-     * block(s) referred to by the given (filename, start, len) tuple.
+     * 找出一些可能包含给定(文件名、开始、len)元组引用的块的主机。
      */
     public UTF8[][] getDatanodeHints(UTF8 src, long start, long len) {
         if (start < 0 || len < 0) {
             return new UTF8[0][];
         }
-
         int startBlock = -1;
         int endBlock = -1;
-        Block blocks[] = dir.getFile(src);
-
-        if (blocks == null) {                     // no blocks
+        Block[] blocks = dir.getFile(src);
+        if (blocks == null) {
+            // no blocks
             return new UTF8[0][];
         }
-
-        //
-        // First, figure out where the range falls in
-        // the blocklist.
-        //
+        // 首先，找出范围在块列表中的位置。
         long startpos = start;
         long endpos = start + len;
         for (int i = 0; i < blocks.length; i++) {
@@ -588,34 +538,28 @@ public class FSNamesystem implements FSConstants {
                 }
             }
         }
-
-        //
-        // Next, create an array of hosts where each block can
-        // be found
-        //
+        // 接下来，创建一个主机数组，其中可以找到每个块
         if (startBlock < 0 || endBlock < 0) {
             return new UTF8[0][];
         } else {
-            UTF8 hosts[][] = new UTF8[(endBlock - startBlock) + 1][];
+            UTF8[][] hosts = new UTF8[(endBlock - startBlock) + 1][];
             for (int i = startBlock; i <= endBlock; i++) {
-                TreeSet containingNodes = (TreeSet) blocksMap.get(blocks[i]);
-                Vector v = new Vector();
-                for (Iterator it = containingNodes.iterator(); it.hasNext(); ) {
-                    DatanodeInfo cur = (DatanodeInfo) it.next();
+                TreeSet<DatanodeInfo> containingNodes = blocksMap.get(blocks[i]);
+                Vector<UTF8> v = new Vector<UTF8>();
+                for (Iterator<DatanodeInfo> it = containingNodes.iterator(); it.hasNext(); ) {
+                    DatanodeInfo cur = it.next();
                     v.add(cur.getHost());
                 }
-                hosts[i - startBlock] = (UTF8[]) v.toArray(new UTF8[v.size()]);
+                hosts[i - startBlock] = v.toArray(new UTF8[v.size()]);
             }
             return hosts;
         }
     }
 
     /************************************************************
-     * A Lease governs all the locks held by a single client.
-     * For each client there's a corresponding lease, whose
-     * timestamp is updated when the client periodically
-     * checks in.  If the client dies and allows its lease to
-     * expire, all the corresponding locks can be released.
+     * 租约管理单个客户端持有的所有锁。
+     * 对于每个客户端，都有一个对应的租约，当客户端定期签入时，租约的时间戳将被更新。
+     * 如果客户机死亡并允许其租约过期，则可以释放所有相应的锁。
      *************************************************************/
     class Lease implements Comparable {
         public UTF8 holder;
@@ -673,18 +617,14 @@ public class FSNamesystem implements FSConstants {
             creates.clear();
         }
 
-        /**
-         */
         @Override
         public String toString() {
             return "[Lease.  Holder: " + holder.toString() + ", heldlocks: " + locks.size() + ", pendingcreates: " + creates.size() + "]";
         }
 
-        /**
-         */
         @Override
         public int compareTo(Object o) {
-            Lease l1 = (Lease) this;
+            Lease l1 = this;
             Lease l2 = (Lease) o;
             long lu1 = l1.lastUpdate;
             long lu2 = l2.lastUpdate;
@@ -699,8 +639,7 @@ public class FSNamesystem implements FSConstants {
     }
 
     /******************************************************
-     * LeaseMonitor checks for leases that have expired,
-     * and disposes of them.
+     * LeaseMonitor检查已过期的租约，并处理它们。
      ******************************************************/
     class LeaseMonitor implements Runnable {
         @Override
@@ -710,7 +649,7 @@ public class FSNamesystem implements FSConstants {
                     synchronized (leases) {
                         Lease top;
                         while ((sortedLeases.size() > 0) &&
-                                ((top = (Lease) sortedLeases.first()) != null)) {
+                                ((top = sortedLeases.first()) != null)) {
                             if (top.expired()) {
                                 top.releaseLocks();
                                 leases.remove(top.holder);
@@ -733,13 +672,13 @@ public class FSNamesystem implements FSConstants {
     }
 
     /**
-     * Get a lock (perhaps exclusive) on the given file
+     * 获取给定文件上的锁(可能是独占的)
      */
     public synchronized int obtainLock(UTF8 src, UTF8 holder, boolean exclusive) {
         int result = dir.obtainLock(src, holder, exclusive);
         if (result == COMPLETE_SUCCESS) {
             synchronized (leases) {
-                Lease lease = (Lease) leases.get(holder);
+                Lease lease = leases.get(holder);
                 if (lease == null) {
                     lease = new Lease(holder);
                     leases.put(holder, lease);
@@ -756,13 +695,13 @@ public class FSNamesystem implements FSConstants {
     }
 
     /**
-     * Release the lock on the given file
+     * 释放给定文件上的锁
      */
     public synchronized int releaseLock(UTF8 src, UTF8 holder) {
         int result = internalReleaseLock(src, holder);
         if (result == COMPLETE_SUCCESS) {
             synchronized (leases) {
-                Lease lease = (Lease) leases.get(holder);
+                Lease lease = leases.get(holder);
                 if (lease != null) {
                     lease.released(src);
                     if (!lease.hasLocks()) {
@@ -780,19 +719,19 @@ public class FSNamesystem implements FSConstants {
     }
 
     private void internalReleaseCreate(UTF8 src) {
-        Vector v = (Vector) pendingCreates.remove(src);
-        for (Iterator it2 = v.iterator(); it2.hasNext(); ) {
-            Block b = (Block) it2.next();
+        Vector<Block> v = pendingCreates.remove(src);
+        for (Iterator<Block> it = v.iterator(); it.hasNext(); ) {
+            Block b = it.next();
             pendingCreateBlocks.remove(b);
         }
     }
 
     /**
-     * Renew the lease(s) held by the given client
+     * 续签客户所持有的租约
      */
     public void renewLease(UTF8 holder) {
         synchronized (leases) {
-            Lease lease = (Lease) leases.get(holder);
+            Lease lease = leases.get(holder);
             if (lease != null) {
                 sortedLeases.remove(lease);
                 lease.renew();
@@ -802,8 +741,8 @@ public class FSNamesystem implements FSConstants {
     }
 
     /**
-     * Get a listing of all files at 'src'.  The Object[] array
-     * exists so we can return file attributes (soon to be implemented)
+     * 获取'src'上所有文件的列表。
+     * Object[]数组存在，因此我们可以返回文件属性(即将实现)
      */
     public DFSFileInfo[] getListing(UTF8 src) {
         return dir.getListing(src);
@@ -811,22 +750,21 @@ public class FSNamesystem implements FSConstants {
 
     /////////////////////////////////////////////////////////
     //
-    // These methods are called by datanodes
+    // 这些方法由datanode调用
     //
     /////////////////////////////////////////////////////////
 
     /**
-     * The given node has reported in.  This method should:
-     * 1) Record the heartbeat, so the datanode isn't timed out
-     * 2) Adjust usage stats for future block allocation
+     * 给定节点已报告。这个方法应该:
+     * 1)记录心跳，这样datanode就不会超时
+     * 2)为将来的块分配调整使用状态
      */
     public synchronized void gotHeartbeat(UTF8 name, long capacity, long remaining) {
         synchronized (heartbeats) {
             synchronized (datanodeMap) {
                 long capacityDiff = 0;
                 long remainingDiff = 0;
-                DatanodeInfo nodeinfo = (DatanodeInfo) datanodeMap.get(name);
-
+                DatanodeInfo nodeinfo = datanodeMap.get(name);
                 if (nodeinfo == null) {
                     LOGGER.info("Got brand-new heartbeat from " + name);
                     nodeinfo = new DatanodeInfo(name, capacity, remaining);
@@ -847,11 +785,9 @@ public class FSNamesystem implements FSConstants {
     }
 
     /**
-     * Periodically calls heartbeatCheck().
+     * 定期调用heartbeatCheck ()。
      */
     class HeartbeatMonitor implements Runnable {
-        /**
-         */
         @Override
         public void run() {
             while (fsRunning) {
@@ -865,26 +801,22 @@ public class FSNamesystem implements FSConstants {
     }
 
     /**
-     * Check if there are any expired heartbeats, and if so,
-     * whether any blocks have to be re-replicated.
+     * 检查是否有任何过期的心跳，如果有，是否需要重新复制任何块。
      */
     synchronized void heartbeatCheck() {
         synchronized (heartbeats) {
             DatanodeInfo nodeInfo = null;
-
             while ((heartbeats.size() > 0) &&
-                    ((nodeInfo = (DatanodeInfo) heartbeats.first()) != null) &&
+                    ((nodeInfo = heartbeats.first()) != null) &&
                     (nodeInfo.lastUpdate() < System.currentTimeMillis() - EXPIRE_INTERVAL)) {
                 LOGGER.info("Lost heartbeat for " + nodeInfo.getName());
-
                 heartbeats.remove(nodeInfo);
                 synchronized (datanodeMap) {
                     datanodeMap.remove(nodeInfo.getName());
                 }
                 totalCapacity -= nodeInfo.getCapacity();
                 totalRemaining -= nodeInfo.getRemaining();
-
-                Block deadblocks[] = nodeInfo.getBlocks();
+                Block[] deadblocks = nodeInfo.getBlocks();
                 if (deadblocks != null) {
                     for (int i = 0; i < deadblocks.length; i++) {
                         removeStoredBlock(deadblocks[i], nodeInfo);
@@ -892,93 +824,75 @@ public class FSNamesystem implements FSConstants {
                 }
 
                 if (heartbeats.size() > 0) {
-                    nodeInfo = (DatanodeInfo) heartbeats.first();
+                    nodeInfo = heartbeats.first();
                 }
             }
         }
     }
 
     /**
-     * The given node is reporting all its blocks.  Use this info to
-     * update the (machine-->blocklist) and (block-->machinelist) tables.
+     * 给定节点报告它的所有块。
+     * 使用此信息更新(machine—>blocklist)和(block—>machinelist)表。
      */
-    public synchronized Block[] processReport(Block newReport[], UTF8 name) {
-        DatanodeInfo node = (DatanodeInfo) datanodeMap.get(name);
+    public synchronized Block[] processReport(Block[] newReport, UTF8 name) {
+        DatanodeInfo node = datanodeMap.get(name);
         if (node == null) {
             throw new IllegalArgumentException("Unexpected exception.  Received block report from node " + name + ", but there is no info for " + name);
         }
-
-        //
-        // Modify the (block-->datanode) map, according to the difference
-        // between the old and new block report.
-        //
+        // 根据新旧块报表之间的差异修改(block——>datanode)映射。
         int oldPos = 0, newPos = 0;
-        Block oldReport[] = node.getBlocks();
+        Block[] oldReport = node.getBlocks();
         while (oldReport != null && newReport != null && oldPos < oldReport.length && newPos < newReport.length) {
             int cmp = oldReport[oldPos].compareTo(newReport[newPos]);
-
             if (cmp == 0) {
-                // Do nothing, blocks are the same
+                // 什么都不做，block块是一样的吗
                 oldPos++;
                 newPos++;
             } else if (cmp < 0) {
-                // The old report has a block the new one does not
+                // 旧报告有一个块，而新报告没有
                 removeStoredBlock(oldReport[oldPos], node);
                 oldPos++;
             } else {
-                // The new report has a block the old one does not
+                // 新报告有一个旧报告没有的块
                 addStoredBlock(newReport[newPos], node);
                 newPos++;
             }
         }
         while (oldReport != null && oldPos < oldReport.length) {
-            // The old report has a block the new one does not
+            // 旧报告有一个块，而新报告没有
             removeStoredBlock(oldReport[oldPos], node);
             oldPos++;
         }
         while (newReport != null && newPos < newReport.length) {
-            // The new report has a block the old one does not
+            // 新报告有一个旧报告没有的块
             addStoredBlock(newReport[newPos], node);
             newPos++;
         }
-
-        //
-        // Modify node so it has the new blockreport
-        //
+        // 修改节点，使其具有新的blockreport
         node.updateBlocks(newReport);
-
-        //
-        // We've now completely updated the node's block report profile.
-        // We now go through all its blocks and find which ones are invalid,
-        // no longer pending, or over-replicated.
-        //
-        // (Note it's not enough to just invalidate blocks at lease expiry 
-        // time; datanodes can go down before the client's lease on 
-        // the failed file expires and miss the "expire" event.)
-        //
-        // This function considers every block on a datanode, and thus
-        // should only be invoked infrequently.
-        //
-        Vector obsolete = new Vector();
-        for (Iterator it = node.getBlockIterator(); it.hasNext(); ) {
-            Block b = (Block) it.next();
-
+        //我们现在已经完全更新了节点的块报告概要文件。
+        //现在我们遍历它的所有块，找出哪些是无效的、不再挂起的或过度复制的。
+        //(注意，仅仅在租约期满时使房屋失效是不够的;数据阳极可以在客户端对失败文件的租约到期之前失效，从而错过“过期”事件。)
+        //这个函数考虑datanode上的每个块，因此只应该很少调用。
+        Vector<Block> obsolete = new Vector<Block>();
+        for (Iterator<Block> it = node.getBlockIterator(); it.hasNext(); ) {
+            Block b = it.next();
             if (!dir.isValidBlock(b) && !pendingCreateBlocks.contains(b)) {
                 LOGGER.info("Obsoleting block " + b);
                 obsolete.add(b);
             }
         }
-        return (Block[]) obsolete.toArray(new Block[obsolete.size()]);
+        return obsolete.toArray(new Block[obsolete.size()]);
     }
 
     /**
-     * Modify (block-->datanode) map.  Remove block from set of
-     * needed replications if this takes care of the problem.
+     * 修改(块- - > datanode)地图。
+     * 如果解决了这个问题，则从所需的复制集中删除块。
      */
     synchronized void addStoredBlock(Block block, DatanodeInfo node) {
-        TreeSet containingNodes = (TreeSet) blocksMap.get(block);
+        TreeSet<DatanodeInfo> containingNodes = blocksMap.get(block);
         if (containingNodes == null) {
-            containingNodes = new TreeSet();
+            containingNodes = new TreeSet<DatanodeInfo>();
             blocksMap.put(block, containingNodes);
         }
         if (!containingNodes.contains(node)) {
@@ -986,7 +900,6 @@ public class FSNamesystem implements FSConstants {
         } else {
             LOGGER.info("Redundant addStoredBlock request received for block " + block + " on node " + node);
         }
-
         synchronized (neededReplications) {
             if (dir.isValidBlock(block)) {
                 if (containingNodes.size() >= this.desiredReplication) {
@@ -997,16 +910,12 @@ public class FSNamesystem implements FSConstants {
                         neededReplications.add(block);
                     }
                 }
-
-                //
-                // Find how many of the containing nodes are "extra", if any.
-                // If there are any extras, call chooseExcessReplicates() to
-                // mark them in the excessReplicateMap.
-                //
-                Vector nonExcess = new Vector();
-                for (Iterator it = containingNodes.iterator(); it.hasNext(); ) {
-                    DatanodeInfo cur = (DatanodeInfo) it.next();
-                    TreeSet excessBlocks = (TreeSet) excessReplicateMap.get(cur.getName());
+                //查找包含多少节点是“额外的”(如果有的话)。
+                //如果有任何额外的功能，调用chooseexcessrepl()来在excessReplicateMap中标记它们。
+                Vector<DatanodeInfo> nonExcess = new Vector<DatanodeInfo>();
+                for (Iterator<DatanodeInfo> it = containingNodes.iterator(); it.hasNext(); ) {
+                    DatanodeInfo cur = it.next();
+                    TreeSet<Block> excessBlocks = excessReplicateMap.get(cur.getName());
                     if (excessBlocks == null || !excessBlocks.contains(block)) {
                         nonExcess.add(cur);
                     }
@@ -1019,39 +928,31 @@ public class FSNamesystem implements FSConstants {
     }
 
     /**
-     * We want a max of "maxReps" replicates for any block, but we now have too many.
-     * In this method, copy enough nodes from 'srcNodes' into 'dstNodes' such that:
+     * 我们希望为任何块复制最多的“maxReps”，但是现在我们有太多了。
+     * 在该方法中，将足够多的节点从“srcNodes”复制到“dstNodes”中，使:
      * <p>
      * srcNodes.size() - dstNodes.size() == maxReps
      * <p>
-     * For now, we choose nodes randomly.  In the future, we might enforce some
-     * kind of policy (like making sure replicates are spread across racks).
+     * 现在，我们随机选择节点。
+     * 在将来，我们可能会强制执行某种策略(比如确保复制分布在机架上)。
      */
-    void chooseExcessReplicates(Vector nonExcess, Block b, int maxReps) {
+    void chooseExcessReplicates(Vector<DatanodeInfo> nonExcess, Block b, int maxReps) {
         while (nonExcess.size() - maxReps > 0) {
             int chosenNode = r.nextInt(nonExcess.size());
-            DatanodeInfo cur = (DatanodeInfo) nonExcess.elementAt(chosenNode);
+            DatanodeInfo cur = nonExcess.elementAt(chosenNode);
             nonExcess.removeElementAt(chosenNode);
-
-            TreeSet excessBlocks = (TreeSet) excessReplicateMap.get(cur.getName());
+            TreeSet<Block> excessBlocks = excessReplicateMap.get(cur.getName());
             if (excessBlocks == null) {
                 excessBlocks = new TreeSet();
                 excessReplicateMap.put(cur.getName(), excessBlocks);
             }
             excessBlocks.add(b);
-
-            //
-            // The 'excessblocks' tracks blocks until we get confirmation
-            // that the datanode has deleted them; the only way we remove them
-            // is when we get a "removeBlock" message.  
-            //
-            // The 'invalidate' list is used to inform the datanode the block 
-            // should be deleted.  Items are removed from the invalidate list
-            // upon giving instructions to the namenode.
-            //
-            Vector invalidateSet = (Vector) recentInvalidateSets.get(cur.getName());
+            //“excessblocks”跟踪block，直到我们确认datanode删除了它们;我们删除它们的唯一方法是当我们收到一条“removeBlock”消息时。
+            //“invalidate”列表用于通知datanode块应该被删除。
+            //向namenode发出指令后，从失效列表中删除项。
+            Vector<Block> invalidateSet = recentInvalidateSets.get(cur.getName());
             if (invalidateSet == null) {
-                invalidateSet = new Vector();
+                invalidateSet = new Vector<Block>();
                 recentInvalidateSets.put(cur.getName(), invalidateSet);
             }
             invalidateSet.add(b);
@@ -1059,33 +960,25 @@ public class FSNamesystem implements FSConstants {
     }
 
     /**
-     * Modify (block-->datanode) map.  Possibly generate
-     * replication tasks, if the removed block is still valid.
+     * 修改(块- - > datanode)地图。
+     * 如果删除的块仍然有效，则可能生成复制任务。
      */
     synchronized void removeStoredBlock(Block block, DatanodeInfo node) {
-        TreeSet containingNodes = (TreeSet) blocksMap.get(block);
+        TreeSet<DatanodeInfo> containingNodes = blocksMap.get(block);
         if (containingNodes == null || !containingNodes.contains(node)) {
             throw new IllegalArgumentException("No machine mapping found for block " + block + ", which should be at node " + node);
         }
         containingNodes.remove(node);
-
-        //
-        // It's possible that the block was removed because of a datanode
-        // failure.  If the block is still valid, check if replication is
-        // necessary.  In that case, put block on a possibly-will-
-        // be-replicated list.
-        //
+        //可能是由于datanode故障而删除了该块。
+        //如果该块仍然有效，检查是否需要复制。
+        //在这种情况下，将block放在一个可能被复制的列表上。
         if (dir.isValidBlock(block) && (containingNodes.size() < this.desiredReplication)) {
             synchronized (neededReplications) {
                 neededReplications.add(block);
             }
         }
-
-        //
-        // We've removed a block from a node, so it's definitely no longer
-        // in "excess" there.
-        //
-        TreeSet excessBlocks = (TreeSet) excessReplicateMap.get(node.getName());
+        // 我们已经从节点中删除了一个块，所以它肯定不再是“多余的”。
+        TreeSet<Block> excessBlocks = excessReplicateMap.get(node.getName());
         if (excessBlocks != null) {
             excessBlocks.remove(block);
             if (excessBlocks.size() == 0) {
@@ -1095,48 +988,41 @@ public class FSNamesystem implements FSConstants {
     }
 
     /**
-     * The given node is reporting that it received a certain block.
+     * 给定节点报告它收到了某个块。
      */
     public synchronized void blockReceived(Block block, UTF8 name) {
-        DatanodeInfo node = (DatanodeInfo) datanodeMap.get(name);
+        DatanodeInfo node = datanodeMap.get(name);
         if (node == null) {
             throw new IllegalArgumentException("Unexpected exception.  Got blockReceived message from node " + name + ", but there is no info for " + name);
         }
-        //
-        // Modify the blocks->datanode map
-        // 
+        // 修改块->datanode映射
         addStoredBlock(block, node);
-
-        //
-        // Supplement node's blockreport
-        //
+        // 补充节点的blockreport
         node.addBlock(block);
     }
 
     /**
-     * Total raw bytes
+     * 原始字节总数
      */
     public long totalCapacity() {
         return totalCapacity;
     }
 
     /**
-     * Total non-used raw bytes
+     * 总未使用的原始字节
      */
     public long totalRemaining() {
         return totalRemaining;
     }
 
-    /**
-     */
     public DatanodeInfo[] datanodeReport() {
-        DatanodeInfo results[] = null;
+        DatanodeInfo[] results = null;
         synchronized (heartbeats) {
             synchronized (datanodeMap) {
                 results = new DatanodeInfo[datanodeMap.size()];
                 int i = 0;
-                for (Iterator it = datanodeMap.values().iterator(); it.hasNext(); ) {
-                    DatanodeInfo cur = (DatanodeInfo) it.next();
+                for (Iterator<DatanodeInfo> it = datanodeMap.values().iterator(); it.hasNext(); ) {
+                    DatanodeInfo cur = it.next();
                     results[i++] = cur;
                 }
             }
@@ -1146,62 +1032,53 @@ public class FSNamesystem implements FSConstants {
 
     /////////////////////////////////////////////////////////
     //
-    // These methods are called by the Namenode system, to see
-    // if there is any work for a given datanode.
+    // 这些方法由Namenode系统调用，以查看是否有针对给定datanode的工作。
     //
     /////////////////////////////////////////////////////////
 
     /**
-     * Check if there are any recently-deleted blocks a datanode should remove.
+     * 检查datanode是否应该删除最近删除的任何块。
      */
     public synchronized Block[] blocksToInvalidate(UTF8 sender) {
-        Vector invalidateSet = (Vector) recentInvalidateSets.remove(sender);
+        Vector<Block> invalidateSet = recentInvalidateSets.remove(sender);
         if (invalidateSet != null) {
-            return (Block[]) invalidateSet.toArray(new Block[invalidateSet.size()]);
+            return invalidateSet.toArray(new Block[invalidateSet.size()]);
         } else {
             return null;
         }
     }
 
     /**
-     * Return with a list of Block/DataNodeInfo sets, indicating
-     * where various Blocks should be copied, ASAP.
-     * <p>
-     * The Array that we return consists of two objects:
-     * The 1st elt is an array of Blocks.
-     * The 2nd elt is a 2D array of DatanodeInfo objs, identifying the
-     * target sequence for the Block at the appropriate index.
+     * 返回一个块/DataNodeInfo集合列表，指示应该在哪里复制不同的块，越快越好。
+     * 我们返回的数组由两个对象组成:
+     * 第一个elt是一个块数组。
+     * 第二个elt是DatanodeInfo objs的2D数组，它在适当的索引处标识块的目标序列。
      */
     public synchronized Object[] pendingTransfers(DatanodeInfo srcNode, int xmitsInProgress) {
         synchronized (neededReplications) {
-            Object results[] = null;
+            Object[] results = null;
             int scheduledXfers = 0;
 
             if (neededReplications.size() > 0) {
-                //
-                // Go through all blocks that need replications.  See if any
-                // are present at the current node.  If so, ask the node to
-                // replicate them.
-                //
-                Vector replicateBlocks = new Vector();
-                Vector replicateTargetSets = new Vector();
-                for (Iterator it = neededReplications.iterator(); it.hasNext(); ) {
-                    //
-                    // We can only reply with 'maxXfers' or fewer blocks
-                    //
+                //遍历所有需要复制的块。
+                //查看当前节点上是否存在。
+                //如果是，请节点复制它们。
+                Vector<Block> replicateBlocks = new Vector<Block>();
+                Vector<DatanodeInfo[]> replicateTargetSets = new Vector<DatanodeInfo[]>();
+                for (Iterator<Block> it = neededReplications.iterator(); it.hasNext(); ) {
+                    // 我们只能回复“maxXfers”或更少的块
                     if (scheduledXfers >= this.maxReplicationStreams - xmitsInProgress) {
                         break;
                     }
-
-                    Block block = (Block) it.next();
+                    Block block = it.next();
                     if (!dir.isValidBlock(block)) {
                         it.remove();
                     } else {
-                        TreeSet containingNodes = (TreeSet) blocksMap.get(block);
+                        TreeSet<DatanodeInfo> containingNodes = blocksMap.get(block);
                         if (containingNodes.contains(srcNode)) {
-                            DatanodeInfo targets[] = chooseTargets(Math.min(this.desiredReplication - containingNodes.size(), this.maxReplicationStreams - xmitsInProgress), containingNodes, null);
+                            DatanodeInfo[] targets = chooseTargets(Math.min(this.desiredReplication - containingNodes.size(), this.maxReplicationStreams - xmitsInProgress), containingNodes, null);
                             if (targets.length > 0) {
-                                // Build items to return
+                                // 构建要返回的项
                                 replicateBlocks.add(block);
                                 replicateTargetSets.add(targets);
                                 scheduledXfers += targets.length;
@@ -1209,36 +1086,26 @@ public class FSNamesystem implements FSConstants {
                         }
                     }
                 }
-
-                //
-                // Move the block-replication into a "pending" state.
-                // The reason we use 'pending' is so we can retry
-                // replications that fail after an appropriate amount of time.  
-                // (REMIND - mjc - this timer is not yet implemented.)
-                //
+                //将块复制移动到“挂起”状态。
+                //我们使用“pending”的原因是，我们可以在适当的时间之后重试失败的复制。
+                //(提醒- mjc -此计时器尚未实现。)
                 if (replicateBlocks.size() > 0) {
                     int i = 0;
-                    for (Iterator it = replicateBlocks.iterator(); it.hasNext(); i++) {
-                        Block block = (Block) it.next();
-                        DatanodeInfo targets[] = (DatanodeInfo[]) replicateTargetSets.elementAt(i);
-                        TreeSet containingNodes = (TreeSet) blocksMap.get(block);
-
+                    for (Iterator<Block> it = replicateBlocks.iterator(); it.hasNext(); i++) {
+                        Block block = it.next();
+                        DatanodeInfo[] targets = replicateTargetSets.elementAt(i);
+                        TreeSet<DatanodeInfo> containingNodes = blocksMap.get(block);
                         if (containingNodes.size() + targets.length >= this.desiredReplication) {
                             neededReplications.remove(block);
                             pendingReplications.add(block);
                         }
-
                         LOGGER.info("Pending transfer (block " + block.getBlockName() + ") from " + srcNode.getName() + " to " + targets.length + " destinations");
                     }
-
-                    //
-                    // Build returned objects from above lists
-                    //
-                    DatanodeInfo targetMatrix[][] = new DatanodeInfo[replicateTargetSets.size()][];
+                    // 从上面的列表构建返回的对象
+                    DatanodeInfo[][] targetMatrix = new DatanodeInfo[replicateTargetSets.size()][];
                     for (i = 0; i < targetMatrix.length; i++) {
-                        targetMatrix[i] = (DatanodeInfo[]) replicateTargetSets.elementAt(i);
+                        targetMatrix[i] = replicateTargetSets.elementAt(i);
                     }
-
                     results = new Object[2];
                     results[0] = replicateBlocks.toArray(new Block[replicateBlocks.size()]);
                     results[1] = targetMatrix;
@@ -1249,91 +1116,72 @@ public class FSNamesystem implements FSConstants {
     }
 
     /**
-     * Get a certain number of targets, if possible.
-     * If not, return as many as we can.
-     * @param desiredReplicates number of duplicates wanted.
-     * @param forbiddenNodes    of DatanodeInfo instances that should not be
-     *                          considered targets.
-     * @return array of DatanodeInfo instances uses as targets.
+     * 如果可能的话，设定一定数量的目标。
+     * 如果没有，尽可能多的返回。
+     * @param desiredReplicates 需要复制的数量。
+     * @param forbiddenNodes    不应被视为目标的DatanodeInfo实例。
+     * @return DatanodeInfo实例数组用作目标。
      */
-    DatanodeInfo[] chooseTargets(int desiredReplicates, TreeSet forbiddenNodes, UTF8 clientMachine) {
-        TreeSet alreadyChosen = new TreeSet();
-        Vector targets = new Vector();
-
+    DatanodeInfo[] chooseTargets(int desiredReplicates, TreeSet<DatanodeInfo> forbiddenNodes, UTF8 clientMachine) {
+        TreeSet<DatanodeInfo> alreadyChosen = new TreeSet<DatanodeInfo>();
+        Vector<DatanodeInfo> targets = new Vector<DatanodeInfo>();
         for (int i = 0; i < desiredReplicates; i++) {
             DatanodeInfo target = chooseTarget(forbiddenNodes, alreadyChosen, clientMachine);
             if (target != null) {
                 targets.add(target);
                 alreadyChosen.add(target);
             } else {
-                break; // calling chooseTarget again won't help
+                // 再次调用chooseTarget没有帮助
+                break;
             }
         }
-        return (DatanodeInfo[]) targets.toArray(new DatanodeInfo[targets.size()]);
+        return targets.toArray(new DatanodeInfo[targets.size()]);
     }
 
     /**
-     * Choose a target from available machines, excepting the
-     * given ones.
-     * <p>
-     * Right now it chooses randomly from available boxes.  In future could
-     * choose according to capacity and load-balancing needs (or even
-     * network-topology, to avoid inter-switch traffic).
-     * @param forbidden1 DatanodeInfo targets not allowed, null allowed.
-     * @param forbidden2 DatanodeInfo targets not allowed, null allowed.
-     * @return DatanodeInfo instance to use or null if something went wrong
-     * (a log message is emitted if null is returned).
+     * 从可用的机器中选择一个目标，给定的机器除外。
+     * 现在它从可用的盒子中随机选择。
+     * 将来可以根据容量和负载平衡需求(甚至网络拓扑结构，以避免交换流量)进行选择。
+     * @param forbidden1 不允许DatanodeInfo目标为空。
+     * @param forbidden2 不允许DatanodeInfo目标为空。
+     * @return 如果出错，则使用DatanodeInfo实例;如果返回null，则发出日志消息。
      */
-    DatanodeInfo chooseTarget(TreeSet forbidden1, TreeSet forbidden2, UTF8 clientMachine) {
-        //
-        // Check if there are any available targets at all
-        //
+    DatanodeInfo chooseTarget(TreeSet<DatanodeInfo> forbidden1, TreeSet<DatanodeInfo> forbidden2, UTF8 clientMachine) {
+        // 检查是否有任何可用的目标
         int totalMachines = datanodeMap.size();
         if (totalMachines == 0) {
             LOGGER.warn("While choosing target, totalMachines is " + totalMachines);
             return null;
         }
-
-        //
-        // Build a map of forbidden hostnames from the two forbidden sets.
-        //
-        TreeSet forbiddenMachines = new TreeSet();
+        // 从两个禁用集构建禁用主机名的映射。
+        TreeSet<UTF8> forbiddenMachines = new TreeSet<UTF8>();
         if (forbidden1 != null) {
-            for (Iterator it = forbidden1.iterator(); it.hasNext(); ) {
-                DatanodeInfo cur = (DatanodeInfo) it.next();
+            for (Iterator<DatanodeInfo> it = forbidden1.iterator(); it.hasNext(); ) {
+                DatanodeInfo cur = it.next();
                 forbiddenMachines.add(cur.getHost());
             }
         }
         if (forbidden2 != null) {
-            for (Iterator it = forbidden2.iterator(); it.hasNext(); ) {
-                DatanodeInfo cur = (DatanodeInfo) it.next();
+            for (Iterator<DatanodeInfo> it = forbidden2.iterator(); it.hasNext(); ) {
+                DatanodeInfo cur = it.next();
                 forbiddenMachines.add(cur.getHost());
             }
         }
-
-        //
-        // Build list of machines we can actually choose from
-        //
-        Vector targetList = new Vector();
-        for (Iterator it = datanodeMap.values().iterator(); it.hasNext(); ) {
-            DatanodeInfo node = (DatanodeInfo) it.next();
+        // 构建我们可以实际选择的机器列表
+        Vector<DatanodeInfo> targetList = new Vector<DatanodeInfo>();
+        for (Iterator<DatanodeInfo> it = datanodeMap.values().iterator(); it.hasNext(); ) {
+            DatanodeInfo node = it.next();
             if (!forbiddenMachines.contains(node.getHost())) {
                 targetList.add(node);
             }
         }
         Collections.shuffle(targetList);
-
-        //
-        // Now pick one
-        //
+        // 现在选择一个
         if (targetList.size() > 0) {
-            //
-            // If the requester's machine is in the targetList, 
-            // and it's got the capacity, pick it.
-            //
+            // 如果请求者的机器在targetList中，并且它有容量，那么选择它。
             if (clientMachine != null && clientMachine.getLength() > 0) {
-                for (Iterator it = targetList.iterator(); it.hasNext(); ) {
-                    DatanodeInfo node = (DatanodeInfo) it.next();
+                for (Iterator<DatanodeInfo> it = targetList.iterator(); it.hasNext(); ) {
+                    DatanodeInfo node = it.next();
                     if (clientMachine.equals(node.getHost())) {
                         if (node.getRemaining() > BLOCK_SIZE * MIN_BLOCKS_FOR_WRITE) {
                             return node;
@@ -1341,24 +1189,18 @@ public class FSNamesystem implements FSConstants {
                     }
                 }
             }
-
-            //
-            // Otherwise, choose node according to target capacity
-            //
-            for (Iterator it = targetList.iterator(); it.hasNext(); ) {
-                DatanodeInfo node = (DatanodeInfo) it.next();
+            // 否则，根据目标容量选择节点
+            for (Iterator<DatanodeInfo> it = targetList.iterator(); it.hasNext(); ) {
+                DatanodeInfo node = it.next();
                 if (node.getRemaining() > BLOCK_SIZE * MIN_BLOCKS_FOR_WRITE) {
                     return node;
                 }
             }
-
-            //
-            // That should do the trick.  But we might not be able
-            // to pick any node if the target was out of bytes.  As
-            // a last resort, pick the first valid one we can find.
-            //
-            for (Iterator it = targetList.iterator(); it.hasNext(); ) {
-                DatanodeInfo node = (DatanodeInfo) it.next();
+            // 这样就行了。
+            // 但是如果目标没有字节，我们可能无法选择任何节点。
+            // 最后，选择我们能找到的第一个有效的。
+            for (Iterator<DatanodeInfo> it = targetList.iterator(); it.hasNext(); ) {
+                DatanodeInfo node = it.next();
                 if (node.getRemaining() > BLOCK_SIZE) {
                     return node;
                 }

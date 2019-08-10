@@ -1,12 +1,12 @@
 /**
  * Copyright 2005 The Apache Software Foundation
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,12 +16,13 @@
 package org.apache.hadoop.dfs;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.util.ConfigConstants;
 
-/************************************
- * Some handy constants
- *
- * @author Mike Cafarella
- ************************************/
+/**
+ * 一些方便的常量
+ * @author 章云
+ * @date 2019/8/9 15:06
+ */
 interface FSConstants {
     int BLOCK_SIZE = 32 * 1000 * 1000;
     int MIN_BLOCKS_FOR_WRITE = 5;
@@ -43,7 +44,7 @@ interface FSConstants {
     byte OP_CLIENT_STARTFILE = (byte) 21;
     byte OP_CLIENT_ADDBLOCK = (byte) 22;
     byte OP_CLIENT_RENAMETO = (byte) 23;
-    byte OP_CLIENT_DELETE = (byte) 24;  
+    byte OP_CLIENT_DELETE = (byte) 24;
     byte OP_CLIENT_COMPLETEFILE = (byte) 25;
     byte OP_CLIENT_LISTING = (byte) 26;
     byte OP_CLIENT_OBTAINLOCK = (byte) 27;
@@ -56,10 +57,10 @@ interface FSConstants {
     byte OP_CLIENT_RAWSTATS = (byte) 34;
     byte OP_CLIENT_DATANODEREPORT = (byte) 35;
     byte OP_CLIENT_DATANODE_HINTS = (byte) 36;
-    
+
     // Processed at datanode, back from namenode
     byte OP_ACK = (byte) 40;
-    byte OP_TRANSFERBLOCKS = (byte) 41;    
+    byte OP_TRANSFERBLOCKS = (byte) 41;
     byte OP_INVALIDATE_BLOCKS = (byte) 42;
     byte OP_FAILURE = (byte) 43;
 
@@ -74,10 +75,10 @@ interface FSConstants {
     byte OP_CLIENT_LISTING_ACK = (byte) 67;
     byte OP_CLIENT_OBTAINLOCK_ACK = (byte) 68;
     byte OP_CLIENT_RELEASELOCK_ACK = (byte) 69;
-    byte OP_CLIENT_EXISTS_ACK = (byte) 70;  
+    byte OP_CLIENT_EXISTS_ACK = (byte) 70;
     byte OP_CLIENT_ISDIR_ACK = (byte) 71;
     byte OP_CLIENT_MKDIRS_ACK = (byte) 72;
-    byte OP_CLIENT_RENEW_LEASE_ACK = (byte) 73;    
+    byte OP_CLIENT_RENEW_LEASE_ACK = (byte) 73;
     byte OP_CLIENT_ABANDONBLOCK_ACK = (byte) 74;
     byte OP_CLIENT_RAWSTATS_ACK = (byte) 75;
     byte OP_CLIENT_DATANODEREPORT_ACK = (byte) 76;
@@ -107,8 +108,7 @@ interface FSConstants {
     long LEASE_PERIOD = 60 * 1000;
     int READ_TIMEOUT = 60 * 1000;
 
-    //TODO mb@media-style.com: should be conf injected?
-    int BUFFER_SIZE = new Configuration().getInt("io.file.buffer.size", 4096);
+    int BUFFER_SIZE = new Configuration().getInt(ConfigConstants.IO_FILE_BUFFER_SIZE, ConfigConstants.IO_FILE_BUFFER_SIZE_DEFAULT);
 
 }
 

@@ -125,19 +125,19 @@ if [ "$COMMAND" = "namenode" ] ; then
 elif [ "$COMMAND" = "datanode" ] ; then
   CLASS='org.apache.hadoop.dfs.DataNode'
 elif [ "$COMMAND" = "dfs" ] ; then
-  CLASS=org.apache.hadoop.dfs.DFSShell
+  CLASS='org.apache.hadoop.dfs.DFSShell'
 elif [ "$COMMAND" = "fsck" ] ; then
-  CLASS=org.apache.hadoop.dfs.DFSck
+  CLASS='org.apache.hadoop.dfs.DFSck'
 elif [ "$COMMAND" = "jobtracker" ] ; then
-  CLASS=org.apache.hadoop.mapred.JobTracker
+  CLASS='org.apache.hadoop.mapred.JobTracker'
 elif [ "$COMMAND" = "tasktracker" ] ; then
-  CLASS=org.apache.hadoop.mapred.TaskTracker
+  CLASS='org.apache.hadoop.mapred.TaskTracker'
 elif [ "$COMMAND" = "job" ] ; then
-  CLASS=org.apache.hadoop.mapred.JobClient
+  CLASS='org.apache.hadoop.mapred.JobClient'
 elif [ "$COMMAND" = "jar" ] ; then
   JAR="$1"
   shift
-  CLASS=`"$0" org.apache.hadoop.util.PrintJarMainClass "$JAR"`
+  CLASS=`"$0" 'org.apache.hadoop.util.PrintJarMainClass' "$JAR"`
   if [ $? != 0 ]; then
     echo "Error: Could not find main class in jar file $JAR"
     exit 1

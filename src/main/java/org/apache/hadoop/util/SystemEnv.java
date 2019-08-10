@@ -9,7 +9,7 @@ import java.util.Locale;
  */
 public class SystemEnv {
 
-    private static final String systemEnv = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
+    private static final String SYSTEM_ENV = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
     private static final String WINDOWS = "windows";
     private static final String LINUX = "linux";
 
@@ -18,7 +18,7 @@ public class SystemEnv {
      * @return
      */
     public static final boolean isWindows() {
-        return systemEnv.startsWith(WINDOWS);
+        return SYSTEM_ENV.startsWith(WINDOWS);
     }
 
     /**
@@ -26,7 +26,7 @@ public class SystemEnv {
      * @return
      */
     public static final boolean isLinux() {
-        return systemEnv.startsWith(LINUX);
+        return SYSTEM_ENV.startsWith(LINUX);
     }
 
 }

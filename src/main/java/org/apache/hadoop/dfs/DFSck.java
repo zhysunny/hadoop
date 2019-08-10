@@ -79,7 +79,7 @@ public class DFSck {
 
     /**
      * 文件系统检查。
-     * @param conf          current Configuration
+     * @param conf          当前配置类
      * @param fixing        预定义值之一
      * @param showFiles     显示每个被选中的文件
      * @param showBlocks    对于选中的每个文件，显示其块信息
@@ -100,15 +100,15 @@ public class DFSck {
     }
 
     /**
-     * Check files on DFS, starting from the indicated path.
-     * @param path starting point
-     * @return result of checking
+     * 检查DFS上的文件，从指定的路径开始。
+     * @param path 起点
+     * @return 检查的结果
      * @throws Exception
      */
     public Result fsck(String path) throws Exception {
         DFSFileInfo[] files = dfs.listFiles(new UTF8(path));
         Result res = new Result();
-        res.setReplication(conf.getInt("dfs.replication", 3));
+        res.setReplication(conf.getInt(ConfigConstants.DFS_REPLICATION, ConfigConstants.DFS_REPLICATION_DEFAULT));
         for (int i = 0; i < files.length; i++) {
             check(files[i], res);
         }
@@ -117,8 +117,9 @@ public class DFSck {
 
     private void check(DFSFileInfo file, Result res) throws Exception {
         if (file.isDir()) {
-            if (showFiles)
+            if (showFiles) {
                 System.out.println(file.getPath() + " <dir>");
+            }
             res.totalDirs++;
             DFSFileInfo[] files = dfs.listFiles(new UTF8(file.getPath()));
             for (int i = 0; i < files.length; i++) {
@@ -135,7 +136,9 @@ public class DFSck {
         } else {
             System.out.print('.');
             System.out.flush();
-            if (res.totalFiles % 100 == 0) System.out.println();
+            if (res.totalFiles % 100 == 0) {
+                System.out.println();
+            }
         }
         int missing = 0;
         long missize = 0;
@@ -144,9 +147,12 @@ public class DFSck {
             Block block = blocks[i].getBlock();
             long id = block.getBlockId();
             DatanodeInfo[] locs = blocks[i].getLocations();
-            if (locs.length > res.replication) res.overReplicatedBlocks += (locs.length - res.replication);
-            if (locs.length < res.replication && locs.length > 0)
+            if (locs.length > res.replication) {
+                res.overReplicatedBlocks += (locs.length - res.replication);
+            }
+            if (locs.length < res.replication && locs.length > 0) {
                 res.underReplicatedBlocks += (res.replication - locs.length);
+            }
             report.append(i + ". " + id + " len=" + block.getNumBytes());
             if (locs == null || locs.length == 0) {
                 report.append(" MISSING!");
@@ -158,7 +164,9 @@ public class DFSck {
                 if (showLocations) {
                     StringBuffer sb = new StringBuffer("[");
                     for (int j = 0; j < locs.length; j++) {
-                        if (j > 0) sb.append(", ");
+                        if (j > 0) {
+                            sb.append(", ");
+                        }
                         sb.append(locs[j]);
                     }
                     sb.append(']');
@@ -168,11 +176,12 @@ public class DFSck {
             report.append('\n');
         }
         if (missing > 0) {
-            if (!showFiles)
+            if (!showFiles) {
                 System.out.println("\nMISSING " + missing + " blocks of total size " + missize + " B");
+            }
             res.corruptFiles++;
             switch (fixing) {
-                case FIXING_NONE: // do nothing
+                case FIXING_NONE:
                     System.err.println("\n - ignoring corrupted " + file.getPath());
                     break;
                 case FIXING_MOVE:
@@ -187,8 +196,12 @@ public class DFSck {
         if (showFiles) {
             if (missing > 0) {
                 System.out.println(" MISSING " + missing + " blocks of total size " + missize + " B");
-            } else System.out.println(" OK");
-            if (showBlocks) System.out.println(report.toString());
+            } else {
+                System.out.println(" OK");
+            }
+            if (showBlocks) {
+                System.out.println(report.toString());
+            }
         }
     }
 
@@ -222,7 +235,9 @@ public class DFSck {
                 }
                 if (fos == null) {
                     fos = dfs.create(new UTF8(target.toString() + "/" + chain), true);
-                    if (fos != null) chain++;
+                    if (fos != null) {
+                        chain++;
+                    }
                 }
                 if (fos == null) {
                     System.err.println(errmsg + ": could not store chain " + chain);
@@ -243,7 +258,9 @@ public class DFSck {
                     fos = null;
                 }
             }
-            if (fos != null) fos.close();
+            if (fos != null) {
+                fos.close();
+            }
             System.err.println("\n - moved corrupted file " + file.getPath() + " to /lost+found");
             dfs.delete(new UTF8(file.getPath()));
         } catch (Exception e) {
@@ -252,21 +269,22 @@ public class DFSck {
         }
     }
 
-    /*
-     * XXX (ab) Bulk of this method is copied verbatim from {@link DFSClient}, which is
-     * bad. Both places should be refactored to provide a method to copy blocks
-     * around.
+    /**
+     * XXX (ab)这个方法的大部分是从{@link DFSClient}中逐字复制的，这很糟糕。<br/>
+     * 这两个地方都应该进行重构，以提供复制块的方法。
+     * @param lblock
+     * @param fos
+     * @throws Exception
      */
     private void copyBlock(LocatedBlock lblock, FSOutputStream fos) throws Exception {
         int failures = 0;
         InetSocketAddress targetAddr = null;
-        TreeSet deadNodes = new TreeSet();
+        TreeSet<DatanodeInfo> deadNodes = new TreeSet<DatanodeInfo>();
         Socket s = null;
         DataInputStream in = null;
         DataOutputStream out = null;
         while (s == null) {
             DatanodeInfo chosenNode;
-
             try {
                 chosenNode = bestNode(lblock.getLocations(), deadNodes);
                 targetAddr = DataNode.createSocketAddr(chosenNode.getName().toString());
@@ -287,19 +305,13 @@ public class DFSck {
                 s = new Socket();
                 s.connect(targetAddr, FSConstants.READ_TIMEOUT);
                 s.setSoTimeout(FSConstants.READ_TIMEOUT);
-
-                //
-                // Xmit header info to datanode
-                //
+                // Xmit头信息到datanode
                 out = new DataOutputStream(new BufferedOutputStream(s.getOutputStream()));
                 out.write(FSConstants.OP_READSKIP_BLOCK);
                 lblock.getBlock().write(out);
                 out.writeLong(0L);
                 out.flush();
-
-                //
-                // Get bytes in block, set streams
-                //
+                // 获取块中的字节，设置流
                 in = new DataInputStream(new BufferedInputStream(s.getInputStream()));
                 long curBlockSize = in.readLong();
                 long amtSkipped = in.readLong();
@@ -310,8 +322,8 @@ public class DFSck {
                     throw new IOException("Asked for offset of " + 0L + ", but only received offset of " + amtSkipped);
                 }
             } catch (IOException ex) {
-                // Put chosen node into dead list, continue
-                LOGGER.info("Failed to connect to " + targetAddr + ":" + ex);
+                // 将选择的节点放入死列表中，继续
+                LOGGER.error("Failed to connect to " + targetAddr + ":" + ex);
                 deadNodes.add(chosenNode);
                 if (s != null) {
                     try {
@@ -340,31 +352,34 @@ public class DFSck {
                 in.close();
             } catch (Exception e1) {
             }
-            ;
             try {
                 out.close();
             } catch (Exception e1) {
             }
-            ;
             try {
                 s.close();
             } catch (Exception e1) {
             }
-            ;
         }
-        if (!success)
+        if (!success) {
             throw new Exception("Could not copy block data for " + lblock.getBlock().getBlockName());
+        }
     }
 
     /*
      * XXX (ab) See comment above for copyBlock().
-     *
-     * Pick the best node from which to stream the data.
-     * That's the local one, if available.
      */
     Random r = new Random();
 
-    private DatanodeInfo bestNode(DatanodeInfo nodes[], TreeSet deadNodes) throws IOException {
+    /**
+     * 选择数据流的最佳节点。<br/>
+     * 如果可以的话，这是本地的。
+     * @param nodes
+     * @param deadNodes
+     * @return
+     * @throws IOException
+     */
+    private DatanodeInfo bestNode(DatanodeInfo[] nodes, TreeSet<DatanodeInfo> deadNodes) throws IOException {
         if ((nodes == null) ||
                 (nodes.length - deadNodes.size() < 1)) {
             throw new IOException("No live nodes contain current block");
@@ -392,6 +407,9 @@ public class DFSck {
         return chosenNode;
     }
 
+    /**
+     * 初始化/lost+found目录
+     */
     private void lostFoundInit() {
         lfInited = true;
         try {
@@ -438,11 +456,21 @@ public class DFSck {
         boolean showLocations = false;
         int fixing = FIXING_NONE;
         for (int i = 1; i < args.length; i++) {
-            if (args[i].equals("-files")) showFiles = true;
-            if (args[i].equals("-blocks")) showBlocks = true;
-            if (args[i].equals("-locations")) showLocations = true;
-            if (args[i].equals("-move")) fixing = FIXING_MOVE;
-            if (args[i].equals("-delete")) fixing = FIXING_DELETE;
+            if (args[i].equals("-files")) {
+                showFiles = true;
+            }
+            if (args[i].equals("-blocks")) {
+                showBlocks = true;
+            }
+            if (args[i].equals("-locations")) {
+                showLocations = true;
+            }
+            if (args[i].equals("-move")) {
+                fixing = FIXING_MOVE;
+            }
+            if (args[i].equals("-delete")) {
+                fixing = FIXING_DELETE;
+            }
         }
         DFSck fsck = new DFSck(conf, fixing, showFiles, showBlocks, showLocations);
         Result res = fsck.fsck(path);
@@ -456,8 +484,7 @@ public class DFSck {
     }
 
     /**
-     * Result of checking, plus overall DFS statistics.
-     * @author Andrzej Bialecki
+     * 检查结果，加上总体DFS统计数据。
      */
     public static class Result {
         private ArrayList missingIds = new ArrayList();
@@ -472,7 +499,7 @@ public class DFSck {
         private long totalSize = 0L;
 
         /**
-         * DFS is considered healthy if there are no missing blocks.
+         * 如果没有丢失块，DFS被认为是健康的。
          * @return
          */
         public boolean isHealthy() {
@@ -480,7 +507,7 @@ public class DFSck {
         }
 
         /**
-         * Add a missing block name, plus its size.
+         * 添加一个缺失的块名，加上它的大小。
          */
         public void addMissing(String id, long size) {
             missingIds.add(id);
@@ -488,14 +515,14 @@ public class DFSck {
         }
 
         /**
-         * Return a list of missing block names (as list of Strings).
+         * 返回一个缺少块名的列表(作为字符串列表)。
          */
         public ArrayList getMissingIds() {
             return missingIds;
         }
 
         /**
-         * Return total size of missing data, in bytes.
+         * 返回丢失数据的总大小，单位为字节。
          */
         public long getMissingSize() {
             return missingSize;
@@ -506,7 +533,7 @@ public class DFSck {
         }
 
         /**
-         * Return the number of over-replicsted blocks.
+         * 返回过度复制的块的数量。
          */
         public long getOverReplicatedBlocks() {
             return overReplicatedBlocks;
@@ -517,14 +544,14 @@ public class DFSck {
         }
 
         /**
-         * Return the actual replication factor.
+         * 返回实际的复制因子。
          */
         public float getReplicationFactor() {
             return (float) (totalBlocks * replication + overReplicatedBlocks - underReplicatedBlocks) / (float) totalBlocks;
         }
 
         /**
-         * Return the number of under-replicated blocks. Note: missing blocks are not counted here.
+         * 返回未复制块的数量。注意:丢失的块不计算在这里。
          */
         public long getUnderReplicatedBlocks() {
             return underReplicatedBlocks;
@@ -535,7 +562,7 @@ public class DFSck {
         }
 
         /**
-         * Return total number of directories encountered during this scan.
+         * 返回此扫描期间遇到的目录总数。
          */
         public long getTotalDirs() {
             return totalDirs;
@@ -546,7 +573,7 @@ public class DFSck {
         }
 
         /**
-         * Return total number of files encountered during this scan.
+         * 返回此扫描期间遇到的文件总数。
          */
         public long getTotalFiles() {
             return totalFiles;
@@ -557,7 +584,7 @@ public class DFSck {
         }
 
         /**
-         * Return total size of scanned data, in bytes.
+         * 返回扫描数据的总大小，单位为字节。
          */
         public long getTotalSize() {
             return totalSize;
@@ -568,10 +595,8 @@ public class DFSck {
         }
 
         /**
-         * Return the intended replication factor, against which the over/under-
-         * replicated blocks are counted. Note: this values comes from the current
-         * Configuration supplied for the tool, so it may be different from the
-         * value in DFS Configuration.
+         * 返回预期的复制因子，根据该因子计算复制过多或过少的块。<br/>
+         * 注意:这个值来自为该工具提供的当前配置，因此它可能与DFS配置中的值不同。
          */
         public int getReplication() {
             return replication;
@@ -582,7 +607,7 @@ public class DFSck {
         }
 
         /**
-         * Return the total number of blocks in the scanned area.
+         * 返回扫描区域中的块总数。
          */
         public long getTotalBlocks() {
             return totalBlocks;
@@ -592,6 +617,7 @@ public class DFSck {
             this.totalBlocks = totalBlocks;
         }
 
+        @Override
         public String toString() {
             StringBuffer res = new StringBuffer();
             res.append("Status: " + (isHealthy() ? "HEALTHY" : "CORRUPT"));
@@ -619,7 +645,7 @@ public class DFSck {
         }
 
         /**
-         * Return the number of currupted files.
+         * 返回断开的文件的数量。
          */
         public long getCorruptFiles() {
             return corruptFiles;

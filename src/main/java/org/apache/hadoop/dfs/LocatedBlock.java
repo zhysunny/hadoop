@@ -1,12 +1,12 @@
 /**
  * Copyright 2005 The Apache Software Foundation
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,48 +19,39 @@ import org.apache.hadoop.io.*;
 
 import java.io.*;
 
-/****************************************************
- * A LocatedBlock is a pair of Block, DatanodeInfo[]
- * objects.  It tells where to find a Block.
- * 
- * @author Michael Cafarella
- ****************************************************/
+/**
+ * LocatedBlock是一对Block DatanodeInfo[]对象。它告诉我们在哪里可以找到一个Block。
+ * @author 章云
+ * @date 2019/8/9 8:45
+ */
 class LocatedBlock implements Writable {
 
-    static {                                      // register a ctor
-      WritableFactories.setFactory
-        (LocatedBlock.class,
-         new WritableFactory() {
-           @Override
-           public Writable newInstance() { return new LocatedBlock(); }
-         });
+    static {
+        WritableFactories.setFactory(LocatedBlock.class, new WritableFactory() {
+            @Override
+            public Writable newInstance() {
+                return new LocatedBlock();
+            }
+        });
     }
 
     Block b;
     DatanodeInfo locs[];
 
-    /**
-     */
     public LocatedBlock() {
         this.b = new Block();
         this.locs = new DatanodeInfo[0];
     }
 
-    /**
-     */
     public LocatedBlock(Block b, DatanodeInfo[] locs) {
         this.b = b;
         this.locs = locs;
     }
 
-    /**
-     */
     public Block getBlock() {
         return b;
     }
 
-    /**
-     */
     DatanodeInfo[] getLocations() {
         return locs;
     }
@@ -68,6 +59,7 @@ class LocatedBlock implements Writable {
     ///////////////////////////////////////////
     // Writable
     ///////////////////////////////////////////
+    @Override
     public void write(DataOutput out) throws IOException {
         b.write(out);
         out.writeInt(locs.length);
@@ -76,6 +68,7 @@ class LocatedBlock implements Writable {
         }
     }
 
+    @Override
     public void readFields(DataInput in) throws IOException {
         this.b = new Block();
         b.readFields(in);

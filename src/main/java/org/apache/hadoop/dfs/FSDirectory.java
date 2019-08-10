@@ -23,16 +23,13 @@ import java.util.*;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileUtil;
 
-/*************************************************
- * FSDirectory stores the filesystem directory state.
- * It handles writing/loading values to disk, and logging
- * changes as we go.
- *
- * It keeps the filename->blockset mapping always-current
- * and logged to disk.
- *
- * @author Mike Cafarella
- *************************************************/
+/**
+ * FSDirectory存储文件系统目录状态。<br/>
+ * 它处理向磁盘写入/加载值，并记录更改。<br/>
+ * 它保持文件名->块集映射始终是当前的，并记录到磁盘。
+ * @author 章云
+ * @date 2019/8/10 11:03
+ */
 class FSDirectory implements FSConstants {
     static String FS_IMAGE = "fsimage";
     static String NEW_FS_IMAGE = "fsimage.new";
@@ -44,25 +41,22 @@ class FSDirectory implements FSConstants {
     private static final byte OP_MKDIR = 3;
 
     /******************************************************
-     * We keep an in-memory representation of the file/block
-     * hierarchy.
+     * 我们在内存中保存文件/块层次结构的表示。
      ******************************************************/
     class INode {
         public String name;
         public INode parent;
-        public TreeMap children = new TreeMap();
-        public Block blocks[];
+        public TreeMap<String, INode> children = new TreeMap<String, INode>();
+        public Block[] blocks;
 
-        /**
-         */
-        INode(String name, INode parent, Block blocks[]) {
+        INode(String name, INode parent, Block[] blocks) {
             this.name = name;
             this.parent = parent;
             this.blocks = blocks;
         }
 
         /**
-         * Check whether it's a directory
+         * 检查它是否是一个目录
          * @return
          */
         synchronized public boolean isDir() {
@@ -70,7 +64,7 @@ class FSDirectory implements FSConstants {
         }
 
         /**
-         * This is the external interface
+         * 这是外部接口
          */
         INode getNode(String target) {
             if (!target.startsWith("/") || target.length() == 0) {
@@ -78,7 +72,7 @@ class FSDirectory implements FSConstants {
             } else if (parent == null && "/".equals(target)) {
                 return this;
             } else {
-                Vector components = new Vector();
+                Vector<String> components = new Vector<String>();
                 int start = 0;
                 int slashid = 0;
                 while (start < target.length() && (slashid = target.indexOf('/', start)) >= 0) {
@@ -92,18 +86,15 @@ class FSDirectory implements FSConstants {
             }
         }
 
-        /**
-         */
-        INode getNode(Vector components, int index) {
-            if (!name.equals((String) components.elementAt(index))) {
+        INode getNode(Vector<String> components, int index) {
+            if (!name.equals(components.elementAt(index))) {
                 return null;
             }
             if (index == components.size() - 1) {
                 return this;
             }
-
             // Check with children
-            INode child = (INode) children.get(components.elementAt(index + 1));
+            INode child = children.get(components.elementAt(index + 1));
             if (child == null) {
                 return null;
             } else {
@@ -111,9 +102,7 @@ class FSDirectory implements FSConstants {
             }
         }
 
-        /**
-         */
-        INode addNode(String target, Block blks[]) {
+        INode addNode(String target, Block[] blks) {
             if (getNode(target) != null) {
                 return null;
             } else {
@@ -121,7 +110,6 @@ class FSDirectory implements FSConstants {
                 if (parentName == null) {
                     return null;
                 }
-
                 INode parentNode = getNode(parentName);
                 if (parentNode == null) {
                     return null;
@@ -134,8 +122,6 @@ class FSDirectory implements FSConstants {
             }
         }
 
-        /**
-         */
         boolean removeNode() {
             if (parent == null) {
                 return false;
@@ -146,9 +132,8 @@ class FSDirectory implements FSConstants {
         }
 
         /**
-         * Collect all the blocks at this INode and all its children.
-         * This operation is performed after a node is removed from the tree,
-         * and we want to GC all the blocks at this node and below.
+         * 在这个INode中收集所有块及其所有子节点。<br/>
+         * 此操作是在从树中删除节点之后执行的，我们希望GC此节点及其以下的所有块。
          */
         void collectSubtreeBlocks(Vector v) {
             if (blocks != null) {
@@ -156,25 +141,21 @@ class FSDirectory implements FSConstants {
                     v.add(blocks[i]);
                 }
             }
-            for (Iterator it = children.values().iterator(); it.hasNext(); ) {
-                INode child = (INode) it.next();
+            for (Iterator<INode> it = children.values().iterator(); it.hasNext(); ) {
+                INode child = it.next();
                 child.collectSubtreeBlocks(v);
             }
         }
 
-        /**
-         */
         int numItemsInTree() {
             int total = 0;
-            for (Iterator it = children.values().iterator(); it.hasNext(); ) {
-                INode child = (INode) it.next();
+            for (Iterator<INode> it = children.values().iterator(); it.hasNext(); ) {
+                INode child = it.next();
                 total += child.numItemsInTree();
             }
             return total + 1;
         }
 
-        /**
-         */
         String computeName() {
             if (parent != null) {
                 return parent.computeName() + "/" + name;
@@ -183,8 +164,6 @@ class FSDirectory implements FSConstants {
             }
         }
 
-        /**
-         */
         long computeFileLength() {
             long total = 0;
             if (blocks != null) {
@@ -195,32 +174,25 @@ class FSDirectory implements FSConstants {
             return total;
         }
 
-        /**
-         */
         long computeContentsLength() {
             long total = computeFileLength();
-            for (Iterator it = children.values().iterator(); it.hasNext(); ) {
-                INode child = (INode) it.next();
+            for (Iterator<INode> it = children.values().iterator(); it.hasNext(); ) {
+                INode child = it.next();
                 total += child.computeContentsLength();
             }
             return total;
         }
 
-        /**
-         */
-        void listContents(Vector v) {
+        void listContents(Vector<INode> v) {
             if (parent != null && blocks != null) {
                 v.add(this);
             }
-
-            for (Iterator it = children.values().iterator(); it.hasNext(); ) {
-                INode child = (INode) it.next();
+            for (Iterator<INode> it = children.values().iterator(); it.hasNext(); ) {
+                INode child = it.next();
                 v.add(child);
             }
         }
 
-        /**
-         */
         void saveImage(String parentPrefix, DataOutputStream out) throws IOException {
             String fullName = "";
             if (parent != null) {
@@ -235,21 +207,21 @@ class FSDirectory implements FSConstants {
                     }
                 }
             }
-            for (Iterator it = children.values().iterator(); it.hasNext(); ) {
-                INode child = (INode) it.next();
+            for (Iterator<INode> it = children.values().iterator(); it.hasNext(); ) {
+                INode child = it.next();
                 child.saveImage(fullName, out);
             }
         }
     }
 
     INode rootDir = new INode("", null, null);
-    TreeSet activeBlocks = new TreeSet();
-    TreeMap activeLocks = new TreeMap();
+    TreeSet<Block> activeBlocks = new TreeSet<Block>();
+    TreeMap<UTF8, TreeSet<UTF8>> activeLocks = new TreeMap<UTF8, TreeSet<UTF8>>();
     DataOutputStream editlog = null;
     boolean ready = false;
 
     /**
-     * Access an existing dfs name directory.
+     * 访问现有的dfs名称目录。
      */
     public FSDirectory(File dir) throws IOException {
         File fullimage = new File(dir, "image");
@@ -260,7 +232,6 @@ class FSDirectory implements FSConstants {
         if (loadFSImage(fullimage, edits)) {
             saveFSImage(fullimage, edits);
         }
-
         synchronized (this) {
             this.ready = true;
             this.notifyAll();
@@ -277,7 +248,6 @@ class FSDirectory implements FSConstants {
     public static void format(File dir, Configuration conf) throws IOException {
         File image = new File(dir, "image");
         File edits = new File(dir, "edits");
-
         if (!((!image.exists() || FileUtil.fullyDelete(image, conf)) &&
                 (!edits.exists() || edits.delete()) &&
                 image.mkdirs())) {
@@ -287,14 +257,14 @@ class FSDirectory implements FSConstants {
     }
 
     /**
-     * Shutdown the filestore
+     * 关闭filestore
      */
     public void close() throws IOException {
         editlog.close();
     }
 
     /**
-     * Block until the object is ready to be used.
+     * 块，直到对象准备好使用为止。
      */
     void waitForReady() {
         if (!ready) {
@@ -310,36 +280,29 @@ class FSDirectory implements FSConstants {
     }
 
     /**
-     * Load in the filesystem image.  It's a big list of
-     * filenames and blocks.  Return whether we should
-     * "re-save" and consolidate the edit-logs
+     * 加载文件系统映像。它是一个由文件名和块组成的大列表。<br/>
+     * 返回是否应该“重新保存”并合并编辑日志
      */
     boolean loadFSImage(File fsdir, File edits) throws IOException {
-        //
-        // Atomic move sequence, to recover from interrupted save
-        //
+        // 原子移动顺序，从中断中恢复保存
         File curFile = new File(fsdir, FS_IMAGE);
         File newFile = new File(fsdir, NEW_FS_IMAGE);
         File oldFile = new File(fsdir, OLD_FS_IMAGE);
-
-        // Maybe we were interrupted between 2 and 4
+        // 也许我们在2点到4点之间被打断了
         if (oldFile.exists() && curFile.exists()) {
             oldFile.delete();
             if (edits.exists()) {
                 edits.delete();
             }
         } else if (oldFile.exists() && newFile.exists()) {
-            // Or maybe between 1 and 2
+            // 或者在1和2之间
             newFile.renameTo(curFile);
             oldFile.delete();
         } else if (curFile.exists() && newFile.exists()) {
-            // Or else before stage 1, in which case we lose the edits
+            // 或者在阶段1之前，在这种情况下，我们将丢失编辑
             newFile.delete();
         }
-
-        //
         // Load in bits
-        //
         if (curFile.exists()) {
             DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(curFile)));
             try {
@@ -351,7 +314,7 @@ class FSDirectory implements FSConstants {
                     if (numBlocks == 0) {
                         unprotectedAddFile(name, null);
                     } else {
-                        Block blocks[] = new Block[numBlocks];
+                        Block[] blocks = new Block[numBlocks];
                         for (int j = 0; j < numBlocks; j++) {
                             blocks[j] = new Block();
                             blocks[j].readFields(in);
@@ -363,7 +326,6 @@ class FSDirectory implements FSConstants {
                 in.close();
             }
         }
-
         if (edits.exists() && loadFSEdits(edits) > 0) {
             return true;
         } else {
@@ -372,14 +334,11 @@ class FSDirectory implements FSConstants {
     }
 
     /**
-     * Load an edit log, and apply the changes to the in-memory structure
-     * <p>
-     * This is where we apply edits that we've been writing to disk all
-     * along.
+     * 加载编辑日志，并将更改应用于内存结构<br/>
+     * 这是我们应用编辑的地方，我们一直写磁盘。
      */
     int loadFSEdits(File edits) throws IOException {
         int numEdits = 0;
-
         if (edits.exists()) {
             DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(edits)));
             try {
@@ -392,8 +351,8 @@ class FSDirectory implements FSConstants {
                             name.readFields(in);
                             ArrayWritable aw = new ArrayWritable(Block.class);
                             aw.readFields(in);
-                            Writable writables[] = (Writable[]) aw.get();
-                            Block blocks[] = new Block[writables.length];
+                            Writable[] writables = aw.get();
+                            Block[] blocks = new Block[writables.length];
                             System.arraycopy(writables, 0, blocks, 0, blocks.length);
                             unprotectedAddFile(name, blocks);
                             break;
@@ -431,16 +390,13 @@ class FSDirectory implements FSConstants {
     }
 
     /**
-     * Save the contents of the FS image
+     * 保存FS映像的内容
      */
     void saveFSImage(File fullimage, File edits) throws IOException {
         File curFile = new File(fullimage, FS_IMAGE);
         File newFile = new File(fullimage, NEW_FS_IMAGE);
         File oldFile = new File(fullimage, OLD_FS_IMAGE);
-
-        //
-        // Write out data
-        //
+        // 写出数据
         DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(newFile)));
         try {
             out.writeInt(rootDir.numItemsInTree() - 1);
@@ -448,25 +404,19 @@ class FSDirectory implements FSConstants {
         } finally {
             out.close();
         }
-
-        //
-        // Atomic move sequence
-        //
+        // 原子移动序列
         // 1.  Move cur to old
         curFile.renameTo(oldFile);
-
         // 2.  Move new to cur
         newFile.renameTo(curFile);
-
         // 3.  Remove pending-edits file (it's been integrated with newFile)
         edits.delete();
-
         // 4.  Delete old
         oldFile.delete();
     }
 
     /**
-     * Write an operation to the edit log
+     * 向editlog写入操作
      */
     void logEdit(byte op, Writable w1, Writable w2) {
         synchronized (editlog) {
@@ -484,12 +434,11 @@ class FSDirectory implements FSConstants {
     }
 
     /**
-     * Add the given filename to the fs.
+     * 将给定的文件名添加到fs。
      */
-    public boolean addFile(UTF8 src, Block blocks[]) {
+    public boolean addFile(UTF8 src, Block[] blocks) {
         waitForReady();
-
-        // Always do an implicit mkdirs for parent directory tree
+        // 始终为父目录树执行隐式mkdirs
         mkdirs(DFSFile.getDFSParent(src.toString()));
         if (unprotectedAddFile(src, blocks)) {
             logEdit(OP_ADD, src, new ArrayWritable(Block.class, blocks));
@@ -499,12 +448,10 @@ class FSDirectory implements FSConstants {
         }
     }
 
-    /**
-     */
-    boolean unprotectedAddFile(UTF8 name, Block blocks[]) {
+    boolean unprotectedAddFile(UTF8 name, Block[] blocks) {
         synchronized (rootDir) {
             if (blocks != null) {
-                // Add file->block mapping
+                // 添加文件- >块映射
                 for (int i = 0; i < blocks.length; i++) {
                     activeBlocks.add(blocks[i]);
                 }
@@ -514,7 +461,7 @@ class FSDirectory implements FSConstants {
     }
 
     /**
-     * Change the filename
+     * 更改文件名
      */
     public boolean renameTo(UTF8 src, UTF8 dst) {
         waitForReady();
@@ -526,8 +473,6 @@ class FSDirectory implements FSConstants {
         }
     }
 
-    /**
-     */
     boolean unprotectedRenameTo(UTF8 src, UTF8 dst) {
         synchronized (rootDir) {
             INode removedNode = rootDir.getNode(src.toString());
@@ -541,8 +486,8 @@ class FSDirectory implements FSConstants {
             INode newNode = rootDir.addNode(dst.toString(), removedNode.blocks);
             if (newNode != null) {
                 newNode.children = removedNode.children;
-                for (Iterator it = newNode.children.values().iterator(); it.hasNext(); ) {
-                    INode child = (INode) it.next();
+                for (Iterator<INode> it = newNode.children.values().iterator(); it.hasNext(); ) {
+                    INode child = it.next();
                     child.parent = newNode;
                 }
                 return true;
@@ -554,7 +499,7 @@ class FSDirectory implements FSConstants {
     }
 
     /**
-     * Remove the file from management, return blocks
+     * 从管理中删除文件，返回块
      */
     public Block[] delete(UTF8 src) {
         waitForReady();
@@ -562,28 +507,23 @@ class FSDirectory implements FSConstants {
         return unprotectedDelete(src);
     }
 
-    /**
-     */
     Block[] unprotectedDelete(UTF8 src) {
         synchronized (rootDir) {
             INode targetNode = rootDir.getNode(src.toString());
             if (targetNode == null) {
                 return null;
             } else {
-                //
-                // Remove the node from the namespace and GC all
-                // the blocks underneath the node.
-                //
+                // 将节点从名称空间中移除，并对节点下面的所有块进行GC。
                 if (!targetNode.removeNode()) {
                     return null;
                 } else {
-                    Vector v = new Vector();
+                    Vector<Block> v = new Vector<Block>();
                     targetNode.collectSubtreeBlocks(v);
-                    for (Iterator it = v.iterator(); it.hasNext(); ) {
-                        Block b = (Block) it.next();
+                    for (Iterator<Block> it = v.iterator(); it.hasNext(); ) {
+                        Block b = it.next();
                         activeBlocks.remove(b);
                     }
-                    return (Block[]) v.toArray(new Block[v.size()]);
+                    return v.toArray(new Block[v.size()]);
                 }
             }
         }
@@ -592,9 +532,9 @@ class FSDirectory implements FSConstants {
     /**
      */
     public int obtainLock(UTF8 src, UTF8 holder, boolean exclusive) {
-        TreeSet holders = (TreeSet) activeLocks.get(src);
+        TreeSet<UTF8> holders = activeLocks.get(src);
         if (holders == null) {
-            holders = new TreeSet();
+            holders = new TreeSet<UTF8>();
             activeLocks.put(src, holders);
         }
         if (exclusive && holders.size() > 0) {
@@ -605,10 +545,8 @@ class FSDirectory implements FSConstants {
         }
     }
 
-    /**
-     */
     public int releaseLock(UTF8 src, UTF8 holder) {
-        TreeSet holders = (TreeSet) activeLocks.get(src);
+        TreeSet<UTF8> holders = activeLocks.get(src);
         if (holders != null && holders.contains(holder)) {
             holders.remove(holder);
             if (holders.size() == 0) {
@@ -621,26 +559,23 @@ class FSDirectory implements FSConstants {
     }
 
     /**
-     * Get a listing of files given path 'src'
-     * <p>
-     * This function is admittedly very inefficient right now.  We'll
-     * make it better later.
+     * 获取给定路径“src”的文件列表<br/>
+     * 这个函数现在确实效率很低。<br/>
+     * 我们以后会做得更好。
      */
     public DFSFileInfo[] getListing(UTF8 src) {
         String srcs = normalizePath(src);
-
         synchronized (rootDir) {
             INode targetNode = rootDir.getNode(srcs);
             if (targetNode == null) {
                 return null;
             } else {
-                Vector contents = new Vector();
+                Vector<INode> contents = new Vector<INode>();
                 targetNode.listContents(contents);
-
-                DFSFileInfo listing[] = new DFSFileInfo[contents.size()];
+                DFSFileInfo[] listing = new DFSFileInfo[contents.size()];
                 int i = 0;
-                for (Iterator it = contents.iterator(); it.hasNext(); i++) {
-                    listing[i] = new DFSFileInfo((INode) it.next());
+                for (Iterator<INode> it = contents.iterator(); it.hasNext(); i++) {
+                    listing[i] = new DFSFileInfo(it.next());
                 }
                 return listing;
             }
@@ -648,7 +583,7 @@ class FSDirectory implements FSConstants {
     }
 
     /**
-     * Get the blocks associated with the file
+     * 获取与文件关联的块
      */
     public Block[] getFile(UTF8 src) {
         waitForReady();
@@ -663,7 +598,7 @@ class FSDirectory implements FSConstants {
     }
 
     /**
-     * Check whether the filepath could be created
+     * 检查是否可以创建文件路径
      */
     public boolean isValidToCreate(UTF8 src) {
         String srcs = normalizePath(src);
@@ -679,7 +614,7 @@ class FSDirectory implements FSConstants {
     }
 
     /**
-     * Check whether the path specifies a directory
+     * 检查路径是否指定了目录
      */
     public boolean isDir(UTF8 src) {
         synchronized (rootDir) {
@@ -689,37 +624,32 @@ class FSDirectory implements FSConstants {
     }
 
     /**
-     * Create the given directory and all its parent dirs.
+     * 创建给定目录及其所有父目录。
      */
     public boolean mkdirs(UTF8 src) {
         return mkdirs(src.toString());
     }
 
     /**
-     * Create directory entries for every item
+     * 为每个项目创建目录条目
      */
     boolean mkdirs(String src) {
         src = normalizePath(new UTF8(src));
-
-        // Use this to collect all the dirs we need to construct
-        Vector v = new Vector();
-
-        // The dir itself
+        // 使用它来收集我们需要构造的所有dirs
+        Vector<String> v = new Vector<String>();
+        // dir本身
         v.add(src);
-
         // All its parents
         String parent = DFSFile.getDFSParent(src);
         while (parent != null) {
             v.add(parent);
             parent = DFSFile.getDFSParent(parent);
         }
-
-        // Now go backwards through list of dirs, creating along
-        // the way
+        // 现在回过头来看看dirs列表，一路创建
         boolean lastSuccess = false;
         int numElts = v.size();
         for (int i = numElts - 1; i >= 0; i--) {
-            String cur = (String) v.elementAt(i);
+            String cur = v.elementAt(i);
             INode inserted = unprotectedMkdir(cur);
             if (inserted != null) {
                 logEdit(OP_MKDIR, new UTF8(inserted.computeName()), null);
@@ -731,16 +661,12 @@ class FSDirectory implements FSConstants {
         return lastSuccess;
     }
 
-    /**
-     */
     INode unprotectedMkdir(String src) {
         synchronized (rootDir) {
             return rootDir.addNode(src, null);
         }
     }
 
-    /**
-     */
     String normalizePath(UTF8 src) {
         String srcs = src.toString();
         if (srcs.length() > 1 && srcs.endsWith("/")) {
@@ -750,7 +676,7 @@ class FSDirectory implements FSConstants {
     }
 
     /**
-     * Returns whether the given block is one pointed-to by a file.
+     * 返回给定块是否为文件指向的块。
      */
     public boolean isValidBlock(Block b) {
         synchronized (rootDir) {

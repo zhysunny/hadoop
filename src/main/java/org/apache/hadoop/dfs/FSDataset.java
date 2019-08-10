@@ -1,12 +1,12 @@
 /**
  * Copyright 2005 The Apache Software Foundation
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,114 +23,94 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.df.DF;
 import org.apache.hadoop.fs.df.DFFactory;
 
-/**************************************************
- * FSDataset manages a set of data blocks.  Each block
- * has a unique name and an extent on disk.
- *
- * @author Mike Cafarella
- ***************************************************/
+/**
+ * FSDataset管理一组数据块。<br/>
+ * 每个块在磁盘上都有一个惟一的名称和一个区段。
+ * @author 章云
+ * @date 2019/8/9 15:18
+ */
 class FSDataset implements FSConstants {
     static final double USABLE_DISK_PCT = 0.98;
 
-  /**
-     * A node type that can be built into a tree reflecting the
-     * hierarchy of blocks on the local disk.
+    /**
+     * 一种节点类型，可以构建成反映本地磁盘上块层次结构的树。
      */
     class FSDir {
         File dir;
-        FSDir children[];
+        FSDir[] children;
 
-        /**
-         */
         public FSDir(File dir) {
             this.dir = dir;
             this.children = null;
         }
 
-        /**
-         */
         public File getDirName() {
             return dir;
         }
 
-        /**
-         */
         public FSDir[] getChildren() {
             return children;
         }
 
-        /**
-         */
         public void addBlock(Block b, File src) {
             addBlock(b, src, b.getBlockId(), 0);
         }
 
-        /**
-         */
         void addBlock(Block b, File src, long blkid, int depth) {
-            //
-            // Add to the local dir, if no child dirs
-            //
+            // 如果没有子目录，则添加到本地目录
             if (children == null) {
                 src.renameTo(new File(dir, b.getBlockName()));
-
-                //
-                // Test whether this dir's contents should be busted 
-                // up into subdirs.
-                //
-
-                // REMIND - mjc - sometime soon, we'll want this code
-                // working.  It prevents the datablocks from all going
-                // into a single huge directory.
+                //测试这个目录的内容是否应该分解为子目录。
+                //提醒- mjc -不久的将来，我们将需要这个代码
+                //工作。它阻止了数据锁的运行
+                //进入一个巨大的目录。
                 /**
-                File localFiles[] = dir.listFiles();
-                if (localFiles.length == 16) {
-                    //
-                    // Create all the necessary subdirs
-                    //
-                    this.children = new FSDir[16];
-                    for (int i = 0; i < children.length; i++) {
-                        String str = Integer.toBinaryString(i);
-                        try {
-                            File subdir = new File(dir, "dir_" + str);
-                            subdir.mkdir();
-                            children[i] = new FSDir(subdir);
-                        } catch (StringIndexOutOfBoundsException excep) {
-                            excep.printStackTrace();
-                            System.out.println("Ran into problem when i == " + i + " an str = " + str);
-                        }
-                    }
+                 File localFiles[] = dir.listFiles();
+                 if (localFiles.length == 16) {
+                 //
+                 // 创建所有必要的子目录
+                 //
+                 this.children = new FSDir[16];
+                 for (int i = 0; i < children.length; i++) {
+                 String str = Integer.toBinaryString(i);
+                 try {
+                 File subdir = new File(dir, "dir_" + str);
+                 subdir.mkdir();
+                 children[i] = new FSDir(subdir);
+                 } catch (StringIndexOutOfBoundsException excep) {
+                 excep.printStackTrace();
+                 System.out.println("Ran into problem when i == " + i + " an str = " + str);
+                 }
+                 }
 
-                    //
-                    // Move existing files into new dirs
-                    //
-                    for (int i = 0; i < localFiles.length; i++) {
-                        Block srcB = new Block(localFiles[i]);
-                        File dst = getBlockFilename(srcB, blkid, depth);
-                        if (!src.renameTo(dst)) {
-                            System.out.println("Unexpected problem in renaming " + src);
-                        }
-                    }
-                }
-                **/
+                 //
+                 // 将现有文件移动到新的目录中
+                 //
+                 for (int i = 0; i < localFiles.length; i++) {
+                 Block srcB = new Block(localFiles[i]);
+                 File dst = getBlockFilename(srcB, blkid, depth);
+                 if (!src.renameTo(dst)) {
+                 System.out.println("Unexpected problem in renaming " + src);
+                 }
+                 }
+                 }
+                 **/
             } else {
-                // Find subdir
-                children[getHalfByte(blkid, depth)].addBlock(b, src, blkid, depth+1);
+                // 发现子目录
+                children[getHalfByte(blkid, depth)].addBlock(b, src, blkid, depth + 1);
             }
         }
 
         /**
-         * Fill in the given blockSet with any child blocks
-         * found at this node.
+         * 用在此节点上找到的任何子块填充给定的块集。
          */
-        public void getBlockInfo(TreeSet blockSet) {
+        public void getBlockInfo(TreeSet<Block> blockSet) {
             if (children != null) {
                 for (int i = 0; i < children.length; i++) {
                     children[i].getBlockInfo(blockSet);
                 }
             }
-
-            File blockFiles[] = dir.listFiles();
+            File[] blockFiles = dir.listFiles();
             for (int i = 0; i < blockFiles.length; i++) {
                 if (Block.isBlockFilename(blockFiles[i])) {
                     blockSet.add(new Block(blockFiles[i], blockFiles[i].length()));
@@ -139,42 +119,41 @@ class FSDataset implements FSConstants {
         }
 
         /**
-         * Find the file that corresponds to the given Block
+         * 找到对应于给定块的文件
          */
         public File getBlockFilename(Block b) {
             return getBlockFilename(b, b.getBlockId(), 0);
         }
 
         /**
-         * Helper method to find file for a Block
-         */         
+         * 帮助器方法查找块的文件
+         */
         private File getBlockFilename(Block b, long blkid, int depth) {
             if (children == null) {
                 return new File(dir, b.getBlockName());
             } else {
-                // 
-                // Lift the 4 bits starting at depth, going left->right.
-                // That means there are 2^4 possible children, or 16.
-                // The max depth is thus ((len(long) / 4) == 16).
-                //
-                return children[getHalfByte(blkid, depth)].getBlockFilename(b, blkid, depth+1);
+                //从深度开始提升4位，向左->向右。
+                //这意味着有2^4个可能的子结点，也就是16。
+                //最大深度因此为((len(long) / 4) == 16)。
+                return children[getHalfByte(blkid, depth)].getBlockFilename(b, blkid, depth + 1);
             }
         }
 
         /**
-         * Returns a number 0-15, inclusive.  Pulls out the right
-         * half-byte from the indicated long.
+         * 返回一个包含0-15的数字。<br/>
+         * 从指定的长中提取正确的半字节。
          */
         private int getHalfByte(long blkid, int halfByteIndex) {
             blkid = blkid >> ((15 - halfByteIndex) * 4);
             return (int) ((0x000000000000000F) & blkid);
         }
 
+        @Override
         public String toString() {
-          return "FSDir{" +
-              "dir=" + dir +
-              ", children=" + (children == null ? null : Arrays.asList(children)) +
-              "}";
+            return "FSDir{" +
+                    "dir=" + dir +
+                    ", children=" + (children == null ? null : Arrays.asList(children)) +
+                    "}";
         }
     }
 
@@ -191,12 +170,12 @@ class FSDataset implements FSConstants {
     TreeSet ongoingCreates = new TreeSet();
 
     /**
-     * An FSDataset has a directory where it loads its data files.
+     * FSDataset有一个目录，它在其中加载数据文件。
      */
     public FSDataset(File dir, Configuration conf) throws IOException {
         diskUsage = DFFactory.getDF(dir.getCanonicalPath(), conf);
         this.data = new File(dir, "data");
-        if (! data.exists()) {
+        if (!data.exists()) {
             data.mkdirs();
         }
         this.tmp = new File(dir, "tmp");
@@ -208,24 +187,24 @@ class FSDataset implements FSConstants {
     }
 
     /**
-     * Return total capacity, used and unused
+     * 返回使用和未使用的总容量
      */
     public long getCapacity() throws IOException {
         return diskUsage.getCapacity();
     }
 
     /**
-     * Return how many bytes can still be stored in the FSDataset
+     * 返回在FSDataset中还可以存储多少字节
      */
     public long getRemaining() throws IOException {
-        return ((long) Math.round(USABLE_DISK_PCT * diskUsage.getAvailable())) - reserved;
+        return (Math.round(USABLE_DISK_PCT * diskUsage.getAvailable())) - reserved;
     }
 
     /**
-     * Find the block's on-disk length
+     * 找出块在磁盘上的长度
      */
     public long getLength(Block b) throws IOException {
-        if (! isValidBlock(b)) {
+        if (!isValidBlock(b)) {
             throw new IOException("Block " + b + " is not valid.");
         }
         File f = getFile(b);
@@ -233,22 +212,20 @@ class FSDataset implements FSConstants {
     }
 
     /**
-     * Get a stream of data from the indicated block.
+     * 从指定的块中获取数据流。
      */
     public InputStream getBlockData(Block b) throws IOException {
-        if (! isValidBlock(b)) {
+        if (!isValidBlock(b)) {
             throw new IOException("Block " + b + " is not valid.");
         }
         return new FileInputStream(getFile(b));
     }
 
     /**
-     * A Block b will be coming soon!
+     * A街区b马上就要来了!
      */
     public boolean startBlock(Block b) throws IOException {
-        //
-        // Make sure the block isn't 'valid'
-        //
+        // 确保block不是“有效的”
         if (isValidBlock(b)) {
             throw new IOException("Block " + b + " is valid, and cannot be created.");
         }
@@ -256,116 +233,77 @@ class FSDataset implements FSConstants {
     }
 
     /**
-     * Start writing to a block file
+     * 开始写一个块文件
      */
     public OutputStream writeToBlock(Block b) throws IOException {
-        //
-        // Make sure the block isn't a valid one - we're still creating it!
-        //
+        // 确保该块不是一个有效的块——我们仍然在创建它!
         if (isValidBlock(b)) {
             throw new IOException("Block " + b + " is valid, and cannot be written to.");
         }
-
-        //
-        // Serialize access to /tmp, and check if file already there.
-        //
+        // 序列化对/tmp的访问，并检查文件是否已经存在。
         File f = null;
         synchronized (ongoingCreates) {
-            //
-            // Is it already in the create process?
-            //
+            // 它已经在创建过程中了吗?
             if (ongoingCreates.contains(b)) {
                 throw new IOException("Block " + b + " has already been started (though not completed), and thus cannot be created.");
             }
-
-            //
-            // Check if we have too little space
-            //
+            // 检查一下我们的空间是否太小
             if (getRemaining() < BLOCK_SIZE) {
                 throw new IOException("Insufficient space for an additional block");
             }
-
-            //
-            // OK, all's well.  Register the create, adjust 
-            // 'reserved' size, & create file
-            //
+            // OK, all's well.  Register the create, adjust 'reserved' size, & create file
             ongoingCreates.add(b);
             reserved += BLOCK_SIZE;
             f = getTmpFile(b);
-	    try {
-		if (f.exists()) {
-		    throw new IOException("Unexpected problem in startBlock() for " + b + ".  File " + f + " should not be present, but is.");
-		}
-
-		//
-		// Create the zero-length temp file
-		//
-		if (!f.createNewFile()) {
-		    throw new IOException("Unexpected problem in startBlock() for " + b + ".  File " + f + " should be creatable, but is already present.");
-		}
-	    } catch (IOException ie) {
+            try {
+                if (f.exists()) {
+                    throw new IOException("Unexpected problem in startBlock() for " + b + ".  File " + f + " should not be present, but is.");
+                }
+                // 创建零长度的临时文件
+                if (!f.createNewFile()) {
+                    throw new IOException("Unexpected problem in startBlock() for " + b + ".  File " + f + " should be creatable, but is already present.");
+                }
+            } catch (IOException ie) {
                 System.out.println("Exception!  " + ie);
-		ongoingCreates.remove(b);		
-		reserved -= BLOCK_SIZE;
+                ongoingCreates.remove(b);
+                reserved -= BLOCK_SIZE;
                 throw ie;
-	    }
+            }
         }
-
-        //
-        // Finally, allow a writer to the block file
-        // REMIND - mjc - make this a filter stream that enforces a max
-        // block size, so clients can't go crazy
-        //
+        // 最后，允许编写器对块文件进行提醒(mjc)，使其成为一个过滤器流，强制执行最大块大小，这样客户端就不会发疯
         return new FileOutputStream(f);
     }
 
-    //
-    // REMIND - mjc - eventually we should have a timeout system
-    // in place to clean up block files left by abandoned clients.
-    // We should have some timer in place, so that if a blockfile
-    // is created but non-valid, and has been idle for >48 hours,
-    // we can GC it safely.
-    //
+    //提醒- mjc -最终我们应该有一个超时系统来清理被抛弃的客户端留下的块文件。
+    //我们应该有一个计时器，这样，如果创建了一个块文件，但是无效，并且已经空闲了48小时，我们可以安全地进行GC。
 
     /**
-     * Complete the block write!
+     * 完成方块写!
      */
     public void finalizeBlock(Block b) throws IOException {
         File f = getTmpFile(b);
-        if (! f.exists()) {
+        if (!f.exists()) {
             throw new IOException("No temporary file " + f + " for block " + b);
         }
-        
         synchronized (ongoingCreates) {
-            //
-            // Make sure still registered as ongoing
-            //
-            if (! ongoingCreates.contains(b)) {
+            // 确保仍然注册为进行中
+            if (!ongoingCreates.contains(b)) {
                 throw new IOException("Tried to finalize block " + b + ", but not in ongoingCreates table");
             }
-
             long finalLen = f.length();
             b.setNumBytes(finalLen);
-
-            //
-            // Move the file
-            // (REMIND - mjc - shame to move the file within a synch
-            // section!  Maybe remove this?)
-            //
+            // 移动文件(提醒- mjc -耻辱移动文件在一个同步部分!也许删除?)
             dirTree.addBlock(b, f);
-
-            //
-            // Done, so deregister from ongoingCreates
-            //
-            if (! ongoingCreates.remove(b)) {
+            // 完成，从ongoingcreate中注销
+            if (!ongoingCreates.remove(b)) {
                 throw new IOException("Tried to finalize block " + b + ", but could not find it in ongoingCreates after file-move!");
-            } 
+            }
             reserved -= BLOCK_SIZE;
         }
     }
 
     /**
-     * Return a table of block data
+     * 返回一个块数据表
      */
     public Block[] getBlockReport() {
         TreeSet blockSet = new TreeSet();
@@ -379,7 +317,7 @@ class FSDataset implements FSConstants {
     }
 
     /**
-     * Check whether the given block is a valid one.
+     * 检查给定的块是否有效。
      */
     public boolean isValidBlock(Block b) {
         File f = getFile(b);
@@ -391,14 +329,12 @@ class FSDataset implements FSConstants {
     }
 
     /**
-     * We're informed that a block is no longer valid.  We
-     * could lazily garbage-collect the block, but why bother?
-     * just get rid of it.
+     * 我们被告知block不再有效。<br/>
+     * 我们可以懒懒散散地收集垃圾，但何必费事呢?把它处理掉。
      */
     public void invalidate(Block invalidBlks[]) throws IOException {
         for (int i = 0; i < invalidBlks.length; i++) {
             File f = getFile(invalidBlks[i]);
-
             // long len = f.length();
             if (!f.delete()) {
                 throw new IOException("Unexpected error trying to delete block " + invalidBlks[i] + " at file " + f);
@@ -407,25 +343,26 @@ class FSDataset implements FSConstants {
     }
 
     /**
-     * Turn the block identifier into a filename.
+     * 将块标识符转换为文件名。
      */
     File getFile(Block b) {
-        // REMIND - mjc - should cache this result for performance
+        // 提醒- mjc -应缓存此结果的性能
         return dirTree.getBlockFilename(b);
     }
 
     /**
-     * Get the temp file, if this block is still being created.
+     * 如果仍在创建此块，则获取临时文件。
      */
     File getTmpFile(Block b) {
-        // REMIND - mjc - should cache this result for performance
+        // 提醒- mjc -应缓存此结果的性能
         return new File(tmp, b.getBlockName());
     }
 
+    @Override
     public String toString() {
-      return "FSDataset{" +
-        "dirpath='" + diskUsage.getDirPath() + "'" +
-        "}";
+        return "FSDataset{" +
+                "dirpath='" + diskUsage.getDirPath() + "'" +
+                "}";
     }
 
 }

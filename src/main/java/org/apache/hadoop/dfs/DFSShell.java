@@ -1,12 +1,12 @@
 /**
  * Copyright 2005 The Apache Software Foundation
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,88 +21,91 @@ import java.util.*;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 
-/**************************************************
- * This class provides some DFS administrative access.
- *
- * @author Mike Cafarella
- **************************************************/
+/**
+ * 该类提供一些DFS管理访问。
+ * @author 章云
+ * @date 2019/8/9 14:12
+ */
 public class DFSShell {
     FileSystem fs;
 
-    /**
-     */
     public DFSShell(FileSystem fs) {
         this.fs = fs;
     }
 
     /**
-     * Add a local file to the indicated name in DFS. src is kept.
+     * 将一个本地文件拷贝到DFS中指定的名称中。
      */
     void copyFromLocal(File src, String dstf) throws IOException {
         fs.copyFromLocalFile(src, new File(dstf));
     }
 
     /**
-     * Add a local file to the indicated name in DFS. src is removed.
+     * 将一个本地文件移动到DFS中指定的名称中。
      */
     void moveFromLocal(File src, String dstf) throws IOException {
         fs.moveFromLocalFile(src, new File(dstf));
     }
 
     /**
-     * Obtain the indicated DFS file and copy to the local name.
-     * srcf is kept.
+     * 获取指定的DFS文件并复制到本地
      */
     void copyToLocal(String srcf, File dst) throws IOException {
         fs.copyToLocalFile(new File(srcf), dst);
     }
 
     /**
-     * Obtain the indicated DFS file and copy to the local name.
-     * srcf is removed.
+     * 获取指定的DFS文件并移动到本地
+     * 目前没有实现该功能
      */
     void moveToLocal(String srcf, File dst) throws IOException {
         System.err.println("Option '-moveToLocal' is not implemented yet.");
     }
 
+    /**
+     * 查看文件内容
+     */
     void cat(String srcf) throws IOException {
-      FSDataInputStream in = fs.open(new File(srcf));
-      try {
-        DataInputStream din = new DataInputStream(new BufferedInputStream(in));
-        String line;
-        while((line = din.readLine()) != null) {
-          System.out.println(line);      
+        BufferedReader br = null;
+        try {
+            br = new BufferedReader(new InputStreamReader(fs.open(new File(srcf))));
+            String line;
+            while ((line = br.readLine()) != null) {
+                System.out.println(line);
+            }
+        } finally {
+            if (br != null) {
+                br.close();
+            }
         }
-      } finally {
-        in.close();
-      }
     }
 
     /**
-     * Get a listing of all files in DFS at the indicated name
+     * 获取DFS中指定名称的所有文件的列表
      */
     public void ls(String src, boolean recursive) throws IOException {
-        File items[] = fs.listFiles(new File(src));
+        File[] items = fs.listFiles(new File(src));
         if (items == null) {
             System.out.println("Could not get listing for " + src);
         } else {
-            if(!recursive) {
-            	System.out.println("Found " + items.length + " items");
+            if (!recursive) {
+                System.out.println("Found " + items.length + " items");
             }
             for (int i = 0; i < items.length; i++) {
                 File cur = items[i];
                 System.out.println(cur.getPath() + "\t" + (cur.isDirectory() ? "<dir>" : ("" + cur.length())));
-                if(recursive && cur.isDirectory()) {
-									 ls(cur.getPath(), recursive);
+                if (recursive && cur.isDirectory()) {
+                    ls(cur.getPath(), recursive);
                 }
             }
         }
     }
 
     /**
+     * 查看文件大小
      */
     public void du(String src) throws IOException {
-        File items[] = fs.listFiles(new File(src));
+        File[] items = fs.listFiles(new File(src));
         if (items == null) {
             System.out.println("Could not get listing for " + src);
         } else {
@@ -115,15 +118,15 @@ public class DFSShell {
     }
 
     /**
-     * Create the given dir
+     * 创建给定的目录
      */
     public void mkdir(String src) throws IOException {
         File f = new File(src);
         fs.mkdirs(f);
     }
-    
+
     /**
-     * Rename an DFS file
+     * 重命名DFS文件
      */
     public void rename(String srcf, String dstf) throws IOException {
         if (fs.rename(new File(srcf), new File(dstf))) {
@@ -134,7 +137,7 @@ public class DFSShell {
     }
 
     /**
-     * Copy an DFS file
+     * 复制DFS文件
      */
     public void copy(String srcf, String dstf, Configuration conf) throws IOException {
         if (FileUtil.copyContents(fs, new File(srcf), new File(dstf), true, conf)) {
@@ -145,7 +148,7 @@ public class DFSShell {
     }
 
     /**
-     * Delete an DFS file
+     * 删除DFS文件
      */
     public void delete(String srcf) throws IOException {
         if (fs.delete(new File(srcf))) {
@@ -156,7 +159,7 @@ public class DFSShell {
     }
 
     /**
-     * Return an abbreviated English-language desc of the byte length
+     * 返回字节长度的单位
      */
     static String byteDesc(long len) {
         double val = 0.0;
@@ -174,6 +177,12 @@ public class DFSShell {
         return limitDecimal(val, 2) + ending;
     }
 
+    /**
+     * 保留小数位
+     * @param d
+     * @param placesAfterDecimal
+     * @return
+     */
     static String limitDecimal(double d, int placesAfterDecimal) {
         String strVal = Double.toString(d);
         int decpt = strVal.indexOf(".");
@@ -184,31 +193,31 @@ public class DFSShell {
     }
 
     /**
-     * Gives a report on how the FileSystem is doing
+     * 给出文件系统运行情况的报告
      */
     public void report() throws IOException {
-      if (fs instanceof DistributedFileSystem) {
-        DistributedFileSystem dfs = (DistributedFileSystem)fs;
-        long raw = dfs.getRawCapacity();
-        long rawUsed = dfs.getRawUsed();
-        long used = dfs.getUsed();
+        if (fs instanceof DistributedFileSystem) {
+            DistributedFileSystem dfs = (DistributedFileSystem) fs;
+            long raw = dfs.getRawCapacity();
+            long rawUsed = dfs.getRawUsed();
+            long used = dfs.getUsed();
 
-        System.out.println("Total raw bytes: " + raw + " (" + byteDesc(raw) + ")");
-        System.out.println("Used raw bytes: " + rawUsed + " (" + byteDesc(rawUsed) + ")");
-        System.out.println("% used: " + limitDecimal(((1.0 * rawUsed) / raw) * 100, 2) + "%");
-        System.out.println();
-        System.out.println("Total effective bytes: " + used + " (" + byteDesc(used) + ")");
-        System.out.println("Effective replication multiplier: " + (1.0 * rawUsed / used));
+            System.out.println("Total raw bytes: " + raw + " (" + byteDesc(raw) + ")");
+            System.out.println("Used raw bytes: " + rawUsed + " (" + byteDesc(rawUsed) + ")");
+            System.out.println("% used: " + limitDecimal(((1.0 * rawUsed) / raw) * 100, 2) + "%");
+            System.out.println();
+            System.out.println("Total effective bytes: " + used + " (" + byteDesc(used) + ")");
+            System.out.println("Effective replication multiplier: " + (1.0 * rawUsed / used));
 
-        System.out.println("-------------------------------------------------");
-        DataNodeReport info[] = dfs.getDataNodeStats();
-        System.out.println("Datanodes available: " + info.length);
-        System.out.println();
-        for (int i = 0; i < info.length; i++) {
-          System.out.println(info[i]);
-          System.out.println();
+            System.out.println("-------------------------------------------------");
+            DataNodeReport info[] = dfs.getDataNodeStats();
+            System.out.println("Datanodes available: " + info.length);
+            System.out.println();
+            for (int i = 0; i < info.length; i++) {
+                System.out.println(info[i]);
+                System.out.println();
+            }
         }
-      }
     }
 
     /**
@@ -218,12 +227,11 @@ public class DFSShell {
         if (argv.length < 1) {
             System.out.println("Usage: java DFSShell [-local | -dfs <namenode:port>]" +
                     " [-ls <path>] [-lsr <path>] [-du <path>] [-mv <src> <dst>] [-cp <src> <dst>] [-rm <src>]" +
-                    " [-put <localsrc> <dst>] [-copyFromLocal <localsrc> <dst>] [-moveFromLocal <localsrc> <dst>]" + 
+                    " [-put <localsrc> <dst>] [-copyFromLocal <localsrc> <dst>] [-moveFromLocal <localsrc> <dst>]" +
                     " [-get <src> <localdst>] [-cat <src>] [-copyToLocal <src> <localdst>] [-moveToLocal <src> <localdst>]" +
                     " [-mkdir <path>] [-report]");
             return;
         }
-
         Configuration conf = new Configuration();
         int i = 0;
         FileSystem fs = FileSystem.parseArgs(argv, i, conf);
@@ -261,9 +269,9 @@ public class DFSShell {
                 tc.report();
             }
             System.exit(0);
-        } catch (IOException e ) {
-          System.err.println( cmd.substring(1) + ": " + e.getLocalizedMessage() );  
-          System.exit(-1);
+        } catch (IOException e) {
+            System.err.println(cmd.substring(1) + ": " + e.getLocalizedMessage());
+            System.exit(-1);
         } finally {
             fs.close();
         }
