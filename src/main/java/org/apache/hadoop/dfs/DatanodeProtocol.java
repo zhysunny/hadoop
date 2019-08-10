@@ -44,7 +44,7 @@ interface DatanodeProtocol {
      * @return
      * @throws IOException
      */
-    Block[] blockReport(String sender, Block blocks[]) throws IOException;
+    Block[] blockReport(String sender, Block[] blocks) throws IOException;
 
     /**
      * blockReceived()允许DataNode将最近接收的块数据告诉NameNode。
@@ -53,7 +53,7 @@ interface DatanodeProtocol {
      * @param blocks
      * @throws IOException
      */
-    void blockReceived(String sender, Block blocks[]) throws IOException;
+    void blockReceived(String sender, Block[] blocks) throws IOException;
 
     /**
      * errorReport()告诉NameNode发生了错误。

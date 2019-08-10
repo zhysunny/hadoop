@@ -168,7 +168,7 @@ class DFSClient implements FSConstants {
      * 选择数据流的最佳节点。<br/>
      * 如果可以的话，这是本地的。
      */
-    private DatanodeInfo bestNode(DatanodeInfo nodes[], TreeSet deadNodes) throws IOException {
+    private DatanodeInfo bestNode(DatanodeInfo[] nodes, TreeSet deadNodes) throws IOException {
         if ((nodes == null) || (nodes.length - deadNodes.size() < 1)) {
             throw new IOException("No live nodes contain current block");
         }
@@ -228,8 +228,8 @@ class DFSClient implements FSConstants {
 
         private String src;
         private DataInputStream blockStream;
-        private Block blocks[] = null;
-        private DatanodeInfo nodes[][] = null;
+        private Block[] blocks = null;
+        private DatanodeInfo[][] nodes = null;
         private long pos = 0;
         private long filelen = 0;
         private long blockEnd = -1;
@@ -406,7 +406,7 @@ class DFSClient implements FSConstants {
          * 读取整个缓冲区。
          */
         @Override
-        public synchronized int read(byte buf[], int off, int len) throws IOException {
+        public synchronized int read(byte[] buf, int off, int len) throws IOException {
             if (closed) {
                 throw new IOException("Stream closed");
             }
@@ -473,7 +473,7 @@ class DFSClient implements FSConstants {
         private Socket s;
         boolean closed = false;
 
-        private byte outBuf[] = new byte[BUFFER_SIZE];
+        private byte[] outBuf = new byte[BUFFER_SIZE];
         private int pos = 0;
 
         private UTF8 src;
@@ -606,7 +606,7 @@ class DFSClient implements FSConstants {
          * 将指定的字节写入此输出流。
          */
         @Override
-        public synchronized void write(byte b[], int off, int len) throws IOException {
+        public synchronized void write(byte[] b, int off, int len) throws IOException {
             if (closed) {
                 throw new IOException("Stream closed");
             }
@@ -671,7 +671,7 @@ class DFSClient implements FSConstants {
                 nextBlockOutputStream();
                 InputStream in = new FileInputStream(backupFile);
                 try {
-                    byte buf[] = new byte[BUFFER_SIZE];
+                    byte[] buf = new byte[BUFFER_SIZE];
                     int bytesRead = in.read(buf);
                     while (bytesRead > 0) {
                         blockStream.writeLong((long) bytesRead);

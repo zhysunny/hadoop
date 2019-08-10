@@ -211,9 +211,9 @@ public class FSNamesystem implements FSConstants {
     /////////////////////////////////////////////////////////
 
     /**
-     * 客户端想要打开给定的文件名。
-     * 返回(block,machineArray)对的列表。
-     * 列表中唯一块的序列表示组成文件名的所有块。
+     * 客户端想要打开给定的文件名。<br/>
+     * 返回(block,machineArray)对的列表。<br/>
+     * 列表中唯一块的序列表示组成文件名的所有块。<br/>
      * 客户应从机器射线中随机选择一台机器。
      */
     public Object[] open(UTF8 src) {
@@ -241,9 +241,9 @@ public class FSNamesystem implements FSConstants {
     }
 
     /**
-     * 客户端希望为指定的文件名创建一个新块。
-     * 返回一个由块和一组机器组成的数组。
-     * 这个列表中的第一个应该是客户机写入数据的地方。
+     * 客户端希望为指定的文件名创建一个新块。<br/>
+     * 返回一个由块和一组机器组成的数组。<br/>
+     * 这个列表中的第一个应该是客户机写入数据的地方。<br/>
      * 必须在连接到第一个datanode时提供列表中的后续项。
      * @return 返回一个由块和一组机器组成的数组，如果src对于创建无效则返回null(基于{@link FSDirectory#isValidToCreate(UTF8)})。
      */
@@ -292,11 +292,11 @@ public class FSNamesystem implements FSConstants {
     }
 
     /**
-     * 客户端想要为指定的文件名获得一个额外的块(正在被写入到)。
-     * 返回一个由块和一组机器组成的数组。
-     * 这个列表中的第一个应该是客户机写入数据的地方。
-     * 必须在连接到第一个datanode时提供列表中的后续项。
-     * 确保前面的块已经被datanode报告并被复制。
+     * 客户端想要为指定的文件名获得一个额外的块(正在被写入到)。<br/>
+     * 返回一个由块和一组机器组成的数组。<br/>
+     * 这个列表中的第一个应该是客户机写入数据的地方。<br/>
+     * 必须在连接到第一个datanode时提供列表中的后续项。<br/>
+     * 确保前面的块已经被datanode报告并被复制。<br/>
      * 如果我们希望客户端“稍后重试”，将返回一个空的2-elt数组。
      */
     public synchronized Object[] getAdditionalBlock(UTF8 src, UTF8 clientMachine) {
@@ -345,8 +345,8 @@ public class FSNamesystem implements FSConstants {
     }
 
     /**
-     * 完成创建的文件，并使其可访问。
-     * fsnamessystem将已经知道组成文件的块。
+     * 完成创建的文件，并使其可访问。<br/>
+     * fsnamessystem将已经知道组成文件的块。<br/>
      * 在返回之前，我们要确保datanode已经报告了文件的所有块，并且正确地复制了它们。
      */
     public synchronized int completeFile(UTF8 src, UTF8 holder) {
@@ -424,7 +424,7 @@ public class FSNamesystem implements FSConstants {
     }
 
     /**
-     * 检查所指示文件的块是否存在并已复制。
+     * 检查所指示文件的块是否存在并已复制。<br/>
      * 如果没有，返回false。
      */
     synchronized boolean checkFileProgress(UTF8 src) {
@@ -456,7 +456,7 @@ public class FSNamesystem implements FSConstants {
     }
 
     /**
-     * 从命名空间中删除指定的文件名。
+     * 从命名空间中删除指定的文件名。<br/>
      * 这可能会使组成文件的一些块失效。
      */
     public synchronized boolean delete(UTF8 src) {
@@ -557,15 +557,15 @@ public class FSNamesystem implements FSConstants {
     }
 
     /************************************************************
-     * 租约管理单个客户端持有的所有锁。
-     * 对于每个客户端，都有一个对应的租约，当客户端定期签入时，租约的时间戳将被更新。
+     * 租约管理单个客户端持有的所有锁。<br/>
+     * 对于每个客户端，都有一个对应的租约，当客户端定期签入时，租约的时间戳将被更新。<br/>
      * 如果客户机死亡并允许其租约过期，则可以释放所有相应的锁。
      *************************************************************/
     class Lease implements Comparable {
         public UTF8 holder;
         public long lastUpdate;
-        TreeSet locks = new TreeSet();
-        TreeSet creates = new TreeSet();
+        TreeSet<UTF8> locks = new TreeSet<UTF8>();
+        TreeSet<UTF8> creates = new TreeSet<UTF8>();
 
         public Lease(UTF8 holder) {
             this.holder = holder;
@@ -635,6 +635,18 @@ public class FSNamesystem implements FSConstants {
             } else {
                 return l1.holder.compareTo(l2.holder);
             }
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            Lease l = (Lease) o;
+            // lastUpdate和holder都相等，两个对象就相等
+            return (this.compareTo(l) == 0);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(this.lastUpdate, this.holder);
         }
     }
 
@@ -741,7 +753,7 @@ public class FSNamesystem implements FSConstants {
     }
 
     /**
-     * 获取'src'上所有文件的列表。
+     * 获取'src'上所有文件的列表。<br/>
      * Object[]数组存在，因此我们可以返回文件属性(即将实现)
      */
     public DFSFileInfo[] getListing(UTF8 src) {
@@ -755,8 +767,8 @@ public class FSNamesystem implements FSConstants {
     /////////////////////////////////////////////////////////
 
     /**
-     * 给定节点已报告。这个方法应该:
-     * 1)记录心跳，这样datanode就不会超时
+     * 给定节点已报告。这个方法应该:<br/>
+     * 1)记录心跳，这样datanode就不会超时<br/>
      * 2)为将来的块分配调整使用状态
      */
     public synchronized void gotHeartbeat(UTF8 name, long capacity, long remaining) {
@@ -831,7 +843,7 @@ public class FSNamesystem implements FSConstants {
     }
 
     /**
-     * 给定节点报告它的所有块。
+     * 给定节点报告它的所有块。<br/>
      * 使用此信息更新(machine—>blocklist)和(block—>machinelist)表。
      */
     public synchronized Block[] processReport(Block[] newReport, UTF8 name) {
@@ -886,7 +898,7 @@ public class FSNamesystem implements FSConstants {
     }
 
     /**
-     * 修改(块- - > datanode)地图。
+     * 修改(块- - > datanode)地图。<br/>
      * 如果解决了这个问题，则从所需的复制集中删除块。
      */
     synchronized void addStoredBlock(Block block, DatanodeInfo node) {
@@ -928,12 +940,12 @@ public class FSNamesystem implements FSConstants {
     }
 
     /**
-     * 我们希望为任何块复制最多的“maxReps”，但是现在我们有太多了。
+     * 我们希望为任何块复制最多的“maxReps”，但是现在我们有太多了。<br/>
      * 在该方法中，将足够多的节点从“srcNodes”复制到“dstNodes”中，使:
      * <p>
      * srcNodes.size() - dstNodes.size() == maxReps
      * <p>
-     * 现在，我们随机选择节点。
+     * 现在，我们随机选择节点。<br/>
      * 在将来，我们可能会强制执行某种策略(比如确保复制分布在机架上)。
      */
     void chooseExcessReplicates(Vector<DatanodeInfo> nonExcess, Block b, int maxReps) {
@@ -960,7 +972,7 @@ public class FSNamesystem implements FSConstants {
     }
 
     /**
-     * 修改(块- - > datanode)地图。
+     * 修改(块- - > datanode)地图。<br/>
      * 如果删除的块仍然有效，则可能生成复制任务。
      */
     synchronized void removeStoredBlock(Block block, DatanodeInfo node) {
@@ -1049,9 +1061,9 @@ public class FSNamesystem implements FSConstants {
     }
 
     /**
-     * 返回一个块/DataNodeInfo集合列表，指示应该在哪里复制不同的块，越快越好。
-     * 我们返回的数组由两个对象组成:
-     * 第一个elt是一个块数组。
+     * 返回一个块/DataNodeInfo集合列表，指示应该在哪里复制不同的块，越快越好。<br/>
+     * 我们返回的数组由两个对象组成:<br/>
+     * 第一个elt是一个块数组。<br/>
      * 第二个elt是DatanodeInfo objs的2D数组，它在适当的索引处标识块的目标序列。
      */
     public synchronized Object[] pendingTransfers(DatanodeInfo srcNode, int xmitsInProgress) {
@@ -1116,7 +1128,7 @@ public class FSNamesystem implements FSConstants {
     }
 
     /**
-     * 如果可能的话，设定一定数量的目标。
+     * 如果可能的话，设定一定数量的目标。<br/>
      * 如果没有，尽可能多的返回。
      * @param desiredReplicates 需要复制的数量。
      * @param forbiddenNodes    不应被视为目标的DatanodeInfo实例。
@@ -1139,8 +1151,8 @@ public class FSNamesystem implements FSConstants {
     }
 
     /**
-     * 从可用的机器中选择一个目标，给定的机器除外。
-     * 现在它从可用的盒子中随机选择。
+     * 从可用的机器中选择一个目标，给定的机器除外。<br/>
+     * 现在它从可用的盒子中随机选择。<br/>
      * 将来可以根据容量和负载平衡需求(甚至网络拓扑结构，以避免交换流量)进行选择。
      * @param forbidden1 不允许DatanodeInfo目标为空。
      * @param forbidden2 不允许DatanodeInfo目标为空。

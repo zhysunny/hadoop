@@ -131,13 +131,13 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
      */
     @Override
     public LocatedBlock[] open(String src) throws IOException {
-        Object openResults[] = namesystem.open(new UTF8(src));
+        Object[] openResults = namesystem.open(new UTF8(src));
         if (openResults == null) {
             throw new IOException("Cannot open filename " + src);
         } else {
-            Block blocks[] = (Block[]) openResults[0];
-            DatanodeInfo sets[][] = (DatanodeInfo[][]) openResults[1];
-            LocatedBlock results[] = new LocatedBlock[blocks.length];
+            Block[] blocks = (Block[]) openResults[0];
+            DatanodeInfo[][] sets = (DatanodeInfo[][]) openResults[1];
+            LocatedBlock[] results = new LocatedBlock[blocks.length];
             for (int i = 0; i < blocks.length; i++) {
                 results[i] = new LocatedBlock(blocks[i], sets[i]);
             }
@@ -149,12 +149,12 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
      */
     @Override
     public LocatedBlock create(String src, String clientName, String clientMachine, boolean overwrite) throws IOException {
-        Object results[] = namesystem.startFile(new UTF8(src), new UTF8(clientName), new UTF8(clientMachine), overwrite);
+        Object[] results = namesystem.startFile(new UTF8(src), new UTF8(clientName), new UTF8(clientMachine), overwrite);
         if (results == null) {
             throw new IOException("Cannot create file " + src + " on client " + clientName);
         } else {
             Block b = (Block) results[0];
-            DatanodeInfo targets[] = (DatanodeInfo[]) results[1];
+            DatanodeInfo[] targets = (DatanodeInfo[]) results[1];
             return new LocatedBlock(b, targets);
         }
     }
@@ -164,7 +164,7 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
     @Override
     public LocatedBlock addBlock(String src, String clientMachine) throws IOException {
         int retries = 5;
-        Object results[] = namesystem.getAdditionalBlock(new UTF8(src), new UTF8(clientMachine));
+        Object[] results = namesystem.getAdditionalBlock(new UTF8(src), new UTF8(clientMachine));
         while (results != null && results[0] == null && retries > 0) {
             try {
                 Thread.sleep(100);
@@ -180,7 +180,7 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
             return null;
         } else {
             Block b = (Block) results[0];
-            DatanodeInfo targets[] = (DatanodeInfo[]) results[1];
+            DatanodeInfo[] targets = (DatanodeInfo[]) results[1];
             return new LocatedBlock(b, targets);
         }
     }
@@ -193,7 +193,7 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
     @Override
     public void reportWrittenBlock(LocatedBlock lb) throws IOException {
         Block b = lb.getBlock();
-        DatanodeInfo targets[] = lb.getLocations();
+        DatanodeInfo[] targets = lb.getLocations();
         for (int i = 0; i < targets.length; i++) {
             namesystem.blockReceived(b, targets[i].getName());
         }
@@ -234,11 +234,11 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
      */
     @Override
     public String[][] getHints(String src, long start, long len) throws IOException {
-        UTF8 hosts[][] = namesystem.getDatanodeHints(new UTF8(src), start, len);
+        UTF8[][] hosts = namesystem.getDatanodeHints(new UTF8(src), start, len);
         if (hosts == null) {
             return new String[0][];
         } else {
-            String results[][] = new String[hosts.length][];
+            String[][] results = new String[hosts.length][];
             for (int i = 0; i < hosts.length; i++) {
                 results[i] = new String[hosts[i].length];
                 for (int j = 0; j < results[i].length; j++) {
@@ -330,7 +330,7 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
      */
     @Override
     public long[] getStats() throws IOException {
-        long results[] = new long[2];
+        long[] results = new long[2];
         results[0] = namesystem.totalCapacity();
         results[1] = namesystem.totalCapacity() - namesystem.totalRemaining();
         return results;
@@ -340,7 +340,7 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
      */
     @Override
     public DatanodeInfo[] getDatanodeReport() throws IOException {
-        DatanodeInfo results[] = namesystem.datanodeReport();
+        DatanodeInfo[] results = namesystem.datanodeReport();
         if (results == null || results.length == 0) {
             throw new IOException("Cannot find datanode report");
         }
@@ -359,13 +359,13 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
     }
 
     @Override
-    public Block[] blockReport(String sender, Block blocks[]) {
+    public Block[] blockReport(String sender, Block[] blocks) {
         LOGGER.info("Block report from " + sender + ": " + blocks.length + " blocks.");
         return namesystem.processReport(blocks, new UTF8(sender));
     }
 
     @Override
-    public void blockReceived(String sender, Block blocks[]) {
+    public void blockReceived(String sender, Block[] blocks) {
         for (int i = 0; i < blocks.length; i++) {
             namesystem.blockReceived(blocks[i], new UTF8(sender));
         }
@@ -388,7 +388,7 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
         //
         // Ask to perform pending transfers, if any
         //
-        Object xferResults[] = namesystem.pendingTransfers(new DatanodeInfo(new UTF8(sender)), xmitsInProgress);
+        Object[] xferResults = namesystem.pendingTransfers(new DatanodeInfo(new UTF8(sender)), xmitsInProgress);
         if (xferResults != null) {
             return new BlockCommand((Block[]) xferResults[0], (DatanodeInfo[][]) xferResults[1]);
         }
@@ -399,7 +399,7 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
         // a block report.  This is just a small fast removal of blocks that have
         // just been removed.
         //
-        Block blocks[] = namesystem.blocksToInvalidate(new UTF8(sender));
+        Block[] blocks = namesystem.blocksToInvalidate(new UTF8(sender));
         if (blocks != null) {
             return new BlockCommand(blocks);
         }
@@ -411,17 +411,17 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
      * @param argv
      * @throws Exception
      */
-    public static void main(String argv[]) throws Exception {
+    public static void main(String[] argv) throws Exception {
         Configuration conf = new Configuration();
 
-        if (argv.length == 1 && argv[0].equals("-format")) {
+        if (argv.length == 1 && "-format".equals(argv[0])) {
             // -format格式化namenode磁盘
             File dir = getDir(conf);
             if (dir.exists()) {
                 // 是否需要重新格式化
                 System.err.print("Re-format filesystem in " + dir + " ? (Y or N) ");
                 // 无法输入，有问题
-                if (!(System.in.read() == 'Y')) {
+                if (System.in.read() != 'Y') {
                     System.err.println("Format aborted.");
                     System.exit(1);
                 }

@@ -308,7 +308,7 @@ class FSDataset implements FSConstants {
     public Block[] getBlockReport() {
         TreeSet blockSet = new TreeSet();
         dirTree.getBlockInfo(blockSet);
-        Block blockTable[] = new Block[blockSet.size()];
+        Block[] blockTable = new Block[blockSet.size()];
         int i = 0;
         for (Iterator it = blockSet.iterator(); it.hasNext(); i++) {
             blockTable[i] = (Block) it.next();
@@ -332,10 +332,9 @@ class FSDataset implements FSConstants {
      * 我们被告知block不再有效。<br/>
      * 我们可以懒懒散散地收集垃圾，但何必费事呢?把它处理掉。
      */
-    public void invalidate(Block invalidBlks[]) throws IOException {
+    public void invalidate(Block[] invalidBlks) throws IOException {
         for (int i = 0; i < invalidBlks.length; i++) {
             File f = getFile(invalidBlks[i]);
-            // long len = f.length();
             if (!f.delete()) {
                 throw new IOException("Unexpected error trying to delete block " + invalidBlks[i] + " at file " + f);
             }

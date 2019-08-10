@@ -210,7 +210,7 @@ public class DFSShell {
             System.out.println("Effective replication multiplier: " + (1.0 * rawUsed / used));
 
             System.out.println("-------------------------------------------------");
-            DataNodeReport info[] = dfs.getDataNodeStats();
+            DataNodeReport[] info = dfs.getDataNodeStats();
             System.out.println("Datanodes available: " + info.length);
             System.out.println();
             for (int i = 0; i < info.length; i++) {
@@ -223,7 +223,7 @@ public class DFSShell {
     /**
      * main() has some simple utility methods
      */
-    public static void main(String argv[]) throws IOException {
+    public static void main(String[] argv) throws IOException {
         if (argv.length < 1) {
             System.out.println("Usage: java DFSShell [-local | -dfs <namenode:port>]" +
                     " [-ls <path>] [-lsr <path>] [-du <path>] [-mv <src> <dst>] [-cp <src> <dst>] [-rm <src>]" +

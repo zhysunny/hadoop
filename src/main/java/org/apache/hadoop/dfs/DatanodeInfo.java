@@ -148,6 +148,18 @@ class DatanodeInfo implements Writable, Comparable {
         return name.compareTo(d.getName());
     }
 
+    @Override
+    public boolean equals(Object o) {
+        DatanodeInfo datanodeInfo = (DatanodeInfo) o;
+        // name相等，两个对象就相等
+        return (this.compareTo(datanodeInfo) == 0);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(this.name);
+    }
+
     /////////////////////////////////////////////////
     // Writable
     /////////////////////////////////////////////////

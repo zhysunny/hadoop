@@ -36,7 +36,7 @@ class LocatedBlock implements Writable {
     }
 
     Block b;
-    DatanodeInfo locs[];
+    DatanodeInfo[] locs;
 
     public LocatedBlock() {
         this.b = new Block();

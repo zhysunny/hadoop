@@ -18,11 +18,12 @@ package org.apache.hadoop.dfs;
 import org.apache.hadoop.ipc.*;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import java.util.logging.*;
 
 /**********************************************************
  * DataNode is a class (and program) that stores a set of
@@ -57,7 +58,7 @@ import java.util.logging.*;
  * @author Mike Cafarella
  **********************************************************/
 public class DataNode implements FSConstants, Runnable {
-    public static final Logger LOG = LogFormatter.getLogger("org.apache.hadoop.dfs.DataNode");
+    private static final Logger LOGGER = LoggerFactory.getLogger(DataNode.class);
     //
     // REMIND - mjc - I might bring "maxgigs" back so user can place 
     // artificial  limit on space
@@ -118,9 +119,9 @@ public class DataNode implements FSConstants, Runnable {
         while (ss == null) {
             try {
                 ss = new ServerSocket(tmpPort);
-                LOG.info("Opened server at " + tmpPort);
+                LOGGER.info("Opened server at " + tmpPort);
             } catch (IOException ie) {
-                LOG.info("Could not open server at " + tmpPort + ", trying new port");
+                LOGGER.info("Could not open server at " + tmpPort + ", trying new port");
                 tmpPort++;
             }
         }
@@ -140,7 +141,6 @@ public class DataNode implements FSConstants, Runnable {
      * Return the namenode's identifier
      */
     public String getNamenode() {
-        //return namenode.toString();
         return "<namenode>";
     }
 
@@ -166,7 +166,7 @@ public class DataNode implements FSConstants, Runnable {
         long lastHeartbeat = 0, lastBlockReport = 0;
         long sendStart = System.currentTimeMillis();
         int heartbeatsSent = 0;
-        LOG.info("using BLOCKREPORT_INTERVAL of " + blockReportInterval + "msec");
+        LOGGER.info("using BLOCKREPORT_INTERVAL of " + blockReportInterval + "msec");
 
         //
         // Now loop for a long time....
@@ -187,7 +187,7 @@ public class DataNode implements FSConstants, Runnable {
                     // -- Bytes remaining
                     //
                     namenode.sendHeartbeat(localName, data.getCapacity(), data.getRemaining());
-                    //LOG.info("Just sent heartbeat, with name " + localName);
+                    LOGGER.info("Just sent heartbeat, with name " + localName);
                     lastHeartbeat = now;
                 }
                 if (now - lastBlockReport > blockReportInterval) {
@@ -196,7 +196,7 @@ public class DataNode implements FSConstants, Runnable {
                     // Get back a list of local block(s) that are obsolete
                     // and can be safely GC'ed.
                     //
-                    Block toDelete[] = namenode.blockReport(localName, data.getBlockReport());
+                    Block[] toDelete = namenode.blockReport(localName, data.getBlockReport());
                     data.invalidate(toDelete);
                     lastBlockReport = now;
                     continue;
@@ -205,7 +205,7 @@ public class DataNode implements FSConstants, Runnable {
                     //
                     // Send newly-received blockids to namenode
                     //
-                    Block blockArray[] = (Block[]) receivedBlockList.toArray(new Block[receivedBlockList.size()]);
+                    Block[] blockArray = (Block[]) receivedBlockList.toArray(new Block[receivedBlockList.size()]);
                     receivedBlockList.removeAllElements();
                     namenode.blockReceived(localName, blockArray);
                 }
@@ -229,18 +229,18 @@ public class DataNode implements FSConstants, Runnable {
                         //
                         // Send a copy of a block to another datanode
                         //
-                        Block blocks[] = cmd.getBlocks();
-                        DatanodeInfo xferTargets[][] = cmd.getTargets();
+                        Block[] blocks = cmd.getBlocks();
+                        DatanodeInfo[][] xferTargets = cmd.getTargets();
 
                         for (int i = 0; i < blocks.length; i++) {
                             if (!data.isValidBlock(blocks[i])) {
                                 String errStr = "Can't send invalid block " + blocks[i];
-                                LOG.info(errStr);
+                                LOGGER.info(errStr);
                                 namenode.errorReport(localName, errStr);
                                 break;
                             } else {
                                 if (xferTargets[i].length > 0) {
-                                    LOG.info("Starting thread to transfer block " + blocks[i] + " to " + xferTargets[i]);
+                                    LOGGER.info("Starting thread to transfer block " + blocks[i] + " to " + xferTargets[i]);
                                     new Daemon(new DataTransfer(xferTargets[i], blocks[i])).start();
                                 }
                             }
@@ -285,6 +285,7 @@ public class DataNode implements FSConstants, Runnable {
 
         /**
          */
+        @Override
         public void run() {
             try {
                 while (shouldListen) {
@@ -294,7 +295,7 @@ public class DataNode implements FSConstants, Runnable {
                 }
                 ss.close();
             } catch (IOException ie) {
-                LOG.info("Exiting DataXceiveServer due to " + ie.toString());
+                LOGGER.info("Exiting DataXceiveServer due to " + ie.toString());
             }
         }
 
@@ -320,6 +321,7 @@ public class DataNode implements FSConstants, Runnable {
         /**
          * Read/write data from/to the DataXceiveServer.
          */
+        @Override
         public void run() {
             try {
                 DataInputStream in = new DataInputStream(new BufferedInputStream(s.getInputStream()));
@@ -338,7 +340,7 @@ public class DataNode implements FSConstants, Runnable {
                             if (numTargets <= 0) {
                                 throw new IOException("Mislabelled incoming datastream.");
                             }
-                            DatanodeInfo targets[] = new DatanodeInfo[numTargets];
+                            DatanodeInfo[] targets = new DatanodeInfo[numTargets];
                             for (int i = 0; i < targets.length; i++) {
                                 DatanodeInfo tmp = new DatanodeInfo();
                                 tmp.readFields(in);
@@ -409,7 +411,7 @@ public class DataNode implements FSConstants, Runnable {
                                 //
                                 try {
                                     boolean anotherChunk = len != 0;
-                                    byte buf[] = new byte[BUFFER_SIZE];
+                                    byte[] buf = new byte[BUFFER_SIZE];
 
                                     while (anotherChunk) {
                                         while (len > 0) {
@@ -461,20 +463,20 @@ public class DataNode implements FSConstants, Runnable {
                                     }
 
                                     if (out2 == null) {
-                                        LOG.info("Received block " + b + " from " + s.getInetAddress());
+                                        LOGGER.info("Received block " + b + " from " + s.getInetAddress());
                                     } else {
                                         out2.flush();
                                         long complete = in2.readLong();
                                         if (complete != WRITE_COMPLETE) {
-                                            LOG.info("Conflicting value for WRITE_COMPLETE: " + complete);
+                                            LOGGER.info("Conflicting value for WRITE_COMPLETE: " + complete);
                                         }
                                         LocatedBlock newLB = new LocatedBlock();
                                         newLB.readFields(in2);
-                                        DatanodeInfo mirrorsSoFar[] = newLB.getLocations();
+                                        DatanodeInfo[] mirrorsSoFar = newLB.getLocations();
                                         for (int k = 0; k < mirrorsSoFar.length; k++) {
                                             mirrors.add(mirrorsSoFar[k]);
                                         }
-                                        LOG.info("Received block " + b + " from " + s.getInetAddress() + " and mirrored to " + mirrorTarget);
+                                        LOGGER.info("Received block " + b + " from " + s.getInetAddress() + " and mirrored to " + mirrorTarget);
                                     }
                                 } finally {
                                     if (out2 != null) {
@@ -560,7 +562,7 @@ public class DataNode implements FSConstants, Runnable {
                                     out.writeLong(amtSkipped);
                                 }
 
-                                byte buf[] = new byte[BUFFER_SIZE];
+                                byte[] buf = new byte[BUFFER_SIZE];
                                 try {
                                     int bytesRead = 0;
                                     try {
@@ -591,7 +593,7 @@ public class DataNode implements FSConstants, Runnable {
                                     }
                                 }
                             }
-                            LOG.info("Served block " + b + " to " + s.getInetAddress());
+                            LOGGER.info("Served block " + b + " to " + s.getInetAddress());
                         } finally {
                             out.close();
                         }
@@ -606,7 +608,7 @@ public class DataNode implements FSConstants, Runnable {
                     in.close();
                 }
             } catch (IOException ie) {
-                LOG.log(Level.WARNING, "DataXCeiver", ie);
+                LOGGER.warn("DataXCeiver", ie);
             } finally {
                 try {
                     s.close();
@@ -622,15 +624,15 @@ public class DataNode implements FSConstants, Runnable {
      */
     class DataTransfer implements Runnable {
         InetSocketAddress curTarget;
-        DatanodeInfo targets[];
+        DatanodeInfo[] targets;
         Block b;
-        byte buf[];
+        byte[] buf;
 
         /**
          * Connect to the first item in the target list.  Pass along the
          * entire target list, the block, and the data.
          */
-        public DataTransfer(DatanodeInfo targets[], Block b) throws IOException {
+        public DataTransfer(DatanodeInfo[] targets, Block b) throws IOException {
             this.curTarget = createSocketAddr(targets[0].getName().toString());
             this.targets = targets;
             this.b = b;
@@ -640,6 +642,7 @@ public class DataNode implements FSConstants, Runnable {
         /**
          * Do the deed, write the bytes
          */
+        @Override
         public void run() {
             xmitsInProgress++;
             try {
@@ -678,9 +681,9 @@ public class DataNode implements FSConstants, Runnable {
                 } finally {
                     out.close();
                 }
-                LOG.info("Transmitted block " + b + " to " + curTarget);
+                LOGGER.info("Transmitted block " + b + " to " + curTarget);
             } catch (IOException ie) {
-                LOG.log(Level.WARNING, "Failed to transfer " + b + " to " + curTarget, ie);
+                LOGGER.warn("Failed to transfer " + b + " to " + curTarget, ie);
             } finally {
                 xmitsInProgress--;
             }
@@ -694,15 +697,16 @@ public class DataNode implements FSConstants, Runnable {
      * <p>
      * Only stop when "shouldRun" is turned off (which can only happen at shutdown).
      */
+    @Override
     public void run() {
-        LOG.info("Starting DataNode in: " + data.data);
+        LOGGER.info("Starting DataNode in: " + data.data);
         while (shouldRun) {
             try {
                 offerService();
             } catch (Exception ex) {
-                LOG.info("Exception: " + ex);
+                LOGGER.info("Exception: " + ex);
                 if (shouldRun) {
-                    LOG.info("Lost connection to namenode.  Retrying...");
+                    LOGGER.info("Lost connection to namenode.  Retrying...");
                     try {
                         Thread.sleep(5000);
                     } catch (InterruptedException ie) {
@@ -710,7 +714,7 @@ public class DataNode implements FSConstants, Runnable {
                 }
             }
         }
-        LOG.info("Finishing DataNode in: " + data.data);
+        LOGGER.info("Finishing DataNode in: " + data.data);
     }
 
     /**
@@ -725,7 +729,8 @@ public class DataNode implements FSConstants, Runnable {
             DataNode dn = makeInstanceForDir(dataDirs[i], conf);
             if (dn != null) {
                 Thread t = new Thread(dn, "DataNode: " + dataDirs[i]);
-                t.setDaemon(true); // needed for JUnit testing
+                // needed for JUnit testing
+                t.setDaemon(true);
                 t.start();
                 subThreadList.add(t);
             }
@@ -769,7 +774,7 @@ public class DataNode implements FSConstants, Runnable {
         File data = new File(dataDir);
         data.mkdirs();
         if (!data.isDirectory()) {
-            LOG.warning("Can't start DataNode in non-directory: " + dataDir);
+            LOGGER.warn("Can't start DataNode in non-directory: " + dataDir);
             return null;
         } else {
             dn = new DataNode(conf, dataDir);
@@ -777,6 +782,7 @@ public class DataNode implements FSConstants, Runnable {
         return dn;
     }
 
+    @Override
     public String toString() {
         return "DataNode{" +
                 "data=" + data +
@@ -785,10 +791,7 @@ public class DataNode implements FSConstants, Runnable {
                 "}";
     }
 
-    /**
-     */
-    public static void main(String args[]) throws IOException {
-        LogFormatter.setShowThreadIDs(true);
+    public static void main(String[] args) throws IOException {
         runAndWait(new Configuration());
     }
 }

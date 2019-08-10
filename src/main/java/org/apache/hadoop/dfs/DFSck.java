@@ -191,6 +191,9 @@ public class DFSck {
                 case FIXING_DELETE:
                     System.err.println("\n - deleting corrupted " + file.getPath());
                     dfs.delete(new UTF8(file.getPath()));
+                    break;
+                default:
+                    break;
             }
         }
         if (showFiles) {
@@ -456,19 +459,19 @@ public class DFSck {
         boolean showLocations = false;
         int fixing = FIXING_NONE;
         for (int i = 1; i < args.length; i++) {
-            if (args[i].equals("-files")) {
+            if ("-files".equals(args[i])) {
                 showFiles = true;
             }
-            if (args[i].equals("-blocks")) {
+            if ("-blocks".equals(args[i])) {
                 showBlocks = true;
             }
-            if (args[i].equals("-locations")) {
+            if ("-locations".equals(args[i])) {
                 showLocations = true;
             }
-            if (args[i].equals("-move")) {
+            if ("-move".equals(args[i])) {
                 fixing = FIXING_MOVE;
             }
-            if (args[i].equals("-delete")) {
+            if ("-delete".equals(args[i])) {
                 fixing = FIXING_DELETE;
             }
         }
