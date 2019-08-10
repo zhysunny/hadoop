@@ -26,42 +26,46 @@ import java.net.*;
 import java.util.*;
 
 /**********************************************************
- * DataNode is a class (and program) that stores a set of
- * blocks for a DFS deployment.  A single deployment can
- * have one or many DataNodes.  Each DataNode communicates
- * regularly with a single NameNode.  It also communicates
- * with client code and other DataNodes from time to time.
- *
- * DataNodes store a series of named blocks.  The DataNode
- * allows client code to read these blocks, or to write new
- * block data.  The DataNode may also, in response to instructions
- * from its NameNode, delete blocks or copy blocks to/from other
- * DataNodes.
- *
- * The DataNode maintains just one critical table:
- *   block-> stream of bytes (of BLOCK_SIZE or less)
- *
- * This info is stored on a local disk.  The DataNode
- * reports the table's contents to the NameNode upon startup
- * and every so often afterwards.
- *
- * DataNodes spend their lives in an endless loop of asking
- * the NameNode for something to do.  A NameNode cannot connect
- * to a DataNode directly; a NameNode simply returns values from
- * functions invoked by a DataNode.
- *
- * DataNodes maintain an open server socket so that client code 
- * or other DataNodes can read/write data.  The host/port for
- * this server is reported to the NameNode, which then sends that
- * information to clients or other DataNodes that might be interested.
+ * DataNode is a class (and program) that stores a set of blocks for a DFS deployment.
+ * A single deployment can have one or many DataNodes.
+ * Each DataNode communicates regularly with a single NameNode.
+ * It also communicates with client code and other DataNodes from time to time.
+ * DataNodes store a series of named blocks.
+ * The DataNode allows client code to read these blocks, or to write new block data.
+ * The DataNode may also, in response to instructions from its NameNode, delete blocks or copy blocks to/from other DataNodes.
+ * The DataNode maintains just one critical table: block-> stream of bytes (of BLOCK_SIZE or less)
+ * This info is stored on a local disk.
+ * The DataNode reports the table's contents to the NameNode upon startup and every so often afterwards.
+ * DataNodes spend their lives in an endless loop of asking the NameNode for something to do.
+ * A NameNode cannot connect to a DataNode directly; a NameNode simply returns values from functions invoked by a DataNode.
+ * DataNodes maintain an open server socket so that client code or other DataNodes can read/write data.
+ * The host/port for this server is reported to the NameNode, which then sends that information to clients or other DataNodes that might be interested.
  *
  * @author Mike Cafarella
  **********************************************************/
+
+/**
+ * DataNode是一个类(和程序)，它为DFS部署存储一组块。
+ * 一个部署可以有一个或多个datanode。
+ * 每个DataNode定期与一个NameNode通信。
+ * 它还不时地与客户机代码和其他数据节点通信。
+ * datanode存储一系列命名块。
+ * DataNode允许客户端代码读取这些块，或者编写新的块数据。
+ * DataNode还可以响应来自其NameNode的指令，删除块或将块复制到/从其他DataNode。
+ * DataNode只维护一个关键表:block->字节流(BLOCK_SIZE或更小)
+ * 此信息存储在本地磁盘上。
+ * DataNode在启动时以及之后经常向NameNode报告表的内容。
+ * 数据节点将它们的生命花费在无休止的循环中，要求NameNode做一些事情。
+ * NameNode不能直接连接到数据节点;NameNode只返回由DataNode调用的函数的值。
+ * 数据节点维护一个开放的服务器套接字，以便客户机代码或其他数据节点能够读取/写入数据。
+ * 此服务器的主机/端口报告给NameNode，然后NameNode将该信息发送给客户机或其他可能感兴趣的数据节点。
+ * @author 章云
+ * @date 2019/8/10 14:57
+ */
 public class DataNode implements FSConstants, Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(DataNode.class);
     //
-    // REMIND - mjc - I might bring "maxgigs" back so user can place 
-    // artificial  limit on space
+    // 提醒- mjc -我可能会带“maxgigs”回来，这样用户可以人为地限制空间修改翻译结果
     //private static final long GIGABYTE = 1024 * 1024 * 1024;
     //private static long numGigs = Configuration.get().getLong("dfs.datanode.maxgigs", 100);
     //
@@ -89,7 +93,7 @@ public class DataNode implements FSConstants, Runnable {
     FSDataset data;
     String localName;
     boolean shouldRun = true;
-    Vector receivedBlockList = new Vector();
+    Vector<Block> receivedBlockList = new Vector<Block>();
     int xmitsInProgress = 0;
     Daemon dataXceiveServer = null;
     long blockReportInterval;
