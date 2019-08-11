@@ -19,12 +19,12 @@ package org.apache.hadoop.mapred;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.ipc.*;
 import org.apache.hadoop.conf.*;
-import org.apache.hadoop.util.LogFormatter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import java.util.logging.*;
 
 /*******************************************************
  * JobTracker is the central location for submitting and 
@@ -33,14 +33,13 @@ import java.util.logging.*;
  * @author Mike Cafarella
  *******************************************************/
 public class JobTracker implements MRConstants, InterTrackerProtocol, JobSubmissionProtocol {
+    private static final Logger LOGGER = LoggerFactory.getLogger(JobTracker.class);
     static long JOBINIT_SLEEP_INTERVAL = 2000;
     static long RETIRE_JOB_INTERVAL;
     static long RETIRE_JOB_CHECK_INTERVAL;
     static float TASK_ALLOC_EPSILON;
     static float PAD_FRACTION;
     static float MIN_SLOTS_FOR_PADDING;
-
-    public static final Logger LOG = LogFormatter.getLogger("org.apache.hadoop.mapred.JobTracker");
 
     private static JobTracker tracker = null;
     public static void startTracker(Configuration conf) throws IOException {
@@ -51,7 +50,7 @@ public class JobTracker implements MRConstants, InterTrackerProtocol, JobSubmiss
           tracker = new JobTracker(conf);
           break;
         } catch (IOException e) {
-          LOG.log(Level.WARNING, "Starting tracker", e);
+            LOGGER.warn("Starting tracker", e);
         }
         try {
           Thread.sleep(1000);
@@ -204,7 +203,7 @@ public class JobTracker implements MRConstants, InterTrackerProtocol, JobSubmiss
                         job.initTasks();
                     }
                 } catch (Exception e) {
-                    LOG.log(Level.WARNING, "job init failed", e);
+                    LOGGER.warn("job init failed", e);
                     job.kill();
                 }
             }
@@ -339,7 +338,7 @@ public class JobTracker implements MRConstants, InterTrackerProtocol, JobSubmiss
 	for (Iterator it = p.keySet().iterator(); it.hasNext(); ) {
 	    String key = (String) it.next();
 	    String val = (String) p.getProperty(key);
-	    LOG.info("Property '" + key + "' is " + val);
+        LOGGER.info("Property '" + key + "' is " + val);
 	}
 
         this.infoPort = conf.getInt("mapred.job.tracker.info.port", 50030);
@@ -381,7 +380,7 @@ public class JobTracker implements MRConstants, InterTrackerProtocol, JobSubmiss
     // and TaskInProgress
     ///////////////////////////////////////////////////////
     void createTaskEntry(String taskid, String taskTracker, TaskInProgress tip) {
-        LOG.info("Adding task '" + taskid + "' to tip " + tip.getTIPId() + ", for tracker '" + taskTracker + "'");
+        LOGGER.info("Adding task '" + taskid + "' to tip " + tip.getTIPId() + ", for tracker '" + taskTracker + "'");
 
         // taskid --> tracker
         taskidToTrackerMap.put(taskid, taskTracker);
@@ -576,7 +575,7 @@ public class JobTracker implements MRConstants, InterTrackerProtocol, JobSubmiss
         // Get map + reduce counts for the current tracker.
         //
         if (tts == null) {
-          LOG.warning("Unknown task tracker polling; ignoring: " + taskTracker);
+            LOGGER.warn("Unknown task tracker polling; ignoring: " + taskTracker);
           return null;
         }
 
@@ -853,7 +852,7 @@ public class JobTracker implements MRConstants, InterTrackerProtocol, JobSubmiss
             TaskStatus report = (TaskStatus) it.next();
             TaskInProgress tip = (TaskInProgress) taskidToTIPMap.get(report.getTaskId());
             if (tip == null) {
-                LOG.info("Serious problem.  While updating status, cannot find taskid " + report.getTaskId());
+                LOGGER.info("Serious problem.  While updating status, cannot find taskid " + report.getTaskId());
             } else {
                 JobInProgress job = tip.getJob();
                 job.updateTaskStatus(tip, report);
@@ -874,7 +873,7 @@ public class JobTracker implements MRConstants, InterTrackerProtocol, JobSubmiss
      * jobs that might be affected.
      */
     void lostTaskTracker(String trackerName) {
-        LOG.info("Lost tracker '" + trackerName + "'");
+        LOGGER.info("Lost tracker '" + trackerName + "'");
         TreeSet lostTasks = (TreeSet) trackerToTaskMap.get(trackerName);
         trackerToTaskMap.remove(trackerName);
 

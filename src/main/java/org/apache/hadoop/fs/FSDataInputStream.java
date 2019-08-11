@@ -15,15 +15,16 @@
  */
 package org.apache.hadoop.fs;
 
-import java.io.*;
-import java.util.Arrays;
-import java.util.zip.*;
-
-import org.apache.hadoop.conf.*;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.exception.ChecksumException;
-import org.apache.hadoop.util.ConfigConstants;
+import org.apache.hadoop.util.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.util.Arrays;
+import java.util.zip.CRC32;
+import java.util.zip.Checksum;
 
 /**
  * 该实用程序将{@link FSInputStream}包装在{@link DataInputStream}中，并通过{@link BufferedInputStream}缓冲输入。
@@ -236,7 +237,7 @@ public class FSDataInputStream extends DataInputStream {
 
     public FSDataInputStream(FileSystem fs, File file, Configuration conf) throws IOException {
         super(null);
-        int bufferSize = conf.getInt(ConfigConstants.IO_FILE_BUFFER_SIZE, ConfigConstants.IO_FILE_BUFFER_SIZE_DEFAULT);
+        int bufferSize = Constants.IO_FILE_BUFFER_SIZE;
         this.in = new Buffer(new PositionCache(new Checker(fs, file, conf)), bufferSize);
     }
 
@@ -244,7 +245,7 @@ public class FSDataInputStream extends DataInputStream {
      * 没有校验的构造器。
      */
     public FSDataInputStream(FSInputStream in, Configuration conf) throws IOException {
-        this(in, conf.getInt(ConfigConstants.IO_FILE_BUFFER_SIZE, ConfigConstants.IO_FILE_BUFFER_SIZE_DEFAULT));
+        this(in, Constants.IO_FILE_BUFFER_SIZE);
     }
 
     /**

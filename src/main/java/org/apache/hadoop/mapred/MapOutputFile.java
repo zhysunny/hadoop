@@ -25,9 +25,13 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.ipc.Server;
 import org.apache.hadoop.mapred.TaskTracker.MapOutputServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** A local file to be transferred via the {@link MapOutputProtocol}. */ 
 class MapOutputFile implements Writable, Configurable {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(MapOutputFile.class);
 
     static {                                      // register a ctor
       WritableFactories.setFactory
@@ -116,7 +120,7 @@ class MapOutputFile implements Writable, Configurable {
       out.writeLong(file.length());
       in = FileSystem.getNamed("local", this.jobConf).open(file);
     } catch (FileNotFoundException e) {
-      TaskTracker.LOG.log(Level.SEVERE, "Can't open map output:" + file, e);
+      LOGGER.error("Can't open map output:" + file, e);
       ((MapOutputServer)Server.get()).getTaskTracker().mapOutputLost(mapTaskId);
       throw e;
     }
@@ -129,7 +133,7 @@ class MapOutputFile implements Writable, Configurable {
         try {
           l = in.read(buffer);
         } catch (IOException e) {
-          TaskTracker.LOG.log(Level.SEVERE,"Can't read map output:" + file, e);
+          LOGGER.error("Can't read map output:" + file, e);
           ((MapOutputServer)Server.get()).getTaskTracker().mapOutputLost(mapTaskId);
           throw e;
         }

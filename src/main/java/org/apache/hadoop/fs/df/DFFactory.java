@@ -1,7 +1,7 @@
 package org.apache.hadoop.fs.df;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.util.ConfigConstants;
+import org.apache.hadoop.util.Constants;
 import org.apache.hadoop.util.SystemEnv;
 
 import java.io.IOException;
@@ -14,7 +14,7 @@ import java.io.IOException;
 public class DFFactory {
 
     public static DF getDF(String path, Configuration conf) throws IOException {
-        return getDF(path, conf.getLong(ConfigConstants.DFS_DF_INTERVAL, ConfigConstants.DFS_DF_INTERVAL_DEFAULT));
+        return getDF(path, Constants.DFS_DF_INTERVAL);
     }
 
     public static DF getDF(String path, long dfInterval) throws IOException {

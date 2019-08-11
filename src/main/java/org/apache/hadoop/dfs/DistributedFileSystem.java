@@ -23,7 +23,6 @@ import java.util.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.util.ConfigConstants;
 
 /**
  * 为DFS系统实现抽象文件系统。<br/>

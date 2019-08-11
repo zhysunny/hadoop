@@ -16,15 +16,17 @@
 
 package org.apache.hadoop.fs;
 
-import java.io.*;
-import java.util.*;
-import java.nio.channels.*;
-
-import org.apache.hadoop.exception.FSError;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.exception.FSError;
 import org.apache.hadoop.fs.df.DFFactory;
+import org.apache.hadoop.util.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.nio.channels.FileLock;
+import java.util.Random;
+import java.util.TreeMap;
 
 /**
  * 为本机文件系统实现FileSystem API。
@@ -286,10 +288,10 @@ public class LocalFileSystem extends FileSystem {
     }
 
     /**
-     * Set the working directory to the given directory.
-     * Sets both a local variable and the system property.
-     * Note that the system property is only used if the application explictly
-     * calls java.io.File.getAbsolutePath().
+     * 将工作目录设置为给定目录。
+     * 同时设置局部变量和系统属性。
+     * 注意，只有当应用程序明确地调用java.io.File.getAbsolutePath()时，才使用系统属性。
+     * @param new_dir
      */
     @Override
     public void setWorkingDirectory(File new_dir) {
@@ -322,9 +324,9 @@ public class LocalFileSystem extends FileSystem {
     @Override
     public synchronized void release(File f) throws IOException {
         f = makeAbsolute(f);
-        FileLock lockObj = (FileLock) lockObjSet.get(f);
-        FileInputStream sharedLockData = (FileInputStream) sharedLockDataSet.get(f);
-        FileOutputStream nonsharedLockData = (FileOutputStream) nonsharedLockDataSet.get(f);
+        FileLock lockObj = lockObjSet.get(f);
+        FileInputStream sharedLockData = sharedLockDataSet.get(f);
+        FileOutputStream nonsharedLockData = nonsharedLockDataSet.get(f);
 
         if (lockObj == null) {
             throw new IOException("Given target not held as lock");
@@ -344,7 +346,12 @@ public class LocalFileSystem extends FileSystem {
         }
     }
 
-    // In the case of the local filesystem, we can just rename the file.
+    /**
+     * 对于本地文件系统，我们可以重命名文件。
+     * @param src
+     * @param dst
+     * @throws IOException
+     */
     @Override
     public void moveFromLocalFile(File src, File dst) throws IOException {
         if (!src.equals(dst)) {
@@ -353,11 +360,18 @@ public class LocalFileSystem extends FileSystem {
             if (useCopyForRename) {
                 FileUtil.copyContents(this, src, dst, true, getConf());
                 fullyDelete(src);
-            } else src.renameTo(dst);
+            } else {
+                src.renameTo(dst);
+            }
         }
     }
 
-    // Similar to moveFromLocalFile(), except the source is kept intact.
+    /**
+     * 与moveFromLocalFile()类似，只是源代码保持不变。
+     * @param src
+     * @param dst
+     * @throws IOException
+     */
     @Override
     public void copyFromLocalFile(File src, File dst) throws IOException {
         if (!src.equals(dst)) {
@@ -367,7 +381,12 @@ public class LocalFileSystem extends FileSystem {
         }
     }
 
-    // We can't delete the src file in this case.  Too bad.
+    /**
+     * 在这种情况下，我们不能删除src文件。太糟糕了。
+     * @param src
+     * @param dst
+     * @throws IOException
+     */
     @Override
     public void copyToLocalFile(File src, File dst) throws IOException {
         if (!src.equals(dst)) {
@@ -377,44 +396,61 @@ public class LocalFileSystem extends FileSystem {
         }
     }
 
-    // We can write output directly to the final location
+    /**
+     * 我们可以直接将输出写入最终位置
+     * @param fsOutputFile
+     * @param tmpLocalFile
+     * @return
+     */
     @Override
-    public File startLocalOutput(File fsOutputFile, File tmpLocalFile) throws IOException {
+    public File startLocalOutput(File fsOutputFile, File tmpLocalFile) {
         return makeAbsolute(fsOutputFile);
     }
 
-    // It's in the right place - nothing to do.
+    /**
+     * 它在正确的地方——没事可做。
+     * @param fsWorkingFile
+     * @param tmpLocalFile
+     */
     @Override
-    public void completeLocalOutput(File fsWorkingFile, File tmpLocalFile) throws IOException {
+    public void completeLocalOutput(File fsWorkingFile, File tmpLocalFile) {
     }
 
-    // We can read directly from the real local fs.
+    /**
+     * 我们可以直接从实际的本地fs中读取。
+     * @param fsInputFile
+     * @param tmpLocalFile
+     * @return
+     */
     @Override
-    public File startLocalInput(File fsInputFile, File tmpLocalFile) throws IOException {
+    public File startLocalInput(File fsInputFile, File tmpLocalFile) {
         return makeAbsolute(fsInputFile);
     }
 
-    // We're done reading.  Nothing to clean up.
+    /**
+     * 做完了阅读。没什么清理的。
+     * @param localFile
+     */
     @Override
-    public void completeLocalInput(File localFile) throws IOException {
-        // Ignore the file, it's at the right destination!
+    public void completeLocalInput(File localFile) {
+        // 忽略文件，它在正确的目的地!
     }
 
+    @Override
     public void close() throws IOException {
     }
 
+    @Override
     public String toString() {
         return "LocalFS";
     }
 
     /**
-     * Implement our own version instead of using the one in FileUtil,
-     * to avoid infinite recursion.
+     * 实现我们自己的版本，而不是使用FileUtil中的版本，以避免无限递归。
      * @param dir
      * @return
-     * @throws IOException
      */
-    private boolean fullyDelete(File dir) throws IOException {
+    private boolean fullyDelete(File dir) {
         dir = makeAbsolute(dir);
         File contents[] = dir.listFiles();
         if (contents != null) {
@@ -434,17 +470,19 @@ public class LocalFileSystem extends FileSystem {
     }
 
     /**
-     * Moves files to a bad file directory on the same device, so that their
-     * storage will not be reused.
+     * 将文件移动到同一设备上的一个坏文件目录，这样它们的存储就不会被重用。
+     * @param f
+     * @param in     打开的文件流
+     * @param start  文件中坏数据开始的位置
+     * @param length 文件中坏数据的长度
+     * @param crc    数据的预期CRC32
      */
     @Override
-    public void reportChecksumFailure(File f, FSInputStream in,
-                                      long start, long length, int crc) {
+    public void reportChecksumFailure(File f, FSInputStream in, long start, long length, int crc) {
         try {
-            // canonicalize f
+            // 规范化
             f = makeAbsolute(f).getCanonicalFile();
-
-            // find highest writable parent dir of f on the same device
+            // 在同一设备上找到f的最高可写父目录
             String device = DFFactory.getDF(f.toString(), getConf()).getMount();
             File parent = f.getParentFile();
             File dir;
@@ -452,8 +490,7 @@ public class LocalFileSystem extends FileSystem {
                 dir = parent;
                 parent = parent.getParentFile();
             } while (parent.canWrite() && parent.toString().startsWith(device));
-
-            // move the file there
+            // 把文件移到那里
             File badDir = new File(dir, "bad_files");
             badDir.mkdirs();
             String suffix = "." + new Random().nextInt();
@@ -461,11 +498,9 @@ public class LocalFileSystem extends FileSystem {
             LOGGER.warn("Moving bad file " + f + " to " + badFile);
             in.close();                               // close it first
             f.renameTo(badFile);                      // rename it
-
             // move checksum file too
             File checkFile = getChecksumFile(f);
             checkFile.renameTo(new File(badDir, checkFile.getName() + suffix));
-
         } catch (IOException e) {
             LOGGER.warn("Error moving bad file " + f + ": " + e);
         }
@@ -473,9 +508,8 @@ public class LocalFileSystem extends FileSystem {
 
     @Override
     public long getBlockSize() {
-        // default to 32MB: large enough to minimize the impact of seeks
-        return getConf().getLong("fs.local.block.size", 32 * 1024 * 1024);
+        // 默认为32MB:足够大，可以最小化seek的影响
+        return Constants.FS_LOCAL_BLOCK_SIZE;
     }
-
 
 }

@@ -15,13 +15,11 @@
  */
 package org.apache.hadoop.mapred;
 
-import org.apache.hadoop.fs.*;
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.util.LogFormatter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.*;
-import java.util.logging.*;
 
 
 ////////////////////////////////////////////////////////
@@ -44,7 +42,7 @@ class TaskInProgress {
     static final double SPECULATIVE_GAP = 0.2;
     static final long SPECULATIVE_LAG = 60 * 1000;
 
-    public static final Logger LOG = LogFormatter.getLogger("org.apache.hadoop.mapred.TaskInProgress");
+    private static final Logger LOGGER = LoggerFactory.getLogger(TaskInProgress.class);
 
     // Defines the TIP
     private String jobFile = null;
@@ -241,7 +239,7 @@ class TaskInProgress {
         String taskid = status.getTaskId();
         String diagInfo = status.getDiagnosticInfo();
         if (diagInfo != null && diagInfo.length() > 0) {
-            LOG.info("Error from "+taskid+": "+diagInfo);
+            LOGGER.info("Error from "+taskid+": "+diagInfo);
             Vector diagHistory = (Vector) taskDiagnosticData.get(taskid);
             if (diagHistory == null) {
                 diagHistory = new Vector();
@@ -263,7 +261,7 @@ class TaskInProgress {
         //
         // Note the failure and its location
         //
-        LOG.info("Task '" + taskid + "' has been lost.");
+        LOGGER.info("Task '" + taskid + "' has been lost.");
         TaskStatus status = (TaskStatus) taskStatuses.get(taskid);
         if (status != null) {
             status.setRunState(TaskStatus.FAILED);
@@ -275,7 +273,7 @@ class TaskInProgress {
 
         numTaskFailures++;
         if (numTaskFailures >= MAX_TASK_FAILURES) {
-            LOG.info("TaskInProgress " + getTIPId() + " has failed " + numTaskFailures + " times.");
+            LOGGER.info("TaskInProgress " + getTIPId() + " has failed " + numTaskFailures + " times.");
             kill();
         }
         machinesWhereFailed.add(trackerName);
@@ -291,7 +289,7 @@ class TaskInProgress {
      * has successfully completed!
      */
     public void completed(String taskid) {
-        LOG.info("Task '" + taskid + "' has completed.");
+        LOGGER.info("Task '" + taskid + "' has completed.");
         TaskStatus status = (TaskStatus) taskStatuses.get(taskid);
         status.setRunState(TaskStatus.SUCCEEDED);
         recentTasks.remove(taskid);

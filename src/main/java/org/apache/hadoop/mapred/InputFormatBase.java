@@ -20,16 +20,15 @@ import java.io.IOException;
 import java.io.File;
 
 import java.util.ArrayList;
-import java.util.logging.Logger;
 
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.util.LogFormatter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** A base class for {@link InputFormat}. */
 public abstract class InputFormatBase implements InputFormat {
 
-  public static final Logger LOG =
-    LogFormatter.getLogger("org.apache.hadoop.mapred.InputFormatBase");
+  private static final Logger LOGGER = LoggerFactory.getLogger(InputFormatBase.class);
 
   private static final double SPLIT_SLOP = 0.1;   // 10% slop
 

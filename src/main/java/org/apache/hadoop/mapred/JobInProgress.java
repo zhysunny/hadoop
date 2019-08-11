@@ -1,12 +1,12 @@
 /**
  * Copyright 2005 The Apache Software Foundation
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,12 +17,12 @@ package org.apache.hadoop.mapred;
 
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.conf.*;
-import org.apache.hadoop.util.LogFormatter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import java.util.logging.*;
 
 ///////////////////////////////////////////////////////
 // JobInProgress maintains all the info for keeping
@@ -31,7 +31,7 @@ import java.util.logging.*;
 // doing bookkeeping of its Tasks.
 ///////////////////////////////////////////////////////
 class JobInProgress {
-    public static final Logger LOG = LogFormatter.getLogger("org.apache.hadoop.mapred.JobInProgress");
+    private static final Logger LOGGER = LoggerFactory.getLogger(JobInProgress.class);
 
     JobProfile profile;
     JobStatus status;
@@ -56,7 +56,7 @@ class JobInProgress {
      * Create a JobInProgress with the given job file, plus a handle
      * to the tracker.
      */
-    public JobInProgress(String jobFile, JobTracker jobtracker, 
+    public JobInProgress(String jobFile, JobTracker jobtracker,
                          Configuration default_conf) throws IOException {
         String jobid = "job_" + jobtracker.createUniqueId();
         String url = "http://" + jobtracker.getJobTrackerMachine() + ":" + jobtracker.getInfoPort() + "/jobdetails.jsp?jobid=" + jobid;
@@ -65,20 +65,20 @@ class JobInProgress {
         this.startTime = System.currentTimeMillis();
 
         JobConf default_job_conf = new JobConf(default_conf);
-        this.localJobFile = default_job_conf.getLocalFile(JobTracker.SUBDIR, 
-            jobid + ".xml");
-        this.localJarFile = default_job_conf.getLocalFile(JobTracker.SUBDIR, 
-            jobid + ".jar");
+        this.localJobFile = default_job_conf.getLocalFile(JobTracker.SUBDIR,
+                jobid + ".xml");
+        this.localJarFile = default_job_conf.getLocalFile(JobTracker.SUBDIR,
+                jobid + ".jar");
         FileSystem fs = FileSystem.get(default_conf);
         fs.copyToLocalFile(new File(jobFile), localJobFile);
 
         conf = new JobConf(localJobFile);
         this.profile = new JobProfile(conf.getUser(), jobid, jobFile, url,
-                                      conf.getJobName());
+                conf.getJobName());
         String jarFile = conf.getJar();
         if (jarFile != null) {
-          fs.copyToLocalFile(new File(jarFile), localJarFile);
-          conf.setJar(localJarFile.getCanonicalPath());
+            fs.copyToLocalFile(new File(jarFile), localJarFile);
+            conf.setJar(localJarFile.getCanonicalPath());
         }
 
         this.numMapTasks = conf.getNumMapTasks();
@@ -105,16 +105,16 @@ class JobInProgress {
         String ifClassName = jd.get("mapred.input.format.class");
         InputFormat inputFormat;
         if (ifClassName != null && localJarFile != null) {
-          try {
-            ClassLoader loader =
-              new URLClassLoader(new URL[]{ localJarFile.toURL() });
-            Class inputFormatClass = loader.loadClass(ifClassName);
-            inputFormat = (InputFormat)inputFormatClass.newInstance();
-          } catch (Exception e) {
-            throw new IOException(e.toString());
-          }
+            try {
+                ClassLoader loader =
+                        new URLClassLoader(new URL[]{localJarFile.toURL()});
+                Class inputFormatClass = loader.loadClass(ifClassName);
+                inputFormat = (InputFormat) inputFormatClass.newInstance();
+            } catch (Exception e) {
+                throw new IOException(e.toString());
+            }
         } else {
-          inputFormat = jd.getInputFormat();
+            inputFormat = jd.getInputFormat();
         }
 
         FileSplit[] splits = inputFormat.getSplits(fs, jd, numMapTasks);
@@ -125,8 +125,8 @@ class JobInProgress {
         Arrays.sort(splits, new Comparator() {
             public int compare(Object a, Object b) {
                 long diff =
-                    ((FileSplit)b).getLength() - ((FileSplit)a).getLength();
-                return diff==0 ? 0 : (diff > 0 ? 1 : -1);
+                        ((FileSplit) b).getLength() - ((FileSplit) a).getLength();
+                return diff == 0 ? 0 : (diff > 0 ? 1 : -1);
             }
         });
 
@@ -181,18 +181,23 @@ class JobInProgress {
     public JobProfile getProfile() {
         return profile;
     }
+
     public JobStatus getStatus() {
         return status;
     }
+
     public long getStartTime() {
         return startTime;
     }
+
     public long getFinishTime() {
         return finishTime;
     }
+
     public int desiredMaps() {
         return numMapTasks;
     }
+
     public int finishedMaps() {
         int finishedCount = 0;
         for (int i = 0; i < maps.length; i++) {
@@ -202,9 +207,11 @@ class JobInProgress {
         }
         return finishedCount;
     }
+
     public int desiredReduces() {
         return numReduceTasks;
     }
+
     public int finishedReduces() {
         int finishedCount = 0;
         for (int i = 0; i < reduces.length; i++) {
@@ -246,29 +253,30 @@ class JobInProgress {
         //
         double progressDelta = tip.getProgress() - oldProgress;
         if (tip.isMapTask()) {
-          if (maps.length == 0) {
-            this.status.setMapProgress(1.0f);
-          } else {
-            this.status.mapProgress += (progressDelta / maps.length);
-          }
+            if (maps.length == 0) {
+                this.status.setMapProgress(1.0f);
+            } else {
+                this.status.mapProgress += (progressDelta / maps.length);
+            }
         } else {
-          if (reduces.length == 0) {
-            this.status.setReduceProgress(1.0f);
-          } else {
-            this.status.reduceProgress += (progressDelta / reduces.length);
-          }
+            if (reduces.length == 0) {
+                this.status.setReduceProgress(1.0f);
+            } else {
+                this.status.reduceProgress += (progressDelta / reduces.length);
+            }
         }
-    }   
+    }
 
     /////////////////////////////////////////////////////
     // Create/manage tasks
     /////////////////////////////////////////////////////
+
     /**
      * Return a MapTask, if appropriate, to run on the given tasktracker
      */
     public Task obtainNewMapTask(String taskTracker, TaskTrackerStatus tts) {
-        if (! tasksInited) {
-            LOG.info("Cannot create task split for " + profile.getJobId());
+        if (!tasksInited) {
+            LOGGER.info("Cannot create task split for " + profile.getJobId());
             return null;
         }
 
@@ -322,7 +330,7 @@ class JobInProgress {
         // there's a speculative task to run.
         //
         if (cacheTarget < 0 && stdTarget < 0) {
-            for (int i = 0; i < maps.length; i++) {        
+            for (int i = 0; i < maps.length; i++) {
                 if (maps[i].hasSpeculativeTask(avgProgress)) {
                     if (specTarget < 0) {
                         specTarget = i;
@@ -351,8 +359,8 @@ class JobInProgress {
      *  work on temporary MapRed files.  
      */
     public Task obtainNewReduceTask(String taskTracker, TaskTrackerStatus tts) {
-        if (! tasksInited) {
-            LOG.info("Cannot create task split for " + profile.getJobId());
+        if (!tasksInited) {
+            LOGGER.info("Cannot create task split for " + profile.getJobId());
             return null;
         }
 
@@ -372,7 +380,7 @@ class JobInProgress {
                 }
             }
         }
-        
+
         if (stdTarget >= 0) {
             t = reduces[stdTarget].getTaskToRun(taskTracker, tts, avgProgress);
         } else if (specTarget >= 0) {
@@ -385,7 +393,7 @@ class JobInProgress {
      * A taskid assigned to this JobInProgress has reported in successfully.
      */
     public synchronized void completedTask(TaskInProgress tip, String taskid) {
-        LOG.info("Taskid '" + taskid + "' has finished successfully.");
+        LOGGER.info("Taskid '" + taskid + "' has finished successfully.");
         tip.completed(taskid);
 
         //
@@ -393,14 +401,14 @@ class JobInProgress {
         //
         boolean allDone = true;
         for (int i = 0; i < maps.length; i++) {
-            if (! maps[i].isComplete()) {
+            if (!maps[i].isComplete()) {
                 allDone = false;
                 break;
             }
         }
         if (allDone) {
             for (int i = 0; i < reduces.length; i++) {
-                if (! reduces[i].isComplete()) {
+                if (!reduces[i].isComplete()) {
                     allDone = false;
                     break;
                 }
@@ -453,12 +461,12 @@ class JobInProgress {
      */
     public void failedTask(TaskInProgress tip, String taskid, String trackerName) {
         tip.failedSubTask(taskid, trackerName);
-            
+
         //
         // Check if we need to kill the job because of too many failures
         //
         if (tip.isFailed()) {
-            LOG.info("Aborting job " + profile.getJobId());
+            LOGGER.info("Aborting job " + profile.getJobId());
             kill();
         }
     }
@@ -469,25 +477,25 @@ class JobInProgress {
      * from the various tables.
      */
     synchronized void garbageCollect() {
-      try {
-        // Definitely remove the local-disk copy of the job file
-        FileSystem localFs = FileSystem.getNamed("local", conf);
-        if (localJobFile != null) {
-            localFs.delete(localJobFile);
-            localJobFile = null;
-        }
-        if (localJarFile != null) {
-            localFs.delete(localJarFile);
-            localJarFile = null;
-        }
+        try {
+            // Definitely remove the local-disk copy of the job file
+            FileSystem localFs = FileSystem.getNamed("local", conf);
+            if (localJobFile != null) {
+                localFs.delete(localJobFile);
+                localJobFile = null;
+            }
+            if (localJarFile != null) {
+                localFs.delete(localJarFile);
+                localJarFile = null;
+            }
 
-        // JobClient always creates a new directory with job files
-        // so we remove that directory to cleanup
-        FileSystem fs = FileSystem.get(conf);
-        fs.delete(new File(profile.getJobFile()).getParentFile());
+            // JobClient always creates a new directory with job files
+            // so we remove that directory to cleanup
+            FileSystem fs = FileSystem.get(conf);
+            fs.delete(new File(profile.getJobFile()).getParentFile());
 
-      } catch (IOException e) {
-        LOG.warning("Error cleaning up "+profile.getJobId()+": "+e);
-      }
+        } catch (IOException e) {
+            LOGGER.warn("Error cleaning up " + profile.getJobId() + ": " + e);
+        }
     }
 }

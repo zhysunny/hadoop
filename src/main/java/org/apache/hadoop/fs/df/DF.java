@@ -15,13 +15,11 @@
  */
 package org.apache.hadoop.fs.df;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.BufferedReader;
-
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.util.ConfigConstants;
-import org.apache.hadoop.util.SystemEnv;
+import org.apache.hadoop.util.Constants;
+
+import java.io.BufferedReader;
+import java.io.IOException;
 
 /**
  * 文件系统磁盘空间使用统计。使用unix 'df'程序。测试在Linux, FreeBSD, Cygwin。
@@ -67,7 +65,7 @@ public abstract class DF {
     protected String mount;
 
     public DF(String path, Configuration conf) throws IOException {
-        this(path, conf.getLong(ConfigConstants.DFS_DF_INTERVAL, ConfigConstants.DFS_DF_INTERVAL_DEFAULT));
+        this(path, Constants.DFS_DF_INTERVAL);
     }
 
     public DF(String path, long dfInterval) throws IOException {
@@ -148,6 +146,6 @@ public abstract class DF {
         if (args.length > 0) {
             path = args[0];
         }
-        System.out.println(DFFactory.getDF(path, ConfigConstants.DFS_DF_INTERVAL_DEFAULT).toString());
+        System.out.println(DFFactory.getDF(path, 3000).toString());
     }
 }

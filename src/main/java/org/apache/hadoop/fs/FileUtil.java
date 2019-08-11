@@ -16,10 +16,11 @@
 
 package org.apache.hadoop.fs;
 
-import java.io.*;
-
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.util.ConfigConstants;
+import org.apache.hadoop.util.Constants;
+
+import java.io.File;
+import java.io.IOException;
 
 /**
  * 文件处理util方法的集合
@@ -70,7 +71,7 @@ public class FileUtil {
             // 拷贝文件
             try {
                 FSOutputStream out = fs.createRaw(dst, true);
-                byte buf[] = new byte[conf.getInt(ConfigConstants.IO_FILE_BUFFER_SIZE, ConfigConstants.IO_FILE_BUFFER_SIZE_DEFAULT)];
+                byte buf[] = new byte[Constants.IO_FILE_BUFFER_SIZE];
                 try {
                     int readBytes = in.read(buf);
                     while (readBytes >= 0) {

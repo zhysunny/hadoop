@@ -18,12 +18,12 @@ package org.apache.hadoop.mapred;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.ipc.*;
 import org.apache.hadoop.conf.*;
-import org.apache.hadoop.util.LogFormatter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import java.util.logging.*;
 
 /*******************************************************
  * JobClient interacts with the JobTracker network interface.
@@ -34,7 +34,7 @@ import java.util.logging.*;
  * @author Mike Cafarella
  *******************************************************/
 public class JobClient implements MRConstants {
-    private static final Logger LOG = LogFormatter.getLogger("org.apache.hadoop.mapred.JobClient");
+    private static final Logger LOGGER = LoggerFactory.getLogger(JobClient.class);
 
     static long MAX_JOBPROFILE_AGE = 1000 * 2;
 
@@ -305,7 +305,7 @@ public class JobClient implements MRConstants {
       try {
         running = jc.submitJob(job);
         String jobId = running.getJobID();
-        LOG.info("Running job: " + jobId);
+          LOGGER.info("Running job: " + jobId);
         while (!running.isComplete()) {
           try {
             Thread.sleep(1000);
@@ -314,14 +314,14 @@ public class JobClient implements MRConstants {
           String report = null;
           report = " map "+Math.round(running.mapProgress()*100)+"%  reduce " + Math.round(running.reduceProgress()*100)+"%";
           if (!report.equals(lastReport)) {
-            LOG.info(report);
+              LOGGER.info(report);
             lastReport = report;
           }
         }
         if (!running.isSuccessful()) {
           throw new IOException("Job failed!");
         }
-        LOG.info("Job complete: " + jobId);
+          LOGGER.info("Job complete: " + jobId);
         error = false;
       } finally {
         if (error && (running != null)) {

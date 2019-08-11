@@ -15,13 +15,15 @@
  */
 package org.apache.hadoop.dfs;
 
-import org.apache.hadoop.io.*;
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.util.*;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.io.UTF8;
+import org.apache.hadoop.util.Constants;
+import org.apache.hadoop.util.Daemon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -177,9 +179,9 @@ public class FSNamesystem implements FSConstants {
         lmthread.start();
         this.systemStart = System.currentTimeMillis();
         this.conf = conf;
-        this.desiredReplication = conf.getInt(ConfigConstants.DFS_REPLICATION, ConfigConstants.DFS_REPLICATION_DEFAULT);
+        this.desiredReplication = Constants.DFS_REPLICATION;
         this.maxReplication = desiredReplication;
-        this.maxReplicationStreams = conf.getInt(ConfigConstants.DFS_MAX_REPL_STREAMS, ConfigConstants.DFS_MAX_REPL_STREAMS_DEFAULT);
+        this.maxReplicationStreams = Constants.DFS_MAX_REPL_STREAMS;
         this.minReplication = 1;
         this.heartBeatRecheck = 1000;
     }

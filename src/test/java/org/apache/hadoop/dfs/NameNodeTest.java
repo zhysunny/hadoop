@@ -1,7 +1,5 @@
 package org.apache.hadoop.dfs;
 
-import static org.junit.Assert.*;
-
 import org.junit.*;
 
 /**

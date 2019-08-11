@@ -15,23 +15,19 @@
  */
 package org.apache.hadoop.dfs;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSOutputStream;
+import org.apache.hadoop.io.UTF8;
+import org.apache.hadoop.util.Constants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.TreeSet;
-
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSOutputStream;
-import org.apache.hadoop.io.UTF8;
-import org.apache.hadoop.util.ConfigConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * 该类提供了对DFS卷进行错误和次优条件的基本检查。
@@ -92,7 +88,7 @@ public class DFSck {
         this.showFiles = showFiles;
         this.showBlocks = showBlocks;
         this.showLocations = showLocations;
-        String fsName = conf.get(ConfigConstants.FS_DEFAULT_NAME, ConfigConstants.FS_DEFAULT_NAME_DEFAULT);
+        String fsName = Constants.FS_DEFAULT_NAME;
         if ("local".equals(fsName)) {
             throw new Exception("This tool only checks DFS, but your config uses 'local' FS.");
         }
@@ -108,7 +104,7 @@ public class DFSck {
     public Result fsck(String path) throws Exception {
         DFSFileInfo[] files = dfs.listFiles(new UTF8(path));
         Result res = new Result();
-        res.setReplication(conf.getInt(ConfigConstants.DFS_REPLICATION, ConfigConstants.DFS_REPLICATION_DEFAULT));
+        res.setReplication(Constants.DFS_REPLICATION);
         for (int i = 0; i < files.length; i++) {
             check(files[i], res);
         }

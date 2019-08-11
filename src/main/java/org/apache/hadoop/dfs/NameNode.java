@@ -15,14 +15,16 @@
  */
 package org.apache.hadoop.dfs;
 
-import org.apache.hadoop.io.*;
-import org.apache.hadoop.ipc.*;
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.util.ConfigConstants;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.io.UTF8;
+import org.apache.hadoop.ipc.RPC;
+import org.apache.hadoop.ipc.Server;
+import org.apache.hadoop.util.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 
 /**********************************************************
  * NameNode serves as both directory namespace manager and
@@ -74,7 +76,7 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
      * @throws IOException
      */
     public NameNode(Configuration conf) throws IOException {
-        this(getDir(conf), DataNode.createSocketAddr(conf.get(ConfigConstants.FS_DEFAULT_NAME, ConfigConstants.FS_DEFAULT_NAME_DEFAULT)).getPort(), conf);
+        this(getDir(conf), DataNode.createSocketAddr(Constants.FS_DEFAULT_NAME).getPort(), conf);
     }
 
     /**
@@ -86,7 +88,7 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
      */
     public NameNode(File dir, int port, Configuration conf) throws IOException {
         this.namesystem = new FSNamesystem(dir, conf);
-        this.handlerCount = conf.getInt(ConfigConstants.DFS_NAMENODE_HANDLER_COUNT, ConfigConstants.DFS_NAMENODE_HANDLER_COUNT_DEFAULT);
+        this.handlerCount = Constants.DFS_NAMENODE_HANDLER_COUNT;
         this.server = RPC.getServer(this, port, handlerCount, false, conf);
         this.server.start();
     }
@@ -97,7 +99,7 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
      * @return
      */
     private static File getDir(Configuration conf) {
-        return new File(conf.get(ConfigConstants.DFS_NAME_DIR, ConfigConstants.DFS_NAME_DIR_DEFAULT));
+        return new File(Constants.DFS_NAME_DIR);
     }
 
     /**
@@ -432,7 +434,6 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
             System.err.println("Formatted：" + dir);
             System.exit(0);
         }
-
         NameNode namenode = new NameNode(conf);
         namenode.join();
     }

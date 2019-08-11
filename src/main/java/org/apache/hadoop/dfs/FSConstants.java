@@ -15,8 +15,7 @@
  */
 package org.apache.hadoop.dfs;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.util.ConfigConstants;
+import org.apache.hadoop.util.Constants;
 
 /**
  * 一些方便的常量
@@ -108,7 +107,7 @@ interface FSConstants {
     long LEASE_PERIOD = 60 * 1000;
     int READ_TIMEOUT = 60 * 1000;
 
-    int BUFFER_SIZE = new Configuration().getInt(ConfigConstants.IO_FILE_BUFFER_SIZE, ConfigConstants.IO_FILE_BUFFER_SIZE_DEFAULT);
+    int BUFFER_SIZE = Constants.IO_FILE_BUFFER_SIZE;
 
 }
 

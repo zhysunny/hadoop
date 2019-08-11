@@ -21,7 +21,7 @@ import java.util.*;
 
 import org.apache.hadoop.dfs.*;
 import org.apache.hadoop.conf.*;
-import org.apache.hadoop.util.ConfigConstants;
+import org.apache.hadoop.util.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,7 +86,7 @@ public abstract class FileSystem extends Configured {
      * @throws IOException
      */
     public static FileSystem get(Configuration conf) throws IOException {
-        return getNamed(conf.get(ConfigConstants.FS_DEFAULT_NAME, ConfigConstants.FS_DEFAULT_NAME_DEFAULT), conf);
+        return getNamed(Constants.FS_DEFAULT_NAME, conf);
     }
 
     /**
@@ -192,7 +192,7 @@ public abstract class FileSystem extends Configured {
      * @throws IOException
      */
     public FSDataOutputStream create(File file) throws IOException {
-        return create(file, true, getConf().getInt(ConfigConstants.IO_FILE_BUFFER_SIZE, ConfigConstants.IO_FILE_BUFFER_SIZE_DEFAULT));
+        return create(file, true, Constants.IO_FILE_BUFFER_SIZE);
     }
 
     /**

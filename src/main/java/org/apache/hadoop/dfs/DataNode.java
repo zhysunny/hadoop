@@ -25,25 +25,6 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-/**********************************************************
- * DataNode is a class (and program) that stores a set of blocks for a DFS deployment.
- * A single deployment can have one or many DataNodes.
- * Each DataNode communicates regularly with a single NameNode.
- * It also communicates with client code and other DataNodes from time to time.
- * DataNodes store a series of named blocks.
- * The DataNode allows client code to read these blocks, or to write new block data.
- * The DataNode may also, in response to instructions from its NameNode, delete blocks or copy blocks to/from other DataNodes.
- * The DataNode maintains just one critical table: block-> stream of bytes (of BLOCK_SIZE or less)
- * This info is stored on a local disk.
- * The DataNode reports the table's contents to the NameNode upon startup and every so often afterwards.
- * DataNodes spend their lives in an endless loop of asking the NameNode for something to do.
- * A NameNode cannot connect to a DataNode directly; a NameNode simply returns values from functions invoked by a DataNode.
- * DataNodes maintain an open server socket so that client code or other DataNodes can read/write data.
- * The host/port for this server is reported to the NameNode, which then sends that information to clients or other DataNodes that might be interested.
- *
- * @author Mike Cafarella
- **********************************************************/
-
 /**
  * DataNode是一个类(和程序)，它为DFS部署存储一组块。
  * 一个部署可以有一个或多个datanode。
@@ -101,25 +82,23 @@ public class DataNode implements FSConstants, Runnable {
     private Configuration fConf;
 
     /**
-     * Create the DataNode given a configuration and a dataDir.
-     * 'dataDir' is where the blocks are stored.
+     * 创建给定配置和dataDir的DataNode。
+     * “dataDir”是存储块的地方。
      */
     public DataNode(Configuration conf, String datadir) throws IOException {
         this(InetAddress.getLocalHost().getHostName(),
                 new File(datadir),
-                createSocketAddr(conf.get("fs.default.name", "local")), conf);
+                createSocketAddr(Constants.FS_DEFAULT_NAME), conf);
     }
 
     /**
-     * A DataNode can also be created with configuration information
-     * explicitly given.
+     * 还可以使用显式给定的配置信息创建DataNode。
      */
     public DataNode(String machineName, File datadir, InetSocketAddress nameNodeAddr, Configuration conf) throws IOException {
-        this.namenode = (DatanodeProtocol) RPC.getProxy(DatanodeProtocol.class, nameNodeAddr, conf);
+        this.namenode = RPC.getProxy(DatanodeProtocol.class, nameNodeAddr, conf);
         this.data = new FSDataset(datadir, conf);
-
         ServerSocket ss = null;
-        int tmpPort = conf.getInt("dfs.datanode.port", 50010);
+        int tmpPort = Constants.DFS_DATANODE_PORT;
         while (ss == null) {
             try {
                 ss = new ServerSocket(tmpPort);
@@ -132,25 +111,21 @@ public class DataNode implements FSConstants, Runnable {
         this.localName = machineName + ":" + tmpPort;
         this.dataXceiveServer = new Daemon(new DataXceiveServer(ss));
         this.dataXceiveServer.start();
-
-        long blockReportIntervalBasis =
-                conf.getLong("dfs.blockreport.intervalMsec", BLOCKREPORT_INTERVAL);
-        this.blockReportInterval =
-                blockReportIntervalBasis - new Random().nextInt((int) (blockReportIntervalBasis / 10));
-        this.datanodeStartupPeriod =
-                conf.getLong("dfs.datanode.startupMsec", DATANODE_STARTUP_PERIOD);
+        long blockReportIntervalBasis = Constants.DFS_BLOCKREPORT_INTERVALMSEC;
+        this.blockReportInterval = blockReportIntervalBasis - new Random().nextInt((int) (blockReportIntervalBasis / 10));
+        this.datanodeStartupPeriod = Constants.DFS_DATANODE_STARTUPMSEC;
     }
 
     /**
-     * Return the namenode's identifier
+     * 返回namenode的标识符
      */
     public String getNamenode() {
         return "<namenode>";
     }
 
     /**
-     * Shut down this instance of the datanode.
-     * Returns only after shutdown is complete.
+     * 关闭datanode的这个实例。
+     * 仅在关机完成后返回。
      */
     void shutdown() {
         this.shouldRun = false;

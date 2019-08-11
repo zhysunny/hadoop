@@ -15,17 +15,24 @@
  */
 package org.apache.hadoop.dfs;
 
-import org.apache.hadoop.io.*;
-import org.apache.hadoop.fs.*;
-import org.apache.hadoop.ipc.*;
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.util.*;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSInputStream;
+import org.apache.hadoop.fs.FSOutputStream;
+import org.apache.hadoop.io.UTF8;
+import org.apache.hadoop.ipc.RPC;
+import org.apache.hadoop.util.Constants;
+import org.apache.hadoop.util.Daemon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.net.*;
-import java.util.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.util.Random;
+import java.util.TreeSet;
+import java.util.Vector;
 
 /**
  * DFSClient可以连接到Hadoop文件系统并执行基本的文件任务。<br/>
@@ -498,7 +505,7 @@ class DFSClient implements FSConstants {
         }
 
         private File newBackupFile() throws IOException {
-            File result = conf.getFile(ConfigConstants.DFS_DATA_DIR, "tmp" + File.separator + "client-" + Math.abs(r.nextLong()));
+            File result = conf.getFile(Constants.DFS_DATA_DIR, "tmp" + File.separator + "client-" + Math.abs(r.nextLong()));
             result.deleteOnExit();
             return result;
         }

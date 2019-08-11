@@ -15,12 +15,12 @@
  */
 package org.apache.hadoop.fs;
 
-import java.io.*;
-import java.util.zip.Checksum;
-import java.util.zip.CRC32;
-
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.util.ConfigConstants;
+import org.apache.hadoop.util.Constants;
+
+import java.io.*;
+import java.util.zip.CRC32;
+import java.util.zip.Checksum;
 
 /**
  * 该实用程序将{@link FSOutputStream}包装在{@link DataOutputStream}中，通过{@link BufferedOutputStream}缓冲输出，并创建一个校验文件。
@@ -42,7 +42,7 @@ public class FSDataOutputStream extends DataOutputStream {
 
         public Summer(FileSystem fs, File file, boolean overwrite, Configuration conf) throws IOException {
             super(fs.createRaw(file, overwrite));
-            this.bytesPerSum = conf.getInt(ConfigConstants.IO_BYTES_PER_CHECKSUM, ConfigConstants.IO_BYTES_PER_CHECKSUM_DEFAULT);
+            this.bytesPerSum = Constants.IO_BYTES_PER_CHECKSUM;
             this.sums = new FSDataOutputStream(fs.createRaw(fs.getChecksumFile(file), true), conf);
             sums.write(CHECKSUM_VERSION, 0, CHECKSUM_VERSION.length);
             sums.writeInt(this.bytesPerSum);
@@ -141,7 +141,7 @@ public class FSDataOutputStream extends DataOutputStream {
      * 没有校验的构造器。
      */
     private FSDataOutputStream(FSOutputStream out, Configuration conf) throws IOException {
-        this(out, conf.getInt(ConfigConstants.IO_FILE_BUFFER_SIZE, ConfigConstants.IO_FILE_BUFFER_SIZE_DEFAULT));
+        this(out, Constants.IO_FILE_BUFFER_SIZE);
     }
 
     /**
