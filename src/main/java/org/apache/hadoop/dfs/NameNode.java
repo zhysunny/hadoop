@@ -26,38 +26,26 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 
-/**********************************************************
- * NameNode serves as both directory namespace manager and
- * "inode table" for the Hadoop DFS.  There is a single NameNode
- * running in any DFS deployment.  (Well, except when there
- * is a second backup/failover NameNode.)
- *
- * The NameNode controls two critical tables:
- *   1)  filename->blocksequence (namespace)
- *   2)  block->machinelist ("inodes")
- *
- * The first table is stored on disk and is very precious.
- * The second table is rebuilt every time the NameNode comes
- * up.
- *
- * 'NameNode' refers to both this class as well as the 'NameNode server'.
- * The 'FSNamesystem' class actually performs most of the filesystem
- * management.  The majority of the 'NameNode' class itself is concerned
- * with exposing the IPC interface to the outside world, plus some
- * configuration management.
- *
- * NameNode implements the ClientProtocol interface, which allows
- * clients to ask for DFS services.  ClientProtocol is not
- * designed for direct use by authors of DFS client code.  End-users
- * should instead use the org.apache.nutch.hadoop.fs.FileSystem class.
- *
- * NameNode also implements the DatanodeProtocol interface, used by
- * DataNode programs that actually store DFS data blocks.  These
- * methods are invoked repeatedly and automatically by all the
- * DataNodes in a DFS deployment.
- *
- * @author Mike Cafarella
- **********************************************************/
+/**
+ * NameNode同时充当Hadoop DFS的目录名称空间管理器和“inode表”。<br/>
+ * 在任何DFS部署中都运行一个NameNode。<br/>
+ * (除非有第二个备份/故障转移NameNode)。<br/>
+ * NameNode控制两个关键表:<br/>
+ * 1)文件名- > blocksequence(名称空间)<br/>
+ * 2)块- > machinelist(“节点”)<br/>
+ * 第一个表存储在磁盘上，非常宝贵。<br/>
+ * 每当出现NameNode时，都会重新构建第二个表。<br/>
+ * “NameNode”指的是这个类和“NameNode服务器”。<br/>
+ * “fsnamessystem”类实际上执行大部分文件系统管理。<br/>
+ * “NameNode”类本身的大部分内容是将IPC接口公开给外部世界，以及一些配置管理。<br/>
+ * NameNode实现了ClientProtocol接口，该接口允许客户机请求DFS服务。<br/>
+ * ClientProtocol不是为DFS客户机代码的作者直接使用而设计的。<br/>
+ * 最终用户应该使用org.apache.nutch.hadoop.fs。文件系统类。<br/>
+ * NameNode还实现了DatanodeProtocol接口，由实际存储DFS数据块的DataNode程序使用。<br/>
+ * 这些方法由DFS部署中的所有数据节点反复自动调用。
+ * @author 章云
+ * @date 2019/8/12 11:18
+ */
 public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
     private static final Logger LOGGER = LoggerFactory.getLogger(NameNode.class);
 
@@ -103,7 +91,7 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
     }
 
     /**
-     * 等待服务完成。
+     * 等待服务完成。<br/>
      * (正常情况下，它会一直运行下去。)
      */
     public void join() {
@@ -114,7 +102,7 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
     }
 
     /**
-     * 停止所有NameNode线程，等待所有线程完成。
+     * 停止所有NameNode线程，等待所有线程完成。<br/>
      * 只有包访问，因为这是用于JUnit测试的。
      */
     void stop() {
@@ -129,8 +117,6 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
     // ClientProtocol
     /////////////////////////////////////////////////////
 
-    /**
-     */
     @Override
     public LocatedBlock[] open(String src) throws IOException {
         Object[] openResults = namesystem.open(new UTF8(src));
@@ -147,8 +133,6 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
         }
     }
 
-    /**
-     */
     @Override
     public LocatedBlock create(String src, String clientName, String clientMachine, boolean overwrite) throws IOException {
         Object[] results = namesystem.startFile(new UTF8(src), new UTF8(clientName), new UTF8(clientMachine), overwrite);
@@ -161,8 +145,6 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
         }
     }
 
-    /**
-     */
     @Override
     public LocatedBlock addBlock(String src, String clientMachine) throws IOException {
         int retries = 5;
@@ -188,9 +170,8 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
     }
 
     /**
-     * The client can report in a set written blocks that it wrote.
-     * These blocks are reported via the client instead of the datanode
-     * to prevent weird heartbeat race conditions.
+     * 客户端可以在它所写的一组已写块中报告。<br/>
+     * 这些块通过客户机而不是datanode报告，以防止奇怪的心跳争用条件。
      */
     @Override
     public void reportWrittenBlock(LocatedBlock lb) throws IOException {
@@ -202,7 +183,7 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
     }
 
     /**
-     * The client needs to give up on the block.
+     * 客户需要放弃交易。
      */
     @Override
     public void abandonBlock(Block b, String src) throws IOException {
@@ -211,15 +192,11 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
         }
     }
 
-    /**
-     */
     @Override
-    public void abandonFileInProgress(String src) throws IOException {
+    public void abandonFileInProgress(String src) {
         namesystem.abandonFileInProgress(new UTF8(src));
     }
 
-    /**
-     */
     @Override
     public boolean complete(String src, String clientName) throws IOException {
         int returnCode = namesystem.completeFile(new UTF8(src), new UTF8(clientName));
@@ -232,10 +209,8 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
         }
     }
 
-    /**
-     */
     @Override
-    public String[][] getHints(String src, long start, long len) throws IOException {
+    public String[][] getHints(String src, long start, long len) {
         UTF8[][] hosts = namesystem.getDatanodeHints(new UTF8(src), start, len);
         if (hosts == null) {
             return new String[0][];
@@ -251,43 +226,31 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
         }
     }
 
-    /**
-     */
     @Override
-    public boolean rename(String src, String dst) throws IOException {
+    public boolean rename(String src, String dst) {
         return namesystem.renameTo(new UTF8(src), new UTF8(dst));
     }
 
-    /**
-     */
     @Override
-    public boolean delete(String src) throws IOException {
+    public boolean delete(String src) {
         return namesystem.delete(new UTF8(src));
     }
 
-    /**
-     */
     @Override
-    public boolean exists(String src) throws IOException {
+    public boolean exists(String src) {
         return namesystem.exists(new UTF8(src));
     }
 
-    /**
-     */
     @Override
-    public boolean isDir(String src) throws IOException {
+    public boolean isDir(String src) {
         return namesystem.isDir(new UTF8(src));
     }
 
-    /**
-     */
     @Override
-    public boolean mkdirs(String src) throws IOException {
+    public boolean mkdirs(String src) {
         return namesystem.mkdirs(new UTF8(src));
     }
 
-    /**
-     */
     @Override
     public boolean obtainLock(String src, String clientName, boolean exclusive) throws IOException {
         int returnCode = namesystem.obtainLock(new UTF8(src), new UTF8(clientName), exclusive);
@@ -300,8 +263,6 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
         }
     }
 
-    /**
-     */
     @Override
     public boolean releaseLock(String src, String clientName) throws IOException {
         int returnCode = namesystem.releaseLock(new UTF8(src), new UTF8(clientName));
@@ -314,32 +275,24 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
         }
     }
 
-    /**
-     */
     @Override
-    public void renewLease(String clientName) throws IOException {
+    public void renewLease(String clientName) {
         namesystem.renewLease(new UTF8(clientName));
     }
 
-    /**
-     */
     @Override
-    public DFSFileInfo[] getListing(String src) throws IOException {
+    public DFSFileInfo[] getListing(String src) {
         return namesystem.getListing(new UTF8(src));
     }
 
-    /**
-     */
     @Override
-    public long[] getStats() throws IOException {
+    public long[] getStats() {
         long[] results = new long[2];
         results[0] = namesystem.totalCapacity();
         results[1] = namesystem.totalCapacity() - namesystem.totalRemaining();
         return results;
     }
 
-    /**
-     */
     @Override
     public DatanodeInfo[] getDatanodeReport() throws IOException {
         DatanodeInfo[] results = namesystem.datanodeReport();
@@ -353,8 +306,6 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
     // DatanodeProtocol
     ////////////////////////////////////////////////////////////////
 
-    /**
-     */
     @Override
     public void sendHeartbeat(String sender, long capacity, long remaining) {
         namesystem.gotHeartbeat(new UTF8(sender), capacity, remaining);
@@ -373,8 +324,6 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
         }
     }
 
-    /**
-     */
     @Override
     public void errorReport(String sender, String msg) {
         // Log error message from datanode
@@ -382,25 +331,22 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
     }
 
     /**
-     * Return a block-oriented command for the datanode to execute.
-     * This will be either a transfer or a delete operation.
+     * 返回一个面向块的命令，以便datanode执行。<br/>
+     * 这将是一个转移或删除操作。
      */
     @Override
     public BlockCommand getBlockwork(String sender, int xmitsInProgress) {
         //
-        // Ask to perform pending transfers, if any
+        // 请求执行挂起的传输(如果有的话)
         //
         Object[] xferResults = namesystem.pendingTransfers(new DatanodeInfo(new UTF8(sender)), xmitsInProgress);
         if (xferResults != null) {
             return new BlockCommand((Block[]) xferResults[0], (DatanodeInfo[][]) xferResults[1]);
         }
 
-        //
-        // If there are no transfers, check for recently-deleted blocks that
-        // should be removed.  This is not a full-datanode sweep, as is done during
-        // a block report.  This is just a small fast removal of blocks that have
-        // just been removed.
-        //
+        //如果没有传输，检查最近删除的应该删除的块。
+        //这不是一个全datanode扫描，就像在块报告中所做的那样。
+        //这只是一个小的快速移动的块，刚刚被删除。
         Block[] blocks = namesystem.blocksToInvalidate(new UTF8(sender));
         if (blocks != null) {
             return new BlockCommand(blocks);

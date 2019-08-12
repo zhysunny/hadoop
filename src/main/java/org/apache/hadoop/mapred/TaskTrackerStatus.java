@@ -42,7 +42,7 @@ class TaskTrackerStatus implements Writable {
     String trackerName;
     String host;
     int port;
-    Vector taskReports;
+    Vector<TaskStatus> taskReports;
     
     volatile long lastSeen;
     
@@ -53,12 +53,12 @@ class TaskTrackerStatus implements Writable {
 
     /**
      */
-    public TaskTrackerStatus(String trackerName, String host, int port, Vector taskReports) {
+    public TaskTrackerStatus(String trackerName, String host, int port, Vector<TaskStatus> taskReports) {
         this.trackerName = trackerName;
         this.host = host;
         this.port = port;
 
-        this.taskReports = new Vector();
+        this.taskReports = new Vector<TaskStatus>();
         this.taskReports.addAll(taskReports);
     }
 
@@ -83,7 +83,7 @@ class TaskTrackerStatus implements Writable {
      *
      * Tasks are tracked by a TaskStatus object.
      */
-    public Iterator taskReports() {
+    public Iterator<TaskStatus> taskReports() {
         return taskReports.iterator();
     }
 
@@ -92,8 +92,8 @@ class TaskTrackerStatus implements Writable {
      */
     public int countMapTasks() {
         int mapCount = 0;
-        for (Iterator it = taskReports.iterator(); it.hasNext(); ) {
-            TaskStatus ts = (TaskStatus) it.next();
+        for (Iterator<TaskStatus> it = taskReports.iterator(); it.hasNext(); ) {
+            TaskStatus ts = it.next();
             if (ts.getIsMap()) {
                 mapCount++;
             }
@@ -129,8 +129,8 @@ class TaskTrackerStatus implements Writable {
         out.writeInt(port);
 
         out.writeInt(taskReports.size());
-        for (Iterator it = taskReports.iterator(); it.hasNext(); ) {
-            ((TaskStatus) it.next()).write(out);
+        for (Iterator<TaskStatus> it = taskReports.iterator(); it.hasNext(); ) {
+            it.next().write(out);
         }
     }
 
@@ -142,7 +142,7 @@ class TaskTrackerStatus implements Writable {
         this.host = UTF8.readString(in);
         this.port = in.readInt();
 
-        taskReports = new Vector();
+        taskReports = new Vector<TaskStatus>();
         taskReports.clear();
 
         int numTasks = in.readInt();

@@ -33,7 +33,7 @@ class JobTrackerInfoServer {
 
     public static class RedirectHandler extends AbstractHttpHandler {
         @Override
-        public void handle(String pathInContext, String pathParams, HttpRequest request, HttpResponse response) throws HttpException, IOException {
+        public void handle(String pathInContext, String pathParams, HttpRequest request, HttpResponse response) throws IOException {
             response.sendRedirect("/jobtracker");
             request.setHandled(true);
         }
@@ -62,8 +62,7 @@ class JobTrackerInfoServer {
 	    } catch (UnsupportedEncodingException e) {
 	    }
 	}
-        WebApplicationContext context =
-          server.addWebApplication(null,"/",new File(path).getCanonicalPath());
+//        WebApplicationContext context = server.addWebApplication(null,"/",new File(path).getCanonicalPath());
 
         SocketListener socketListener = new SocketListener();
         socketListener.setPort(port);

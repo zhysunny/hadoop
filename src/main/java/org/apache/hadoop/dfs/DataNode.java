@@ -26,19 +26,19 @@ import java.net.*;
 import java.util.*;
 
 /**
- * DataNode是一个类(和程序)，它为DFS部署存储一组块。
- * 一个部署可以有一个或多个datanode。
- * 每个DataNode定期与一个NameNode通信。
- * 它还不时地与客户机代码和其他数据节点通信。
- * datanode存储一系列命名块。
- * DataNode允许客户端代码读取这些块，或者编写新的块数据。
- * DataNode还可以响应来自其NameNode的指令，删除块或将块复制到/从其他DataNode。
- * DataNode只维护一个关键表:block->字节流(BLOCK_SIZE或更小)
- * 此信息存储在本地磁盘上。
- * DataNode在启动时以及之后经常向NameNode报告表的内容。
- * 数据节点将它们的生命花费在无休止的循环中，要求NameNode做一些事情。
- * NameNode不能直接连接到数据节点;NameNode只返回由DataNode调用的函数的值。
- * 数据节点维护一个开放的服务器套接字，以便客户机代码或其他数据节点能够读取/写入数据。
+ * DataNode是一个类(和程序)，它为DFS部署存储一组块。<br/>
+ * 一个部署可以有一个或多个datanode。<br/>
+ * 每个DataNode定期与一个NameNode通信。<br/>
+ * 它还不时地与客户机代码和其他数据节点通信。<br/>
+ * datanode存储一系列命名块。<br/>
+ * DataNode允许客户端代码读取这些块，或者编写新的块数据。<br/>
+ * DataNode还可以响应来自其NameNode的指令，删除块或将块复制到/从其他DataNode。<br/>
+ * DataNode只维护一个关键表:block->字节流(BLOCK_SIZE或更小)<br/>
+ * 此信息存储在本地磁盘上。<br/>
+ * DataNode在启动时以及之后经常向NameNode报告表的内容。<br/>
+ * 数据节点将它们的生命花费在无休止的循环中，要求NameNode做一些事情。<br/>
+ * NameNode不能直接连接到数据节点;NameNode只返回由DataNode调用的函数的值。<br/>
+ * 数据节点维护一个开放的服务器套接字，以便客户机代码或其他数据节点能够读取/写入数据。<br/>
  * 此服务器的主机/端口报告给NameNode，然后NameNode将该信息发送给客户机或其他可能感兴趣的数据节点。
  * @author 章云
  * @date 2019/8/10 14:57
@@ -82,7 +82,7 @@ public class DataNode implements FSConstants, Runnable {
     private Configuration fConf;
 
     /**
-     * 创建给定配置和dataDir的DataNode。
+     * 创建给定配置和dataDir的DataNode。<br/>
      * “dataDir”是存储块的地方。
      */
     public DataNode(Configuration conf, String datadir) throws IOException {
@@ -124,7 +124,7 @@ public class DataNode implements FSConstants, Runnable {
     }
 
     /**
-     * 关闭datanode的这个实例。
+     * 关闭datanode的这个实例。<br/>
      * 仅在关机完成后返回。
      */
     void shutdown() {
@@ -137,7 +137,7 @@ public class DataNode implements FSConstants, Runnable {
     }
 
     /**
-     * DataNode的主回路。
+     * DataNode的主回路。<br/>
      * 运行到关机，永远调用远程NameNode函数。
      */
     public void offerService() throws Exception {
@@ -154,53 +154,40 @@ public class DataNode implements FSConstants, Runnable {
             // 每隔一段时间，发送心跳或阻塞报告
             synchronized (receivedBlockList) {
                 if (now - lastHeartbeat > HEARTBEAT_INTERVAL) {
-                    //
                     //所有心跳消息包括以下信息:
                     //——Datanode名称
                     //——数据传输端口
                     //——总容量
                     //——剩余字节
-                    //
                     namenode.sendHeartbeat(localName, data.getCapacity(), data.getRemaining());
                     LOGGER.info("Just sent heartbeat, with name " + localName);
                     lastHeartbeat = now;
                 }
                 if (now - lastBlockReport > blockReportInterval) {
-                    //
                     // 发送最新的区块信息报告，如果计时器已经过期。
                     // 获取一个本地块的列表，这些块已经过时，可以安全地GC'ed。
-                    //
                     Block[] toDelete = namenode.blockReport(localName, data.getBlockReport());
                     data.invalidate(toDelete);
                     lastBlockReport = now;
                     continue;
                 }
                 if (receivedBlockList.size() > 0) {
-                    //
                     // 将新接收到的blockids发送到namenode
-                    //
                     Block[] blockArray = receivedBlockList.toArray(new Block[receivedBlockList.size()]);
                     receivedBlockList.removeAllElements();
                     namenode.blockReceived(localName, blockArray);
                 }
 
-                //
                 //只在启动静默期之后执行块操作(传输、删除)。
                 //假设所有的数据节点都将一起启动，但是namenode可能在此之前已经启动了一段时间。
                 //(在网络中断的情况下尤其如此。)
                 //因此，等待一段时间将连接时间传递到第一个块传输。
                 //否则，我们会不必要地转移很多块。
-                //
                 if (now - sendStart > datanodeStartupPeriod) {
-                    //
-                    // Check to see if there are any block-instructions from the
-                    // namenode that this datanode should perform.
-                    //
+                    // 检查这个datanode是否应该执行来自namenode的任何块指令。
                     BlockCommand cmd = namenode.getBlockwork(localName, xmitsInProgress);
                     if (cmd != null && cmd.transferBlocks()) {
-                        //
-                        // Send a copy of a block to another datanode
-                        //
+                        // 将一个块的副本发送到另一个datanode
                         Block[] blocks = cmd.getBlocks();
                         DatanodeInfo[][] xferTargets = cmd.getTargets();
 
@@ -218,18 +205,12 @@ public class DataNode implements FSConstants, Runnable {
                             }
                         }
                     } else if (cmd != null && cmd.invalidateBlocks()) {
-                        //
-                        // Some local block(s) are obsolete and can be 
-                        // safely garbage-collected.
-                        //
+                        // 一些本地块已经过时，可以安全地进行垃圾收集。
                         data.invalidate(cmd.getBlocks());
                     }
                 }
 
-                //
-                // There is no work to do;  sleep until hearbeat timer elapses, 
-                // or work arrives, and then iterate again.
-                //
+                // 没有工作可做;休眠，直到hearbeat计时器超时，或者工作到达，然后再重复。
                 long waitTime = HEARTBEAT_INTERVAL - (now - lastHeartbeat);
                 if (waitTime > 0 && receivedBlockList.size() == 0) {
                     try {
@@ -242,10 +223,9 @@ public class DataNode implements FSConstants, Runnable {
     }
 
     /**
-     * Server used for receiving/sending a block of data.
-     * This is created to listen for requests from clients or
-     * other DataNodes.  This small server does not use the
-     * Hadoop IPC mechanism.
+     * 用于接收/发送数据块的服务器。<br/>
+     * 创建它是为了侦听来自客户机或其他datanode的请求。<br/>
+     * 这个小服务器不使用Hadoop IPC机制。
      */
     class DataXceiveServer implements Runnable {
         boolean shouldListen = true;
@@ -255,8 +235,6 @@ public class DataNode implements FSConstants, Runnable {
             this.ss = ss;
         }
 
-        /**
-         */
         @Override
         public void run() {
             try {
@@ -281,7 +259,7 @@ public class DataNode implements FSConstants, Runnable {
     }
 
     /**
-     * Thread for processing incoming/outgoing data stream
+     * 处理传入/传出数据流的线程
      */
     class DataXceiver implements Runnable {
         Socket s;
@@ -291,7 +269,7 @@ public class DataNode implements FSConstants, Runnable {
         }
 
         /**
-         * Read/write data from/to the DataXceiveServer.
+         * 从/向DataXceiveServer读取/写入数据。
          */
         @Override
         public void run() {
@@ -300,9 +278,7 @@ public class DataNode implements FSConstants, Runnable {
                 try {
                     byte op = (byte) in.read();
                     if (op == OP_WRITE_BLOCK) {
-                        //
-                        // Read in the header
-                        //
+                        // 在页眉中读取
                         DataOutputStream reply = new DataOutputStream(new BufferedOutputStream(s.getOutputStream()));
                         try {
                             boolean shouldReportBlock = in.readBoolean();
@@ -321,30 +297,21 @@ public class DataNode implements FSConstants, Runnable {
                             byte encodingType = (byte) in.read();
                             long len = in.readLong();
 
-                            //
-                            // Make sure curTarget is equal to this machine
-                            //
+                            // 确保curTarget等于这台机器
                             DatanodeInfo curTarget = targets[0];
 
-                            //
-                            // Track all the places we've successfully written the block
-                            //
+                            // 跟踪我们成功地编写了块的所有位置
                             Vector mirrors = new Vector();
 
-                            //
-                            // Open local disk out
-                            //
+                            // 打开本地磁盘
                             DataOutputStream out = new DataOutputStream(new BufferedOutputStream(data.writeToBlock(b)));
                             InetSocketAddress mirrorTarget = null;
                             try {
-                                //
-                                // Open network conn to backup machine, if 
-                                // appropriate
-                                //
+                                // 打开网络连接到备份机，如果合适的话
                                 DataInputStream in2 = null;
                                 DataOutputStream out2 = null;
                                 if (targets.length > 1) {
-                                    // Connect to backup machine
+                                    // 连接到备份机
                                     mirrorTarget = createSocketAddr(targets[1].getName().toString());
                                     try {
                                         Socket s2 = new Socket();
@@ -353,7 +320,7 @@ public class DataNode implements FSConstants, Runnable {
                                         out2 = new DataOutputStream(new BufferedOutputStream(s2.getOutputStream()));
                                         in2 = new DataInputStream(new BufferedInputStream(s2.getInputStream()));
 
-                                        // Write connection header
+                                        // 编写连接头
                                         out2.write(OP_WRITE_BLOCK);
                                         out2.writeBoolean(shouldReportBlock);
                                         b.write(out2);
@@ -377,10 +344,7 @@ public class DataNode implements FSConstants, Runnable {
                                     }
                                 }
 
-                                //
-                                // Process incoming data, copy to disk and
-                                // maybe to network.
-                                //
+                                // 处理传入的数据，复制到磁盘，或者网络。
                                 try {
                                     boolean anotherChunk = len != 0;
                                     byte[] buf = new byte[BUFFER_SIZE];
@@ -402,11 +366,8 @@ public class DataNode implements FSConstants, Runnable {
                                                     try {
                                                         out2.write(buf, 0, bytesRead);
                                                     } catch (IOException out2e) {
-                                                        //
-                                                        // If stream-copy fails, continue 
-                                                        // writing to disk.  We shouldn't 
-                                                        // interrupt client write.
-                                                        //
+                                                        // 如果流复制失败，请继续写入磁盘。
+                                                        // 我们不应该中断客户端写。
                                                         try {
                                                             out2.close();
                                                             in2.close();
@@ -466,12 +427,8 @@ public class DataNode implements FSConstants, Runnable {
                             }
                             data.finalizeBlock(b);
 
-                            // 
-                            // Tell the namenode that we've received this block 
-                            // in full, if we've been asked to.  This is done
-                            // during NameNode-directed block transfers, but not
-                            // client writes.
-                            //
+                            // 如果要求的话，告诉namenode我们已经完整地接收了这个块。
+                            // 这是在namenode定向的块传输期间完成的，但不是在客户机写入期间。
                             if (shouldReportBlock) {
                                 synchronized (receivedBlockList) {
                                     receivedBlockList.add(b);
@@ -479,10 +436,7 @@ public class DataNode implements FSConstants, Runnable {
                                 }
                             }
 
-                            //
-                            // Tell client job is done, and reply with
-                            // the new LocatedBlock.
-                            //
+                            // 告诉客户任务已经完成，并使用新的LocatedBlock进行回复。
                             reply.writeLong(WRITE_COMPLETE);
                             mirrors.add(curTarget);
                             LocatedBlock newLB = new LocatedBlock(b, (DatanodeInfo[]) mirrors.toArray(new DatanodeInfo[mirrors.size()]));
@@ -491,9 +445,7 @@ public class DataNode implements FSConstants, Runnable {
                             reply.close();
                         }
                     } else if (op == OP_READ_BLOCK || op == OP_READSKIP_BLOCK) {
-                        //
-                        // Read in the header
-                        //
+                        // 在页眉中读取
                         Block b = new Block();
                         b.readFields(in);
 
@@ -502,20 +454,14 @@ public class DataNode implements FSConstants, Runnable {
                             toSkip = in.readLong();
                         }
 
-                        //
-                        // Open reply stream
-                        //
+                        // 打开回复流
                         DataOutputStream out = new DataOutputStream(new BufferedOutputStream(s.getOutputStream()));
                         try {
-                            //
-                            // Write filelen of -1 if error
-                            //
+                            // 如果错误，写filelen (-1)
                             if (!data.isValidBlock(b)) {
                                 out.writeLong(-1);
                             } else {
-                                //
-                                // Get blockdata from disk
-                                //
+                                // 从磁盘获取块数据
                                 long len = data.getLength(b);
                                 DataInputStream in2 = new DataInputStream(data.getBlockData(b));
                                 out.writeLong(len);
@@ -554,8 +500,7 @@ public class DataNode implements FSConstants, Runnable {
                                         }
                                     }
                                 } catch (SocketException se) {
-                                    // This might be because the reader
-                                    // closed the stream early
+                                    // 这可能是因为读者提前关闭了流
                                 } finally {
                                     try {
                                         in2.close();
@@ -591,8 +536,8 @@ public class DataNode implements FSConstants, Runnable {
     }
 
     /**
-     * Used for transferring a block of data.  This class
-     * sends a piece of data to another DataNode.
+     * 用于传输数据块。<br/>
+     * 该类向另一个DataNode发送一段数据。
      */
     class DataTransfer implements Runnable {
         InetSocketAddress curTarget;
@@ -601,8 +546,8 @@ public class DataNode implements FSConstants, Runnable {
         byte[] buf;
 
         /**
-         * Connect to the first item in the target list.  Pass along the
-         * entire target list, the block, and the data.
+         * 连接到目标列表中的第一项。<br/>
+         * 传递整个目标列表、块和数据。
          */
         public DataTransfer(DatanodeInfo[] targets, Block b) throws IOException {
             this.curTarget = createSocketAddr(targets[0].getName().toString());
@@ -612,7 +557,7 @@ public class DataNode implements FSConstants, Runnable {
         }
 
         /**
-         * Do the deed, write the bytes
+         * 做契约，写字节
          */
         @Override
         public void run() {
@@ -626,9 +571,7 @@ public class DataNode implements FSConstants, Runnable {
                     long filelen = data.getLength(b);
                     DataInputStream in = new DataInputStream(new BufferedInputStream(data.getBlockData(b)));
                     try {
-                        //
-                        // Header info
-                        //
+                        // 标题信息
                         out.write(OP_WRITE_BLOCK);
                         out.writeBoolean(true);
                         b.write(out);
@@ -639,9 +582,7 @@ public class DataNode implements FSConstants, Runnable {
                         out.write(RUNLENGTH_ENCODING);
                         out.writeLong(filelen);
 
-                        //
-                        // Write the data
-                        //
+                        // 写入数据
                         while (filelen > 0) {
                             int bytesRead = in.read(buf, 0, (int) Math.min(filelen, buf.length));
                             out.write(buf, 0, bytesRead);
@@ -663,11 +604,9 @@ public class DataNode implements FSConstants, Runnable {
     }
 
     /**
-     * No matter what kind of exception we get, keep retrying to offerService().
-     * That's the loop that connects to the NameNode and provides basic DataNode
-     * functionality.
-     * <p>
-     * Only stop when "shouldRun" is turned off (which can only happen at shutdown).
+     * 无论我们得到什么样的异常，请继续重试offerService()。<br/>
+     * 这个循环连接到NameNode并提供基本的DataNode功能。<br/>
+     * 只有当“shouldRun”关闭时才会停止(只有在关机时才会发生)。
      */
     @Override
     public void run() {
@@ -690,9 +629,8 @@ public class DataNode implements FSConstants, Runnable {
     }
 
     /**
-     * Start datanode daemons.
-     * Start a datanode daemon for each comma separated data directory
-     * specified in property dfs.data.dir
+     * datanode守护进程开始。<br/>
+     * 为属性dfs.data.dir中指定的每个逗号分隔的数据目录启动datanode守护进程
      */
     public static void run(Configuration conf) throws IOException {
         String[] dataDirs = conf.getStrings("dfs.data.dir");
@@ -701,7 +639,7 @@ public class DataNode implements FSConstants, Runnable {
             DataNode dn = makeInstanceForDir(dataDirs[i], conf);
             if (dn != null) {
                 Thread t = new Thread(dn, "DataNode: " + dataDirs[i]);
-                // needed for JUnit testing
+                // 需要JUnit测试
                 t.setDaemon(true);
                 t.start();
                 subThreadList.add(t);
@@ -710,15 +648,14 @@ public class DataNode implements FSConstants, Runnable {
     }
 
     /**
-     * Start datanode daemons.
-     * Start a datanode daemon for each comma separated data directory
-     * specified in property dfs.data.dir and wait for them to finish.
-     * If this thread is specifically interrupted, it will stop waiting.
+     * datanode守护进程开始。<br/>
+     * 为属性dfs.data中指定的每个逗号分隔的数据目录启动datanode守护进程。并等待他们完成。<br/>
+     * 如果这个线程被特别中断，它将停止等待。
      */
     private static void runAndWait(Configuration conf) throws IOException {
         run(conf);
 
-        //  Wait for sub threads to exit
+        //  等待子线程退出
         for (Iterator iterator = subThreadList.iterator(); iterator.hasNext(); ) {
             Thread threadDataNode = (Thread) iterator.next();
             try {
@@ -733,12 +670,10 @@ public class DataNode implements FSConstants, Runnable {
     }
 
     /**
-     * Make an instance of DataNode after ensuring that given data directory
-     * (and parent directories, if necessary) can be created.
-     * @param dataDir where the new DataNode instance should keep its files.
-     * @param conf    Configuration instance to use.
-     * @return DataNode instance for given data dir and conf, or null if directory
-     * cannot be created.
+     * 在确保可以创建给定的数据目录(以及父目录，如果必要的话)之后，创建一个DataNode实例。
+     * @param dataDir 新DataNode实例应该将其文件保存在何处。
+     * @param conf    要使用的配置实例。
+     * @return 指定数据目录和conf的DataNode实例，如果无法创建目录，则为null。
      * @throws IOException
      */
     static DataNode makeInstanceForDir(String dataDir, Configuration conf) throws IOException {
