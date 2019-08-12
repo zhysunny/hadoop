@@ -25,7 +25,7 @@ import java.io.*;
  * @author 章云
  * @date 2019/8/8 20:49
  */
-class BlockCommand implements Writable {
+public class BlockCommand implements Writable {
 
     static {
         WritableFactories.setFactory(BlockCommand.class, new WritableFactory() {

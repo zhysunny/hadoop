@@ -30,7 +30,7 @@ import org.apache.hadoop.fs.FileUtil;
  * @author 章云
  * @date 2019/8/10 11:03
  */
-class FSDirectory implements FSConstants {
+public class FSDirectory implements FSConstants {
     static String FS_IMAGE = "fsimage";
     static String NEW_FS_IMAGE = "fsimage.new";
     static String OLD_FS_IMAGE = "fsimage.old";
@@ -43,7 +43,7 @@ class FSDirectory implements FSConstants {
     /******************************************************
      * 我们在内存中保存文件/块层次结构的表示。
      ******************************************************/
-    class INode {
+    public class INode {
         public String name;
         public INode parent;
         public TreeMap<String, INode> children = new TreeMap<String, INode>();

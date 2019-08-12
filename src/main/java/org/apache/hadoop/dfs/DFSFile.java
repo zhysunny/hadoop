@@ -22,7 +22,7 @@ import java.io.*;
  * @author 章云
  * @date 2019/8/9 14:01
  */
-class DFSFile extends File {
+public class DFSFile extends File {
     DFSFileInfo info;
 
     /**

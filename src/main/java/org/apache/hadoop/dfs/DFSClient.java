@@ -41,7 +41,7 @@ import java.util.Vector;
  * @author 章云
  * @date 2019/8/9 9:13
  */
-class DFSClient implements FSConstants {
+public class DFSClient implements FSConstants {
     private static final Logger LOGGER = LoggerFactory.getLogger(DFSClient.class);
     static int MAX_BLOCK_ACQUIRE_FAILURES = 3;
     ClientProtocol namenode;
@@ -205,7 +205,7 @@ class DFSClient implements FSConstants {
     /***************************************************************
      * 定期检查namenode，并在租期过半时续订所有租约。
      ***************************************************************/
-    class LeaseChecker implements Runnable {
+    public class LeaseChecker implements Runnable {
         @Override
         public void run() {
             long lastRenewed = 0;
@@ -229,7 +229,7 @@ class DFSClient implements FSConstants {
      * DFSInputStream提供来自命名文件的字节。<br/>
      * 它根据需要处理namenode和各种数据节点的协商。
      ****************************************************************/
-    class DFSInputStream extends FSInputStream {
+    public class DFSInputStream extends FSInputStream {
         private Socket s = null;
         boolean closed = false;
 
@@ -476,7 +476,7 @@ class DFSClient implements FSConstants {
     /****************************************************************
      * DFSOutputStream从一个字节流创建文件。
      ****************************************************************/
-    class DFSOutputStream extends FSOutputStream {
+    public class DFSOutputStream extends FSOutputStream {
         private Socket s;
         boolean closed = false;
 

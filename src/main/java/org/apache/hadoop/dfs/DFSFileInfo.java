@@ -24,7 +24,7 @@ import java.io.*;
  * @author 章云
  * @date 2019/8/9 14:05
  */
-class DFSFileInfo implements Writable {
+public class DFSFileInfo implements Writable {
     static {
         WritableFactories.setFactory(DFSFileInfo.class, new WritableFactory() {
             @Override

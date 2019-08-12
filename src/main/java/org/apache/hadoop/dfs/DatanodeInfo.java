@@ -25,7 +25,7 @@ import java.util.*;
  * @author 章云
  * @date 2019/8/8 20:53
  */
-class DatanodeInfo implements Writable, Comparable {
+public class DatanodeInfo implements Writable, Comparable {
 
     static {
         WritableFactories.setFactory(DatanodeInfo.class, new WritableFactory() {

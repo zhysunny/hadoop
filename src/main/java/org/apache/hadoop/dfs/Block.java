@@ -25,7 +25,7 @@ import java.util.*;
  * @author 章云
  * @date 2019/8/8 20:29
  */
-class Block implements Writable, Comparable {
+public class Block implements Writable, Comparable {
 
     static {
         WritableFactories.setFactory(Block.class, new WritableFactory() {

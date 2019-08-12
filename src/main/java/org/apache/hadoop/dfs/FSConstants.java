@@ -22,7 +22,7 @@ import org.apache.hadoop.util.Constants;
  * @author 章云
  * @date 2019/8/9 15:06
  */
-interface FSConstants {
+public interface FSConstants {
     int BLOCK_SIZE = 32 * 1000 * 1000;
     int MIN_BLOCKS_FOR_WRITE = 5;
 

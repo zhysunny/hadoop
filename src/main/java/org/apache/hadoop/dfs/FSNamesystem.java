@@ -563,7 +563,7 @@ public class FSNamesystem implements FSConstants {
      * 对于每个客户端，都有一个对应的租约，当客户端定期签入时，租约的时间戳将被更新。<br/>
      * 如果客户机死亡并允许其租约过期，则可以释放所有相应的锁。
      *************************************************************/
-    class Lease implements Comparable {
+    public class Lease implements Comparable {
         public UTF8 holder;
         public long lastUpdate;
         TreeSet<UTF8> locks = new TreeSet<UTF8>();
@@ -655,7 +655,7 @@ public class FSNamesystem implements FSConstants {
     /******************************************************
      * LeaseMonitor检查已过期的租约，并处理它们。
      ******************************************************/
-    class LeaseMonitor implements Runnable {
+    public class LeaseMonitor implements Runnable {
         @Override
         public void run() {
             while (fsRunning) {
@@ -801,7 +801,7 @@ public class FSNamesystem implements FSConstants {
     /**
      * 定期调用heartbeatCheck ()。
      */
-    class HeartbeatMonitor implements Runnable {
+    public class HeartbeatMonitor implements Runnable {
         @Override
         public void run() {
             while (fsRunning) {

@@ -22,7 +22,7 @@ import java.io.*;
  * @author 章云
  * @date 2019/7/30 15:56
  */
-interface ClientProtocol {
+public interface ClientProtocol {
 
     ///////////////////////////////////////
     // 文件内容

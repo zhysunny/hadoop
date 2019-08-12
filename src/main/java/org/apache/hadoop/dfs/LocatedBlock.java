@@ -24,7 +24,7 @@ import java.io.*;
  * @author 章云
  * @date 2019/8/9 8:45
  */
-class LocatedBlock implements Writable {
+public class LocatedBlock implements Writable {
 
     static {
         WritableFactories.setFactory(LocatedBlock.class, new WritableFactory() {

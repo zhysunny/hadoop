@@ -23,12 +23,12 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 
 import java.net.InetSocketAddress;
-import java.util.logging.Logger;
 import java.io.*;
 
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.conf.*;
-import org.apache.hadoop.util.LogFormatter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A simple RPC mechanism.
@@ -50,8 +50,7 @@ import org.apache.hadoop.util.LogFormatter;
  * the protocol instance is transmitted.
  */
 public class RPC {
-    private static final Logger LOG =
-            LogFormatter.getLogger("org.apache.hadoop.ipc.RPC");
+    private static final Logger LOGGER = LoggerFactory.getLogger(RPC.class);
 
     private RPC() {
     }                                  // no public ctor
@@ -302,7 +301,7 @@ public class RPC {
         if (value != null && value.length() > 55) {
             value = value.substring(0, 55) + "...";
         }
-        LOG.info(value);
+        LOGGER.info(value);
     }
 
 }

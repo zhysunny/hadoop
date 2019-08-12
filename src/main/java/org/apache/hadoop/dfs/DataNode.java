@@ -227,7 +227,7 @@ public class DataNode implements FSConstants, Runnable {
      * 创建它是为了侦听来自客户机或其他datanode的请求。<br/>
      * 这个小服务器不使用Hadoop IPC机制。
      */
-    class DataXceiveServer implements Runnable {
+    public class DataXceiveServer implements Runnable {
         boolean shouldListen = true;
         ServerSocket ss;
 
@@ -261,7 +261,7 @@ public class DataNode implements FSConstants, Runnable {
     /**
      * 处理传入/传出数据流的线程
      */
-    class DataXceiver implements Runnable {
+    public class DataXceiver implements Runnable {
         Socket s;
 
         public DataXceiver(Socket s) {
@@ -539,7 +539,7 @@ public class DataNode implements FSConstants, Runnable {
      * 用于传输数据块。<br/>
      * 该类向另一个DataNode发送一段数据。
      */
-    class DataTransfer implements Runnable {
+    public class DataTransfer implements Runnable {
         InetSocketAddress curTarget;
         DatanodeInfo[] targets;
         Block b;

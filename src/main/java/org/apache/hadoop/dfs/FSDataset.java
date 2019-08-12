@@ -29,13 +29,13 @@ import org.apache.hadoop.fs.df.DFFactory;
  * @author 章云
  * @date 2019/8/9 15:18
  */
-class FSDataset implements FSConstants {
+public class FSDataset implements FSConstants {
     static final double USABLE_DISK_PCT = 0.98;
 
     /**
      * 一种节点类型，可以构建成反映本地磁盘上块层次结构的树。
      */
-    class FSDir {
+    public class FSDir {
         File dir;
         FSDir[] children;
 

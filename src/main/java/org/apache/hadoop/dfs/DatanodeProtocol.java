@@ -25,7 +25,7 @@ import java.io.*;
  * @author 章云
  * @date 2019/7/30 16:22
  */
-interface DatanodeProtocol {
+public interface DatanodeProtocol {
     /**
      * sendHeartbeat()告诉NameNode, DataNode仍然是活动的，并且运行良好。还包括一些状态信息。
      * @param sender
