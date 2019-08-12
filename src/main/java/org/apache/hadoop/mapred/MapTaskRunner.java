@@ -30,12 +30,14 @@ class MapTaskRunner extends TaskRunner {
   }
   
   /** Delete any temporary files from previous failed attempts. */
+  @Override
   public boolean prepare() throws IOException {
     this.mapOutputFile.removeAll(getTask().getTaskId());
     return true;
   }
 
   /** Delete all of the temporary map output files. */
+  @Override
   public void close() throws IOException {
     LOG.info(getTask()+" done; removing files.");
     this.mapOutputFile.removeAll(getTask().getTaskId());

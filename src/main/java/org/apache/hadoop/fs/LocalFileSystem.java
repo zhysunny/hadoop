@@ -452,7 +452,7 @@ public class LocalFileSystem extends FileSystem {
      */
     private boolean fullyDelete(File dir) {
         dir = makeAbsolute(dir);
-        File contents[] = dir.listFiles();
+        File[] contents = dir.listFiles();
         if (contents != null) {
             for (int i = 0; i < contents.length; i++) {
                 if (contents[i].isFile()) {

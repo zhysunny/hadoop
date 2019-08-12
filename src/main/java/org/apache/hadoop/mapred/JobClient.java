@@ -75,6 +75,7 @@ public class JobClient implements MRConstants {
         /**
          * An identifier for the job
          */
+        @Override
         public String getJobID() {
             return profile.getJobId();
         }
@@ -82,6 +83,7 @@ public class JobClient implements MRConstants {
         /**
          * The name of the job file
          */
+        @Override
         public String getJobFile() {
             return profile.getJobFile();
         }
@@ -89,6 +91,7 @@ public class JobClient implements MRConstants {
         /**
          * A URL where the job's status can be seen
          */
+        @Override
         public String getTrackingURL() {
             return profile.getURL().toString();
         }
@@ -97,6 +100,7 @@ public class JobClient implements MRConstants {
          * A float between 0.0 and 1.0, indicating the % of map work
          * completed.
          */
+        @Override
         public float mapProgress() throws IOException {
             ensureFreshStatus();
             return status.mapProgress();
@@ -106,6 +110,7 @@ public class JobClient implements MRConstants {
          * A float between 0.0 and 1.0, indicating the % of reduce work
          * completed.
          */
+        @Override
         public float reduceProgress() throws IOException {
             ensureFreshStatus();
             return status.reduceProgress();
@@ -114,6 +119,7 @@ public class JobClient implements MRConstants {
         /**
          * Returns immediately whether the whole job is done yet or not.
          */
+        @Override
         public synchronized boolean isComplete() throws IOException {
             ensureFreshStatus();
             return (status.getRunState() == JobStatus.SUCCEEDED ||
@@ -123,6 +129,7 @@ public class JobClient implements MRConstants {
         /**
          * True iff job completed successfully.
          */
+        @Override
         public synchronized boolean isSuccessful() throws IOException {
             ensureFreshStatus();
             return status.getRunState() == JobStatus.SUCCEEDED;
@@ -131,6 +138,7 @@ public class JobClient implements MRConstants {
         /**
          * Blocks until the job is finished
          */
+        @Override
         public synchronized void waitForCompletion() throws IOException {
             while (! isComplete()) {
                 try {
@@ -143,6 +151,7 @@ public class JobClient implements MRConstants {
         /**
          * Tells the service to terminate the current job.
          */
+        @Override
         public synchronized void killJob() throws IOException {
             jobSubmitClient.killJob(getJobID());
         }
@@ -150,6 +159,7 @@ public class JobClient implements MRConstants {
         /**
          * Dump stats to screen
          */
+        @Override
         public String toString() {
             try {
                 ensureFreshStatus();
@@ -352,7 +362,7 @@ public class JobClient implements MRConstants {
 
     /**
      */
-    public static void main(String argv[]) throws IOException {
+    public static void main(String[] argv) throws IOException {
         if (argv.length < 2) {
             System.out.println("JobClient -submit <job> | -status <id> | -kill <id> [-jt <jobtracker:port>|<config>]");
             System.exit(-1);

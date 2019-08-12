@@ -38,6 +38,7 @@ public abstract class CompressedWritable implements Writable {
 
   public CompressedWritable() {}
 
+  @Override
   public final void readFields(DataInput in) throws IOException {
     compressed = new byte[in.readInt()];
     in.readFully(compressed, 0, compressed.length);
@@ -63,6 +64,7 @@ public abstract class CompressedWritable implements Writable {
   protected abstract void readFieldsCompressed(DataInput in)
     throws IOException;
 
+  @Override
   public final void write(DataOutput out) throws IOException {
     if (compressed == null) {
       ByteArrayOutputStream deflated = new ByteArrayOutputStream();

@@ -137,8 +137,8 @@ public class DataNode implements FSConstants, Runnable {
     }
 
     /**
-     * Main loop for the DataNode.  Runs until shutdown,
-     * forever calling remote NameNode functions.
+     * DataNode的主回路。
+     * 运行到关机，永远调用远程NameNode函数。
      */
     public void offerService() throws Exception {
         long wakeups = 0;
@@ -147,23 +147,19 @@ public class DataNode implements FSConstants, Runnable {
         int heartbeatsSent = 0;
         LOGGER.info("using BLOCKREPORT_INTERVAL of " + blockReportInterval + "msec");
 
-        //
-        // Now loop for a long time....
-        //
+        // 现在循环很长时间…
         while (shouldRun) {
             long now = System.currentTimeMillis();
 
-            //
-            // Every so often, send heartbeat or block-report
-            //
+            // 每隔一段时间，发送心跳或阻塞报告
             synchronized (receivedBlockList) {
                 if (now - lastHeartbeat > HEARTBEAT_INTERVAL) {
                     //
-                    // All heartbeat messages include following info:
-                    // -- Datanode name
-                    // -- data transfer port
-                    // -- Total capacity
-                    // -- Bytes remaining
+                    //所有心跳消息包括以下信息:
+                    //——Datanode名称
+                    //——数据传输端口
+                    //——总容量
+                    //——剩余字节
                     //
                     namenode.sendHeartbeat(localName, data.getCapacity(), data.getRemaining());
                     LOGGER.info("Just sent heartbeat, with name " + localName);
@@ -171,9 +167,8 @@ public class DataNode implements FSConstants, Runnable {
                 }
                 if (now - lastBlockReport > blockReportInterval) {
                     //
-                    // Send latest blockinfo report if timer has expired.
-                    // Get back a list of local block(s) that are obsolete
-                    // and can be safely GC'ed.
+                    // 发送最新的区块信息报告，如果计时器已经过期。
+                    // 获取一个本地块的列表，这些块已经过时，可以安全地GC'ed。
                     //
                     Block[] toDelete = namenode.blockReport(localName, data.getBlockReport());
                     data.invalidate(toDelete);
@@ -182,21 +177,19 @@ public class DataNode implements FSConstants, Runnable {
                 }
                 if (receivedBlockList.size() > 0) {
                     //
-                    // Send newly-received blockids to namenode
+                    // 将新接收到的blockids发送到namenode
                     //
-                    Block[] blockArray = (Block[]) receivedBlockList.toArray(new Block[receivedBlockList.size()]);
+                    Block[] blockArray = receivedBlockList.toArray(new Block[receivedBlockList.size()]);
                     receivedBlockList.removeAllElements();
                     namenode.blockReceived(localName, blockArray);
                 }
 
                 //
-                // Only perform block operations (transfer, delete) after
-                // a startup quiet period.  The assumption is that all the
-                // datanodes will be started together, but the namenode may
-                // have been started some time before.  (This is esp. true in
-                // the case of network interruptions.)  So, wait for some time
-                // to pass from the time of connection to the first block-transfer.
-                // Otherwise we transfer a lot of blocks unnecessarily.
+                //只在启动静默期之后执行块操作(传输、删除)。
+                //假设所有的数据节点都将一起启动，但是namenode可能在此之前已经启动了一段时间。
+                //(在网络中断的情况下尤其如此。)
+                //因此，等待一段时间将连接时间传递到第一个块传输。
+                //否则，我们会不必要地转移很多块。
                 //
                 if (now - sendStart > datanodeStartupPeriod) {
                     //

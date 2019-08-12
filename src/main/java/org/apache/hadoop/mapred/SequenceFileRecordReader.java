@@ -36,8 +36,9 @@ public class SequenceFileRecordReader implements RecordReader {
     this.in = new SequenceFile.Reader(fs, split.getFile().toString(), conf);
     this.end = split.getStart() + split.getLength();
 
-    if (split.getStart() > in.getPosition())
-      in.sync(split.getStart());                  // sync to start
+    if (split.getStart() > in.getPosition()) {
+        in.sync(split.getStart());                  // sync to start
+    }
 
     more = in.getPosition() < end;
   }
@@ -51,9 +52,12 @@ public class SequenceFileRecordReader implements RecordReader {
    * #next(Writable,Writable)}.. */
   public Class getValueClass() { return in.getValueClass(); }
   
+  @Override
   public synchronized boolean next(Writable key, Writable value)
     throws IOException {
-    if (!more) return false;
+    if (!more) {
+        return false;
+    }
     long pos = in.getPosition();
     boolean eof = in.next(key, value);
     if (pos >= end && in.syncSeen()) {
@@ -64,10 +68,12 @@ public class SequenceFileRecordReader implements RecordReader {
     return more;
   }
   
+  @Override
   public synchronized long getPos() throws IOException {
     return in.getPosition();
   }
   
+  @Override
   public synchronized void close() throws IOException { in.close(); }
   
 }

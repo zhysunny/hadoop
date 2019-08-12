@@ -60,6 +60,7 @@ abstract class TaskRunner extends Thread {
   */
   public void close() throws IOException {}
 
+  @Override
   public final void run() {
     try {
 
@@ -262,6 +263,7 @@ abstract class TaskRunner extends Thread {
     try {
       StringBuffer errorBuf = new StringBuffer();
       new Thread() {
+        @Override
         public void run() {
           logStream(process.getErrorStream());    // copy log output
         }

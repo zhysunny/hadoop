@@ -96,6 +96,7 @@ public class RPC {
             return parameters;
         }
 
+        @Override
         public void readFields(DataInput in) throws IOException {
             methodName = UTF8.readString(in);
             parameters = new Object[in.readInt()];
@@ -107,6 +108,7 @@ public class RPC {
             }
         }
 
+        @Override
         public void write(DataOutput out) throws IOException {
             UTF8.writeString(out, methodName);
             out.writeInt(parameterClasses.length);
@@ -115,13 +117,15 @@ public class RPC {
             }
         }
 
+        @Override
         public String toString() {
             StringBuffer buffer = new StringBuffer();
             buffer.append(methodName);
             buffer.append("(");
             for (int i = 0; i < parameters.length; i++) {
-                if (i != 0)
+                if (i != 0) {
                     buffer.append(", ");
+                }
                 buffer.append(parameters[i]);
             }
             buffer.append(")");
@@ -155,6 +159,7 @@ public class RPC {
             }
         }
 
+        @Override
         public Object invoke(Object proxy, Method method, Object[] args)
                 throws Throwable {
             ObjectWritable value = (ObjectWritable)
@@ -179,8 +184,9 @@ public class RPC {
             throws IOException {
 
         Invocation[] invocations = new Invocation[params.length];
-        for (int i = 0; i < params.length; i++)
+        for (int i = 0; i < params.length; i++) {
             invocations[i] = new Invocation(method, params[i]);
+        }
         CLIENT = (Client) conf.getObject(Client.class.getName());
         if (CLIENT == null) {
             CLIENT = new Client(ObjectWritable.class, conf);
@@ -194,9 +200,11 @@ public class RPC {
 
         Object[] values =
                 (Object[]) Array.newInstance(method.getReturnType(), wrappedValues.length);
-        for (int i = 0; i < values.length; i++)
-            if (wrappedValues[i] != null)
+        for (int i = 0; i < values.length; i++) {
+            if (wrappedValues[i] != null) {
                 values[i] = ((ObjectWritable) wrappedValues[i]).get();
+            }
+        }
 
         return values;
     }
@@ -254,17 +262,22 @@ public class RPC {
             this.verbose = verbose;
         }
 
+        @Override
         public Writable call(Writable param) throws IOException {
             try {
                 Invocation call = (Invocation) param;
-                if (verbose) log("Call: " + call);
+                if (verbose) {
+                    log("Call: " + call);
+                }
 
                 Method method =
                         implementation.getMethod(call.getMethodName(),
                                 call.getParameterClasses());
 
                 Object value = method.invoke(instance, call.getParameters());
-                if (verbose) log("Return: " + value);
+                if (verbose) {
+                    log("Return: " + value);
+                }
 
                 return new ObjectWritable(method.getReturnType(), value);
 
@@ -286,8 +299,9 @@ public class RPC {
     }
 
     private static void log(String value) {
-        if (value != null && value.length() > 55)
+        if (value != null && value.length() > 55) {
             value = value.substring(0, 55) + "...";
+        }
         LOG.info(value);
     }
 

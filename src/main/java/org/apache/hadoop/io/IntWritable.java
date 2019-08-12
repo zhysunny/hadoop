@@ -32,33 +32,40 @@ public class IntWritable implements WritableComparable {
   /** Return the value of this IntWritable. */
   public int get() { return value; }
 
+  @Override
   public void readFields(DataInput in) throws IOException {
     value = in.readInt();
   }
 
+  @Override
   public void write(DataOutput out) throws IOException {
     out.writeInt(value);
   }
 
   /** Returns true iff <code>o</code> is a IntWritable with the same value. */
+  @Override
   public boolean equals(Object o) {
-    if (!(o instanceof IntWritable))
-      return false;
+    if (!(o instanceof IntWritable)) {
+        return false;
+    }
     IntWritable other = (IntWritable)o;
     return this.value == other.value;
   }
 
+  @Override
   public int hashCode() {
     return (int)value;
   }
 
   /** Compares two IntWritables. */
+  @Override
   public int compareTo(Object o) {
     int thisValue = this.value;
     int thatValue = ((IntWritable)o).value;
     return thisValue - thatValue;
   }
 
+  @Override
   public String toString() {
     return Integer.toString(value);
   }

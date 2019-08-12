@@ -38,8 +38,8 @@ class JobInProgress {
     File localJobFile = null;
     File localJarFile = null;
 
-    TaskInProgress maps[] = new TaskInProgress[0];
-    TaskInProgress reduces[] = new TaskInProgress[0];
+    TaskInProgress[] maps = new TaskInProgress[0];
+    TaskInProgress[] reduces = new TaskInProgress[0];
     int numMapTasks = 0;
     int numReduceTasks = 0;
 
@@ -123,6 +123,7 @@ class JobInProgress {
         // sort splits by decreasing length, to reduce job's tail
         //
         Arrays.sort(splits, new Comparator() {
+            @Override
             public int compare(Object a, Object b) {
                 long diff =
                         ((FileSplit) b).getLength() - ((FileSplit) a).getLength();
@@ -152,7 +153,7 @@ class JobInProgress {
         // Obtain some tasktracker-cache information for the map task splits.
         //
         for (int i = 0; i < maps.length; i++) {
-            String hints[][] = fs.getFileCacheHints(splits[i].getFile(), splits[i].getStart(), splits[i].getLength());
+            String[][] hints = fs.getFileCacheHints(splits[i].getFile(), splits[i].getStart(), splits[i].getLength());
             cachedHints.put(maps[i].getTIPId(), hints);
         }
 
@@ -166,7 +167,7 @@ class JobInProgress {
      * not available, then we pass it through to the filesystem.
      */
     String[][] getFileCacheHints(String tipID, File f, long start, long len) throws IOException {
-        String results[][] = (String[][]) cachedHints.get(tipID);
+        String[][] results = (String[][]) cachedHints.get(tipID);
         if (tipID == null) {
             FileSystem fs = FileSystem.get(conf);
             results = fs.getFileCacheHints(f, start, len);
@@ -227,7 +228,7 @@ class JobInProgress {
      */
     public Vector reportTasksInProgress(boolean shouldBeMap, boolean shouldBeComplete) {
         Vector results = new Vector();
-        TaskInProgress tips[] = null;
+        TaskInProgress[] tips = null;
         if (shouldBeMap) {
             tips = maps;
         } else {

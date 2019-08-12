@@ -23,10 +23,12 @@ import org.apache.hadoop.fs.FileSystem;
 
 /** A base class for {@link OutputFormat}. */
 public abstract class OutputFormatBase implements OutputFormat {
+  @Override
   public abstract RecordWriter getRecordWriter(FileSystem fs,
                                                JobConf job, String name)
     throws IOException;
 
+  @Override
   public void checkOutputSpecs(FileSystem fs, JobConf job) throws IOException {
     // Ensure that the output directory is set and not already there
     File outDir = job.getOutputDir();

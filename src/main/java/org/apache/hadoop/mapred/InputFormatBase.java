@@ -38,6 +38,7 @@ public abstract class InputFormatBase implements InputFormat {
     this.minSplitSize = minSplitSize;
   }
 
+  @Override
   public abstract RecordReader getRecordReader(FileSystem fs,
                                                FileSplit split,
                                                JobConf job,
@@ -93,6 +94,7 @@ public abstract class InputFormatBase implements InputFormat {
 
   /** Splits files returned by {#listFiles(FileSystem,JobConf) when
    * they're too big.*/ 
+  @Override
   public FileSplit[] getSplits(FileSystem fs, JobConf job, int numSplits)
     throws IOException {
 
@@ -118,8 +120,9 @@ public abstract class InputFormatBase implements InputFormat {
     }
 
     long configuredMinSplitSize = job.getLong("mapred.min.split.size", 0);
-    if( configuredMinSplitSize < minSplitSize )
-    	configuredMinSplitSize = minSplitSize;
+    if( configuredMinSplitSize < minSplitSize ) {
+        configuredMinSplitSize = minSplitSize;
+    }
     if (bytesPerSplit < configuredMinSplitSize) { // no smaller than min size
       bytesPerSplit = configuredMinSplitSize;
     }

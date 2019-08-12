@@ -28,6 +28,7 @@ public class MapRunner implements MapRunnable {
   private Class inputKeyClass;
   private Class inputValueClass;
 
+  @Override
   public void configure(JobConf job) {
     this.job = job;
     this.mapper = (Mapper)job.newInstance(job.getMapperClass());
@@ -35,6 +36,7 @@ public class MapRunner implements MapRunnable {
     this.inputValueClass = job.getInputValueClass();
   }
 
+  @Override
   public void run(RecordReader input, OutputCollector output,
                   Reporter reporter)
     throws IOException {

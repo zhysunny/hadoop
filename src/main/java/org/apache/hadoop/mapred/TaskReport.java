@@ -48,6 +48,7 @@ public class TaskReport implements Writable {
   //////////////////////////////////////////////
   // Writable
   //////////////////////////////////////////////
+  @Override
   public void write(DataOutput out) throws IOException {
     UTF8.writeString(out, taskid);
     out.writeFloat(progress);
@@ -55,6 +56,7 @@ public class TaskReport implements Writable {
     new ObjectWritable(diagnostics).write(out);
   }
 
+  @Override
   public void readFields(DataInput in) throws IOException {
     this.taskid = UTF8.readString(in);
     this.progress = in.readFloat();

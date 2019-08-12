@@ -45,21 +45,25 @@ class MapTask extends Task {
     this.split = split;
   }
 
+  @Override
   public boolean isMapTask() {
       return true;
   }
 
+  @Override
   public TaskRunner createRunner(TaskTracker tracker) {
     return new MapTaskRunner(this, tracker, this.conf);
   }
 
   public FileSplit getSplit() { return split; }
 
+  @Override
   public void write(DataOutput out) throws IOException {
     super.write(out);
     split.write(out);
     
   }
+  @Override
   public void readFields(DataInput in) throws IOException {
     super.readFields(in);
 
@@ -67,6 +71,7 @@ class MapTask extends Task {
     split.readFields(in);
   }
 
+  @Override
   public void run(final JobConf job, final TaskUmbilicalProtocol umbilical)
     throws IOException {
 
@@ -86,6 +91,7 @@ class MapTask extends Task {
         (Partitioner)job.newInstance(job.getPartitionerClass());
 
       OutputCollector partCollector = new OutputCollector() { // make collector
+          @Override
           public synchronized void collect(WritableComparable key,
                                            Writable value)
             throws IOException {
@@ -110,6 +116,7 @@ class MapTask extends Task {
       RecordReader in = new RecordReader() {      // wrap in progress reporter
           private float perByte = 1.0f /(float)split.getLength();
 
+          @Override
           public synchronized boolean next(Writable key, Writable value)
             throws IOException {
 
@@ -119,7 +126,9 @@ class MapTask extends Task {
 
             return rawIn.next(key, value);
           }
+          @Override
           public long getPos() throws IOException { return rawIn.getPos(); }
+          @Override
           public void close() throws IOException { rawIn.close(); }
         };
 

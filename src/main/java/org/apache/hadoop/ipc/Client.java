@@ -116,6 +116,7 @@ public class Client {
       this.in = new DataInputStream
         (new BufferedInputStream
          (new FilterInputStream(socket.getInputStream()) {
+             @Override
              public int read(byte[] buf, int off, int len) throws IOException {
                int value = super.read(buf, off, len);
                if (readingCall != null) {
@@ -127,6 +128,7 @@ public class Client {
       this.out = new DataOutputStream
         (new BufferedOutputStream
          (new FilterOutputStream(socket.getOutputStream()) {
+             @Override
              public void write(byte[] buf, int o, int len) throws IOException {
                out.write(buf, o, len);
                if (writingCall != null) {
@@ -140,6 +142,7 @@ public class Client {
                    + ":" + address.getPort());
     }
 
+    @Override
     public void run() {
       LOG.info(getName() + ": starting");
       try {
@@ -151,8 +154,9 @@ public class Client {
             continue;
           }
 
-          if (LOG.isLoggable(Level.FINE))
-            LOG.fine(getName() + " got value #" + id);
+          if (LOG.isLoggable(Level.FINE)) {
+              LOG.fine(getName() + " got value #" + id);
+          }
 
           Call call = (Call)calls.remove(new Integer(id));
           boolean isError = in.readBoolean();     // read if error
@@ -193,8 +197,9 @@ public class Client {
       try {
         calls.put(new Integer(call.id), call);
         synchronized (out) {
-          if (LOG.isLoggable(Level.FINE))
-            LOG.fine(getName() + " sending #" + call.id);
+          if (LOG.isLoggable(Level.FINE)) {
+              LOG.fine(getName() + " sending #" + call.id);
+          }
           try {
             writingCall = call;
             out.writeInt(call.id);
@@ -206,8 +211,9 @@ public class Client {
         }
         error = false;
       } finally {
-        if (error)
-          close();                                // close on error
+        if (error) {
+            close();                                // close on error
+        }
       }
     }
 
@@ -236,6 +242,7 @@ public class Client {
     }
 
     /** Deliver result to result collector. */
+    @Override
     public void callComplete() {
       results.callComplete(this);
     }
@@ -257,7 +264,9 @@ public class Client {
       values[call.index] = call.value;            // store the value
       count++;                                    // count it
       if (count == size)                          // if all values are in
-        notify();                                 // then notify waiting caller
+      {
+          notify();                                 // then notify waiting caller
+      }
     }
   }
 
@@ -315,7 +324,9 @@ public class Client {
    * contains nulls for calls that timed out or errored.  */
   public Writable[] call(Writable[] params, InetSocketAddress[] addresses)
     throws IOException {
-    if (addresses.length == 0) return new Writable[0];
+    if (addresses.length == 0) {
+        return new Writable[0];
+    }
 
     ParallelResults results = new ParallelResults(params.length);
     synchronized (results) {

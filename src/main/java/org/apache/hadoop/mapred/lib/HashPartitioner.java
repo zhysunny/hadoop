@@ -25,9 +25,11 @@ import org.apache.hadoop.io.Writable;
 /** Partition keys by their {@link Object#hashCode()}. */
 public class HashPartitioner implements Partitioner {
 
+  @Override
   public void configure(JobConf job) {}
 
   /** Use {@link Object#hashCode()} to partition. */
+  @Override
   public int getPartition(WritableComparable key, Writable value,
                           int numReduceTasks) {
     return (key.hashCode() & Integer.MAX_VALUE) % numReduceTasks;

@@ -73,12 +73,14 @@ class JobStatus implements Writable {
     ///////////////////////////////////////
     // Writable
     ///////////////////////////////////////
+    @Override
     public void write(DataOutput out) throws IOException {
         UTF8.writeString(out, jobid);
         out.writeFloat(mapProgress);
         out.writeFloat(reduceProgress);
         out.writeInt(runState);
     }
+    @Override
     public void readFields(DataInput in) throws IOException {
         this.jobid = UTF8.readString(in);
         this.mapProgress = in.readFloat();

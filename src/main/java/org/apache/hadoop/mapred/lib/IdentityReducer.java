@@ -32,6 +32,7 @@ import org.apache.hadoop.io.WritableComparable;
 public class IdentityReducer extends MapReduceBase implements Reducer {
 
   /** Writes all keys and values directly to output. */
+  @Override
   public void reduce(WritableComparable key, Iterator values,
                      OutputCollector output, Reporter reporter)
     throws IOException {

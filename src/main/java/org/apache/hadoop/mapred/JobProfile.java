@@ -99,6 +99,7 @@ class JobProfile implements Writable {
     ///////////////////////////////////////
     // Writable
     ///////////////////////////////////////
+    @Override
     public void write(DataOutput out) throws IOException {
         UTF8.writeString(out, jobid);
         UTF8.writeString(out, jobFile);
@@ -106,6 +107,7 @@ class JobProfile implements Writable {
         UTF8.writeString(out, user);
         UTF8.writeString(out, name);
     }
+    @Override
     public void readFields(DataInput in) throws IOException {
         this.jobid = UTF8.readString(in);
         this.jobFile = UTF8.readString(in);

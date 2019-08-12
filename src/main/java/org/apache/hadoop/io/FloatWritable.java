@@ -32,33 +32,40 @@ public class FloatWritable implements WritableComparable {
   /** Return the value of this FloatWritable. */
   public float get() { return value; }
 
+  @Override
   public void readFields(DataInput in) throws IOException {
     value = in.readFloat();
   }
 
+  @Override
   public void write(DataOutput out) throws IOException {
     out.writeFloat(value);
   }
 
   /** Returns true iff <code>o</code> is a FloatWritable with the same value. */
+  @Override
   public boolean equals(Object o) {
-    if (!(o instanceof FloatWritable))
-      return false;
+    if (!(o instanceof FloatWritable)) {
+        return false;
+    }
     FloatWritable other = (FloatWritable)o;
     return this.value == other.value;
   }
 
+  @Override
   public int hashCode() {
     return Float.floatToIntBits(value);
   }
 
   /** Compares two FloatWritables. */
+  @Override
   public int compareTo(Object o) {
     float thisValue = this.value;
     float thatValue = ((FloatWritable)o).value;
     return (thisValue<thatValue ? -1 : (thisValue==thatValue ? 0 : 1));
   }
 
+  @Override
   public String toString() {
     return Float.toString(value);
   }

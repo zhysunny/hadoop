@@ -170,8 +170,9 @@ public class MapFile {
 
         private void checkKey(WritableComparable key) throws IOException {
             // check that keys are well-ordered
-            if (size != 0 && comparator.compare(lastKey, key) > 0)
+            if (size != 0 && comparator.compare(lastKey, key) > 0) {
                 throw new IOException("key out of order: " + key + " after " + lastKey);
+            }
 
             // update lastKey with a copy of key by writing and reading
             outBuf.reset();
@@ -253,10 +254,11 @@ public class MapFile {
             this.data = new SequenceFile.Reader(fs, dataFile.getPath(), conf);
             this.firstPosition = data.getPosition();
 
-            if (comparator == null)
+            if (comparator == null) {
                 this.comparator = WritableComparator.get(data.getKeyClass());
-            else
+            } else {
                 this.comparator = comparator;
+            }
 
             this.getKey = this.comparator.newKey();
 
@@ -266,8 +268,9 @@ public class MapFile {
 
         private void readIndex() throws IOException {
             // read the index entirely into memory
-            if (this.keys != null)
+            if (this.keys != null) {
                 return;
+            }
             this.count = 0;
             this.keys = new WritableComparable[1024];
             this.positions = new long[1024];
@@ -278,12 +281,14 @@ public class MapFile {
                 while (true) {
                     WritableComparable k = comparator.newKey();
 
-                    if (!index.next(k, position))
+                    if (!index.next(k, position)) {
                         break;
+                    }
 
                     // check order to make sure comparator is compatible
-                    if (lastKey != null && comparator.compare(lastKey, k) > 0)
+                    if (lastKey != null && comparator.compare(lastKey, k) > 0) {
                         throw new IOException("key out of order: " + k + " after " + lastKey);
+                    }
                     lastKey = k;
 
                     if (skip > 0) {
@@ -367,12 +372,16 @@ public class MapFile {
             } else {
                 seekIndex = binarySearch(key);
                 if (seekIndex < 0)                        // decode insertion point
+                {
                     seekIndex = -seekIndex - 2;
+                }
 
                 if (seekIndex == -1)                      // belongs before first entry
+                {
                     seekPosition = firstPosition;           // use beginning of file
-                else
+                } else {
                     seekPosition = positions[seekIndex];    // else use index
+                }
             }
             data.seek(seekPosition);
 
@@ -398,12 +407,13 @@ public class MapFile {
                 WritableComparable midVal = keys[mid];
                 int cmp = comparator.compare(midVal, key);
 
-                if (cmp < 0)
+                if (cmp < 0) {
                     low = mid + 1;
-                else if (cmp > 0)
+                } else if (cmp > 0) {
                     high = mid - 1;
-                else
+                } else {
                     return mid;                             // key found
+                }
             }
             return -(low + 1);                          // key not found.
         }
@@ -426,8 +436,9 @@ public class MapFile {
             if (seek(key)) {
                 next(getKey, val);                        // don't smash key
                 return val;
-            } else
+            } else {
                 return null;
+            }
         }
 
         /**
@@ -504,7 +515,9 @@ public class MapFile {
         Writable key = (Writable) keyClass.getConstructor(new Class[0]).newInstance(new Object[0]);
         Writable value = (Writable) valueClass.getConstructor(new Class[0]).newInstance(new Object[0]);
         SequenceFile.Writer indexWriter = null;
-        if (!dryrun) indexWriter = new SequenceFile.Writer(fs, index.toString(), keyClass, LongWritable.class);
+        if (!dryrun) {
+            indexWriter = new SequenceFile.Writer(fs, index.toString(), keyClass, LongWritable.class);
+        }
         try {
             long pos = 0L;
             LongWritable position = new LongWritable();
@@ -512,7 +525,9 @@ public class MapFile {
                 cnt++;
                 if (cnt % indexInterval == 0) {
                     position.set(pos);
-                    if (!dryrun) indexWriter.append(key, position);
+                    if (!dryrun) {
+                        indexWriter.append(key, position);
+                    }
                 }
                 pos = dataReader.getPosition();
             }
@@ -520,7 +535,9 @@ public class MapFile {
             // truncated data file. swallow it.
         }
         dataReader.close();
-        if (!dryrun) indexWriter.close();
+        if (!dryrun) {
+            indexWriter.close();
+        }
         return cnt;
     }
 
@@ -548,7 +565,9 @@ public class MapFile {
         Writable value = (Writable) reader.getValueClass().newInstance();
 
         while (reader.next(key, value))               // copy all entries
+        {
             writer.append(key, value);
+        }
 
         writer.close();
     }

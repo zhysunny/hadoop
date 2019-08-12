@@ -34,6 +34,7 @@ import org.apache.hadoop.io.UTF8;
  * {@link StringTokenizer} to break text into tokens. */
 public class TokenCountMapper extends MapReduceBase implements Mapper {
 
+  @Override
   public void map(WritableComparable key, Writable value,
                   OutputCollector output, Reporter reporter)
     throws IOException {

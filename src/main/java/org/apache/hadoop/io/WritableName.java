@@ -51,16 +51,18 @@ public class WritableName {
   /** Return the name for a class.  Default is {@link Class#getName()}. */
   public static synchronized String getName(Class writableClass) {
     String name = (String)CLASS_TO_NAME.get(writableClass);
-    if (name != null)
-      return name;
+    if (name != null) {
+        return name;
+    }
     return writableClass.getName();
   }
 
   /** Return the class for a name.  Default is {@link Class#forName(String)}.*/
   public static synchronized Class getClass(String name) throws IOException {
     Class writableClass = (Class)NAME_TO_CLASS.get(name);
-    if (writableClass != null)
-      return writableClass;
+    if (writableClass != null) {
+        return writableClass;
+    }
     try {
       return Class.forName(name);
     } catch (ClassNotFoundException e) {

@@ -49,7 +49,7 @@ public class FSDataOutputStream extends DataOutputStream {
         }
 
         @Override
-        public void write(byte b[], int off, int len) throws IOException {
+        public void write(byte[] b, int off, int len) throws IOException {
             int summed = 0;
             while (summed < len) {
 
@@ -95,7 +95,7 @@ public class FSDataOutputStream extends DataOutputStream {
 
         // 这是BufferedOutputStream惟一调用的write()方法，因此我们捕捉对它的调用，以便缓存位置。
         @Override
-        public void write(byte b[], int off, int len) throws IOException {
+        public void write(byte[] b, int off, int len) throws IOException {
             out.write(b, off, len);
             // 更新位置
             position += len;

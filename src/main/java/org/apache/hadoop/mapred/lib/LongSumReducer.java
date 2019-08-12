@@ -30,6 +30,7 @@ import org.apache.hadoop.io.LongWritable;
 /** A {@link Reducer} that sums long values. */
 public class LongSumReducer extends MapReduceBase implements Reducer {
 
+  @Override
   public void reduce(WritableComparable key, Iterator values,
                      OutputCollector output, Reporter reporter)
     throws IOException {

@@ -30,6 +30,7 @@ import org.apache.hadoop.io.UTF8;
  * the position in the file, and values are the line of text.. */
 public class TextInputFormat extends InputFormatBase {
 
+  @Override
   public RecordReader getRecordReader(FileSystem fs, FileSplit split,
                                       JobConf job, Reporter reporter)
     throws IOException {
@@ -54,21 +55,25 @@ public class TextInputFormat extends InputFormatBase {
 
     return new RecordReader() {
         /** Read a line. */
+        @Override
         public synchronized boolean next(Writable key, Writable value)
           throws IOException {
           long pos = in.getPos();
-          if (pos >= end)
-            return false;
+          if (pos >= end) {
+              return false;
+          }
 
           ((LongWritable)key).set(pos);           // key is position
           ((UTF8)value).set(readLine(in));        // value is line
           return true;
         }
         
+        @Override
         public  synchronized long getPos() throws IOException {
           return in.getPos();
         }
 
+        @Override
         public synchronized void close() throws IOException { in.close(); }
 
       };
@@ -79,12 +84,14 @@ public class TextInputFormat extends InputFormatBase {
     while (true) {
 
       int b = in.read();
-      if (b == -1)
-        break;
+      if (b == -1) {
+          break;
+      }
 
       char c = (char)b;              // bug: this assumes eight-bit characters.
-      if (c == '\r' || c == '\n')
-        break;
+      if (c == '\r' || c == '\n') {
+          break;
+      }
 
       buffer.append(c);
     }

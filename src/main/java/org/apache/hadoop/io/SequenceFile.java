@@ -188,17 +188,20 @@ public class SequenceFile {
          */
         public synchronized void append(Writable key, Writable val)
                 throws IOException {
-            if (key.getClass() != keyClass)
+            if (key.getClass() != keyClass) {
                 throw new IOException("wrong key class: " + key + " is not " + keyClass);
-            if (val.getClass() != valClass)
+            }
+            if (val.getClass() != valClass) {
                 throw new IOException("wrong value class: " + val + " is not " + valClass);
+            }
 
             buffer.reset();
 
             key.write(buffer);
             int keyLength = buffer.getLength();
-            if (keyLength == 0)
+            if (keyLength == 0) {
                 throw new IOException("zero length keys not allowed: " + key);
+            }
 
             if (deflateValues) {
                 deflater.reset();
@@ -217,8 +220,9 @@ public class SequenceFile {
          */
         public synchronized void append(byte[] data, int start, int length,
                                         int keyLength) throws IOException {
-            if (keyLength == 0)
+            if (keyLength == 0) {
                 throw new IOException("zero length keys not allowed");
+            }
 
             if (sync != null &&
                     out.getPos() >= lastSyncPos + SYNC_INTERVAL) { // time to emit sync
@@ -304,11 +308,13 @@ public class SequenceFile {
 
             if ((version[0] != VERSION[0]) ||
                     (version[1] != VERSION[1]) ||
-                    (version[2] != VERSION[2]))
+                    (version[2] != VERSION[2])) {
                 throw new IOException(file + " not a SequenceFile");
+            }
 
-            if (version[3] > VERSION[3])
+            if (version[3] > VERSION[3]) {
                 throw new VersionMismatchException(VERSION[3], version[3]);
+            }
 
             UTF8 className = new UTF8();
 
@@ -360,21 +366,24 @@ public class SequenceFile {
          * value.  True if another entry exists, and false at end of file.
          */
         public synchronized boolean next(Writable key) throws IOException {
-            if (key.getClass() != keyClass)
+            if (key.getClass() != keyClass) {
                 throw new IOException("wrong key class: " + key + " is not " + keyClass);
+            }
 
             outBuf.reset();
 
             keyLength = next(outBuf);
-            if (keyLength < 0)
+            if (keyLength < 0) {
                 return false;
+            }
 
             inBuf.reset(outBuf.getData(), outBuf.getLength());
 
             key.readFields(inBuf);
-            if (inBuf.getPosition() != keyLength)
+            if (inBuf.getPosition() != keyLength) {
                 throw new IOException(key + " read " + inBuf.getPosition()
                         + " bytes, should read " + keyLength);
+            }
 
             return true;
         }
@@ -386,8 +395,9 @@ public class SequenceFile {
          */
         public synchronized boolean next(Writable key, Writable val)
                 throws IOException {
-            if (val.getClass() != valClass)
+            if (val.getClass() != valClass) {
                 throw new IOException("wrong value class: " + val + " is not " + valClass);
+            }
 
             boolean more = next(key);
 
@@ -413,10 +423,11 @@ public class SequenceFile {
                 }
                 val.readFields(inBuf);
 
-                if (inBuf.getPosition() != inBuf.getLength())
+                if (inBuf.getPosition() != inBuf.getLength()) {
                     throw new IOException(val + " read " + (inBuf.getPosition() - keyLength)
                             + " bytes, should read " +
                             (inBuf.getLength() - keyLength));
+                }
             }
 
             return more;
@@ -429,8 +440,9 @@ public class SequenceFile {
          * after calls to this method.
          */
         public synchronized int next(DataOutputBuffer buffer) throws IOException {
-            if (in.getPos() >= end)
+            if (in.getPos() >= end) {
                 return -1;
+            }
 
             try {
                 int length = in.readInt();
@@ -440,7 +452,9 @@ public class SequenceFile {
                     //LOG.info("sync@"+in.getPos());
                     in.readFully(syncCheck);                // read syncCheck
                     if (!Arrays.equals(sync, syncCheck))    // check it
+                    {
                         throw new IOException("File is corrupt!");
+                    }
                     syncSeen = true;
                     length = in.readInt();                  // re-read length
                 } else {
@@ -490,8 +504,9 @@ public class SequenceFile {
                 for (int i = 0; in.getPos() < end; i++) {
                     int j = 0;
                     for (; j < syncLen; j++) {
-                        if (sync[j] != syncCheck[(i + j) % syncLen])
+                        if (sync[j] != syncCheck[(i + j) % syncLen]) {
                             break;
+                        }
                     }
                     if (j == syncLen) {
                         in.seek(in.getPos() - SYNC_SIZE);     // position before sync
@@ -521,6 +536,7 @@ public class SequenceFile {
         /**
          * Returns the name of the file.
          */
+        @Override
         public String toString() {
             return file;
         }
@@ -666,8 +682,9 @@ public class SequenceFile {
                             break;
                         }
 
-                        if (count == starts.length)
+                        if (count == starts.length) {
                             grow();
+                        }
 
                         starts[count] = start;                // update pointers
                         pointers[count] = count;
@@ -746,14 +763,16 @@ public class SequenceFile {
                         rawBuffer, starts[j], keyLengths[j]);
             }
 
-            private void mergeSort(int src[], int dest[], int low, int high) {
+            private void mergeSort(int[] src, int[] dest, int low, int high) {
                 int length = high - low;
 
                 // Insertion sort on smallest arrays
                 if (length < 7) {
-                    for (int i = low; i < high; i++)
-                        for (int j = i; j > low && compare(dest[j - 1], dest[j]) > 0; j--)
+                    for (int i = low; i < high; i++) {
+                        for (int j = i; j > low && compare(dest[j - 1], dest[j]) > 0; j--) {
                             swap(dest, j, j - 1);
+                        }
+                    }
                     return;
                 }
 
@@ -771,14 +790,15 @@ public class SequenceFile {
 
                 // Merge sorted halves (now in src) into dest
                 for (int i = low, p = low, q = mid; i < high; i++) {
-                    if (q >= high || p < mid && compare(src[p], src[q]) <= 0)
+                    if (q >= high || p < mid && compare(src[p], src[q]) <= 0) {
                         dest[i] = src[p++];
-                    else
+                    } else {
                         dest[i] = src[q++];
+                    }
                 }
             }
 
-            private void swap(int x[], int a, int b) {
+            private void swap(int[] x, int a, int b) {
                 int t = x[a];
                 x[a] = x[b];
                 x[b] = t;
@@ -900,8 +920,9 @@ public class SequenceFile {
                     String inFile = inFiles[i];
                     MergeStream ms =
                             new MergeStream(new Reader(fs, inFile, memory / (factor + 1)));
-                    if (ms.next())
+                    if (ms.next()) {
                         queue.put(ms);
+                    }
                 }
 
                 queue.merge();
@@ -915,12 +936,14 @@ public class SequenceFile {
             private int keyLength;
 
             public MergeStream(Reader reader) throws IOException {
-                if (reader.keyClass != keyClass)
+                if (reader.keyClass != keyClass) {
                     throw new IOException("wrong key class: " + reader.getKeyClass() +
                             " is not " + keyClass);
-                if (reader.valClass != valClass)
+                }
+                if (reader.valClass != valClass) {
                     throw new IOException("wrong value class: " + reader.getValueClass() +
                             " is not " + valClass);
+                }
                 this.in = reader;
             }
 
@@ -952,6 +975,7 @@ public class SequenceFile {
                 this.done = done;
             }
 
+            @Override
             protected boolean lessThan(Object a, Object b) {
                 MergeStream msa = (MergeStream) a;
                 MergeStream msb = (MergeStream) b;

@@ -31,6 +31,7 @@ public class IdentityMapper extends MapReduceBase implements Mapper {
 
   /** The identify function.  Input key/value pair is written directly to
    * output.*/
+  @Override
   public void map(WritableComparable key, Writable val,
                   OutputCollector output, Reporter reporter)
     throws IOException {

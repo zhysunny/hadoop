@@ -52,15 +52,18 @@ abstract class Task implements Writable, Configurable {
   // Writable methods
   ////////////////////////////////////////////
 
+  @Override
   public void write(DataOutput out) throws IOException {
     UTF8.writeString(out, jobFile);
     UTF8.writeString(out, taskId);
   }
+  @Override
   public void readFields(DataInput in) throws IOException {
     jobFile = UTF8.readString(in);
     taskId = UTF8.readString(in);
   }
 
+  @Override
   public String toString() { return taskId; }
 
   /** Run this task as a part of the named job.  This method is executed in the
@@ -88,6 +91,7 @@ abstract class Task implements Writable, Configurable {
   public Reporter getReporter(final TaskUmbilicalProtocol umbilical,
                               final Progress progress) throws IOException {
     return new Reporter() {
+        @Override
         public void setStatus(String status) throws IOException {
           progress.setStatus(status);
           reportProgress(umbilical);

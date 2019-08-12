@@ -56,17 +56,20 @@ public class FileSplit implements Writable {
   /** The number of bytes in the file to process. */
   public long getLength() { return length; }
 
+  @Override
   public String toString() { return file + ":" + start + "+" + length; }
 
   ////////////////////////////////////////////
   // Writable methods
   ////////////////////////////////////////////
 
+  @Override
   public void write(DataOutput out) throws IOException {
     UTF8.writeString(out, file.toString());
     out.writeLong(start);
     out.writeLong(length);
   }
+  @Override
   public void readFields(DataInput in) throws IOException {
     file = new File(UTF8.readString(in));
     start = in.readLong();

@@ -63,6 +63,7 @@ class TaskStatus implements Writable {
     //////////////////////////////////////////////
     // Writable
     //////////////////////////////////////////////
+    @Override
     public void write(DataOutput out) throws IOException {
         UTF8.writeString(out, taskid);
         out.writeBoolean(isMap);
@@ -72,6 +73,7 @@ class TaskStatus implements Writable {
         UTF8.writeString(out, stateString);
     }
 
+    @Override
     public void readFields(DataInput in) throws IOException {
         this.taskid = UTF8.readString(in);
         this.isMap = in.readBoolean();

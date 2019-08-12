@@ -75,12 +75,13 @@ class MapOutputFile implements Writable, Configurable {
     throws IOException {
     return this.jobConf.getLocalFile(reduceTaskId, mapTaskId+".out");
   }
-  public File getInputFile(String mapTaskIds[], String reduceTaskId)
+  public File getInputFile(String[] mapTaskIds, String reduceTaskId)
     throws IOException {
     for (int i = 0; i < mapTaskIds.length; i++) {
       File file = jobConf.getLocalFile(reduceTaskId, mapTaskIds[i]+".out");
-      if (file.exists())
+      if (file.exists()) {
         return file;
+      }
     }
     throw new IOException("Input file not found!");
   }
@@ -108,6 +109,7 @@ class MapOutputFile implements Writable, Configurable {
     this.partition = partition;
   }
 
+  @Override
   public void write(DataOutput out) throws IOException {
     UTF8.writeString(out, mapTaskId);
     UTF8.writeString(out, reduceTaskId);
@@ -143,6 +145,7 @@ class MapOutputFile implements Writable, Configurable {
     }
   }
 
+  @Override
   public void readFields(DataInput in) throws IOException {
     this.mapTaskId = UTF8.readString(in);
     this.reduceTaskId = UTF8.readString(in);

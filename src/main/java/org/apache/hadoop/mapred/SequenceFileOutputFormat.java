@@ -30,6 +30,7 @@ import org.apache.hadoop.conf.Configuration;
 /** An {@link OutputFormat} that writes {@link SequenceFile}s. */
 public class SequenceFileOutputFormat extends OutputFormatBase {
 
+  @Override
   public RecordWriter getRecordWriter(FileSystem fs, JobConf job,
                                       String name) throws IOException {
 
@@ -43,12 +44,14 @@ public class SequenceFileOutputFormat extends OutputFormatBase {
 
     return new RecordWriter() {
 
+        @Override
         public void write(WritableComparable key, Writable value)
           throws IOException {
 
           out.append(key, value);
         }
 
+        @Override
         public void close(Reporter reporter) throws IOException { out.close();}
       };
   }

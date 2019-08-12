@@ -89,7 +89,7 @@ public class FSDataInputStream extends DataInputStream {
         }
 
         @Override
-        public int read(byte b[], int off, int len) throws IOException {
+        public int read(byte[] b, int off, int len) throws IOException {
             int read = in.read(b, off, len);
             if (sums != null) {
                 int summed = 0;
@@ -161,7 +161,7 @@ public class FSDataInputStream extends DataInputStream {
 
         // 这是BufferedInputStream调用的惟一read()方法，因此我们捕捉对它的调用，以便缓存位置。
         @Override
-        public int read(byte b[], int off, int len) throws IOException {
+        public int read(byte[] b, int off, int len) throws IOException {
             int result;
             if ((result = in.read(b, off, len)) > 0) {
                 position += result;

@@ -58,18 +58,21 @@ class MapOutputLocation implements Writable {
   /** The port listening for {@link MapOutputProtocol} connections. */
   public int getPort() { return port; }
 
+  @Override
   public void write(DataOutput out) throws IOException {
     UTF8.writeString(out, mapTaskId);
     UTF8.writeString(out, host);
     out.writeInt(port);
   }
 
+  @Override
   public void readFields(DataInput in) throws IOException {
     this.mapTaskId = UTF8.readString(in);
     this.host = UTF8.readString(in);
     this.port = in.readInt();
   }
 
+  @Override
   public String toString() {
     return mapTaskId+"@"+host+":"+port;
   }

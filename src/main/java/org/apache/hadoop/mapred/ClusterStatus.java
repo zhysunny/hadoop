@@ -66,6 +66,7 @@ public class ClusterStatus implements Writable {
     return max_tasks;
   }
   
+  @Override
   public void write(DataOutput out) throws IOException {
     out.writeInt(task_trackers);
     out.writeInt(map_tasks);
@@ -73,6 +74,7 @@ public class ClusterStatus implements Writable {
     out.writeInt(max_tasks);
   }
 
+  @Override
   public void readFields(DataInput in) throws IOException {
     task_trackers = in.readInt();
     map_tasks = in.readInt();

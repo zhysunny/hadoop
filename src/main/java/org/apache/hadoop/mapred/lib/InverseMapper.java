@@ -31,6 +31,7 @@ import org.apache.hadoop.io.Writable;
 public class InverseMapper extends MapReduceBase implements Mapper {
 
   /** The inverse function.  Input keys and values are swapped.*/
+  @Override
   public void map(WritableComparable key, Writable value,
                   OutputCollector output, Reporter reporter)
     throws IOException {

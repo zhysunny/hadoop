@@ -97,6 +97,7 @@ public abstract class Server {
       this.setName("Server listener on port " + port);
     }
 
+    @Override
     public void run() {
       LOG.info(getName() + ": starting");
       while (running) {
@@ -134,6 +135,7 @@ public abstract class Server {
                    + socket.getInetAddress().getHostAddress());
     }
 
+    @Override
     public void run() {
       LOG.info(getName() + ": starting");
       SERVER.set(Server.this);
@@ -146,8 +148,9 @@ public abstract class Server {
             continue;
           }
         
-          if (LOG.isLoggable(Level.FINE))
-            LOG.fine(getName() + " got #" + id);
+          if (LOG.isLoggable(Level.FINE)) {
+              LOG.fine(getName() + " got #" + id);
+          }
         
           Writable param = makeParam();           // read param
           param.readFields(in);        
@@ -188,6 +191,7 @@ public abstract class Server {
       this.setName("Server handler "+ instanceNumber + " on " + port);
     }
 
+    @Override
     public void run() {
       LOG.info(getName() + ": starting");
       SERVER.set(Server.this);
@@ -198,7 +202,9 @@ public abstract class Server {
             while (running && callQueue.size()==0) { // wait for a call
               callQueue.wait(timeout);
             }
-            if (!running) break;
+            if (!running) {
+                break;
+            }
             call = (Call)callQueue.removeFirst(); // pop the queue
           }
 
@@ -206,9 +212,10 @@ public abstract class Server {
             callDequeued.notify();
           }
 
-          if (LOG.isLoggable(Level.FINE))
-            LOG.fine(getName() + ": has #" + call.id + " from " +
-                     call.connection.socket.getInetAddress().getHostAddress());
+          if (LOG.isLoggable(Level.FINE)) {
+              LOG.fine(getName() + ": has #" + call.id + " from " +
+                       call.connection.socket.getInetAddress().getHostAddress());
+          }
           
           String error = null;
           Writable value = null;
@@ -226,8 +233,9 @@ public abstract class Server {
           synchronized (out) {
             out.writeInt(call.id);                // write call id
             out.writeBoolean(error!=null);        // write error flag
-            if (error != null)
-              value = new UTF8(error);
+            if (error != null) {
+                value = new UTF8(error);
+            }
             value.write(out);                     // write value
             out.flush();
           }

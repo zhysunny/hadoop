@@ -46,6 +46,7 @@ class CombiningCollector implements OutputCollector {
     this.limit = job.getInt("mapred.combine.buffer.size", 100000);
   }
 
+  @Override
   public synchronized void collect(WritableComparable key, Writable value)
     throws IOException {
 

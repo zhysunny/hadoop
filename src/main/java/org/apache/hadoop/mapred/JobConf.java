@@ -225,8 +225,9 @@ public class JobConf extends Configuration {
   public WritableComparator getOutputKeyComparator() {
     Class theClass = getClass("mapred.output.key.comparator.class", null,
                               WritableComparator.class);
-    if (theClass != null)
-      return (WritableComparator)newInstance(theClass);
+    if (theClass != null) {
+        return (WritableComparator)newInstance(theClass);
+    }
     return WritableComparator.get(getOutputKeyClass());
   }
 
@@ -326,8 +327,9 @@ public class JobConf extends Configuration {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
-    if (result instanceof JobConfigurable)
-      ((JobConfigurable)result).configure(this);
+    if (result instanceof JobConfigurable) {
+        ((JobConfigurable)result).configure(this);
+    }
     return result;
   }
 

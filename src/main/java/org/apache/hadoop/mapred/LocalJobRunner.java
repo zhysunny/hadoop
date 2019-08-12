@@ -81,6 +81,7 @@ class LocalJobRunner implements JobSubmissionProtocol {
             }
         }
 
+        @Override
         public void run() {
             try {
                 // split input into minimum number of splits
@@ -107,13 +108,14 @@ class LocalJobRunner implements JobSubmissionProtocol {
                     File mapOut = this.mapoutputFile.getOutputFile(mapId, 0);
                     File reduceIn = this.mapoutputFile.getInputFile(mapId, reduceId);
                     reduceIn.getParentFile().mkdirs();
-                    if (!localFs.rename(mapOut, reduceIn))
+                    if (!localFs.rename(mapOut, reduceIn)) {
                         throw new IOException("Couldn't rename " + mapOut);
+                    }
                     this.mapoutputFile.removeAll(mapId);
                 }
 
                 // run a single reduce task
-                String mapDependencies[][] = new String[mapIds.size()][1];
+                String[][] mapDependencies = new String[mapIds.size()][1];
                 for (int i = 0; i < mapIds.size(); i++) {
                     mapDependencies[i][0] = (String) mapIds.get(i);
                 }
@@ -148,10 +150,12 @@ class LocalJobRunner implements JobSubmissionProtocol {
 
         // TaskUmbilicalProtocol methods
 
+        @Override
         public Task getTask(String taskid) {
             return null;
         }
 
+        @Override
         public void progress(String taskId, float progress, String state) {
             LOGGER.info(state);
             float taskIndex = mapIds.indexOf(taskId);
@@ -163,13 +167,16 @@ class LocalJobRunner implements JobSubmissionProtocol {
             }
         }
 
+        @Override
         public void reportDiagnosticInfo(String taskid, String trace) {
             // Ignore for now
         }
 
+        @Override
         public void ping(String taskid) throws IOException {
         }
 
+        @Override
         public void done(String taskId) throws IOException {
             int taskIndex = mapIds.indexOf(taskId);
             if (taskIndex >= 0) {                       // mapping
@@ -179,6 +186,7 @@ class LocalJobRunner implements JobSubmissionProtocol {
             }
         }
 
+        @Override
         public synchronized void fsError(String message) throws IOException {
             LOGGER.error("FSError: " + message);
         }
@@ -192,36 +200,44 @@ class LocalJobRunner implements JobSubmissionProtocol {
 
     // JobSubmissionProtocol methods
 
+    @Override
     public JobStatus submitJob(String jobFile) throws IOException {
         return new Job(jobFile, this.conf).status;
     }
 
+    @Override
     public void killJob(String id) {
         ((Thread) jobs.get(id)).stop();
     }
 
+    @Override
     public JobProfile getJobProfile(String id) {
         Job job = (Job) jobs.get(id);
         return job.getProfile();
     }
 
+    @Override
     public TaskReport[] getMapTaskReports(String id) {
         return new TaskReport[0];
     }
 
+    @Override
     public TaskReport[] getReduceTaskReports(String id) {
         return new TaskReport[0];
     }
 
+    @Override
     public JobStatus getJobStatus(String id) {
         Job job = (Job) jobs.get(id);
         return job.status;
     }
 
+    @Override
     public String getFilesystemName() throws IOException {
         return fs.getName();
     }
 
+    @Override
     public ClusterStatus getClusterStatus() {
         return new ClusterStatus(1, map_tasks, reduce_tasks, 1);
     }

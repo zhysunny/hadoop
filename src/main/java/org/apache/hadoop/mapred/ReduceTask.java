@@ -59,10 +59,12 @@ class ReduceTask extends Task {
     this.partition = partition;
   }
 
+  @Override
   public TaskRunner createRunner(TaskTracker tracker) {
     return new ReduceTaskRunner(this, tracker, this.conf);
   }
 
+  @Override
   public boolean isMapTask() {
       return false;
   }
@@ -70,6 +72,7 @@ class ReduceTask extends Task {
   public String[][] getMapTaskIds() { return mapTaskIds; }
   public int getPartition() { return partition; }
 
+  @Override
   public void write(DataOutput out) throws IOException {
     super.write(out);
 
@@ -84,6 +87,7 @@ class ReduceTask extends Task {
     out.writeInt(partition);                      // write partition
   }
 
+  @Override
   public void readFields(DataInput in) throws IOException {
     super.readFields(in);
 
@@ -122,8 +126,10 @@ class ReduceTask extends Task {
 
     /// Iterator methods
 
+    @Override
     public boolean hasNext() { return hasNext; }
 
+    @Override
     public Object next() {
       try {
         Object result = value;                      // save value
@@ -134,6 +140,7 @@ class ReduceTask extends Task {
       }
     }
 
+    @Override
     public void remove() { throw new RuntimeException("not implemented"); }
 
     /// Auxiliary methods
@@ -174,6 +181,7 @@ class ReduceTask extends Task {
     }
   }
 
+  @Override
   public void run(JobConf job, final TaskUmbilicalProtocol umbilical)
     throws IOException {
     Class keyClass = job.getOutputKeyClass();
@@ -227,6 +235,7 @@ class ReduceTask extends Task {
 
     // spawn a thread to give sort progress heartbeats
     Thread sortProgress = new Thread() {
+        @Override
         public void run() {
           while (!sortComplete) {
             try {
@@ -266,6 +275,7 @@ class ReduceTask extends Task {
     final RecordWriter out =
       job.getOutputFormat().getRecordWriter(FileSystem.get(job), job, name);
     OutputCollector collector = new OutputCollector() {
+        @Override
         public void collect(WritableComparable key, Writable value)
           throws IOException {
           out.write(key, value);

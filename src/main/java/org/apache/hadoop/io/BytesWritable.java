@@ -105,6 +105,7 @@ public class BytesWritable implements WritableComparable {
   }
   
   // inherit javadoc
+  @Override
   public void readFields(DataInput in) throws IOException {
     setSize(0); // clear the old data
     setSize(in.readInt());
@@ -112,11 +113,13 @@ public class BytesWritable implements WritableComparable {
   }
   
   // inherit javadoc
+  @Override
   public void write(DataOutput out) throws IOException {
     out.writeInt(size);
     out.write(bytes, 0, size);
   }
   
+  @Override
   public int hashCode() {
     return WritableComparator.hashBytes(bytes, size);
   }
@@ -127,6 +130,7 @@ public class BytesWritable implements WritableComparable {
    * @return Positive if left is bigger than right, 0 if they are equal, and
    *         negative if left is smaller than right.
    */
+  @Override
   public int compareTo(Object right_obj) {
     BytesWritable right = ((BytesWritable) right_obj);
     return WritableComparator.compareBytes(bytes, 0, size, 
@@ -136,6 +140,7 @@ public class BytesWritable implements WritableComparable {
   /**
    * Are the two byte sequences equal?
    */
+  @Override
   public boolean equals(Object right_obj) {
     if (right_obj instanceof BytesWritable) {
       return compareTo(right_obj) == 0;

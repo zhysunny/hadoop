@@ -56,10 +56,12 @@ public class ObjectWritable implements Writable, Configurable {
     this.instance = instance;
   }
   
+  @Override
   public void readFields(DataInput in) throws IOException {
     readObject(in, this, this.conf);
   }
   
+  @Override
   public void write(DataOutput out) throws IOException {
     writeObject(out, instance, declaredClass);
   }
@@ -83,6 +85,7 @@ public class ObjectWritable implements Writable, Configurable {
     public NullInstance(Class declaredClass) {
       this.declaredClass = declaredClass;
     }
+    @Override
     public void readFields(DataInput in) throws IOException {
       String className = UTF8.readString(in);
       declaredClass = (Class)PRIMITIVE_NAMES.get(className);
@@ -94,6 +97,7 @@ public class ObjectWritable implements Writable, Configurable {
         }
       }
     }
+    @Override
     public void write(DataOutput out) throws IOException {
       UTF8.writeString(out, declaredClass.getName());
     }

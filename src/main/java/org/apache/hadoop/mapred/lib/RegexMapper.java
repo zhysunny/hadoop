@@ -40,11 +40,13 @@ public class RegexMapper extends MapReduceBase implements Mapper {
   private Pattern pattern;
   private int group;
 
+  @Override
   public void configure(JobConf job) {
     pattern = Pattern.compile(job.get("mapred.mapper.regex"));
     group = job.getInt("mapred.mapper.regex.group", 0);
   }
 
+  @Override
   public void map(WritableComparable key, Writable value,
                   OutputCollector output, Reporter reporter)
     throws IOException {

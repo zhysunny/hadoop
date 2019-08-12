@@ -28,6 +28,7 @@ import org.apache.hadoop.io.Writable;
 /** An {@link OutputFormat} that writes plain text files. */
 public class TextOutputFormat extends OutputFormatBase {
 
+  @Override
   public RecordWriter getRecordWriter(FileSystem fs, JobConf job,
                                       String name) throws IOException {
 
@@ -36,6 +37,7 @@ public class TextOutputFormat extends OutputFormatBase {
     final FSDataOutputStream out = fs.create(file);
 
     return new RecordWriter() {
+        @Override
         public synchronized void write(WritableComparable key, Writable value)
           throws IOException {
           out.write(key.toString().getBytes("UTF-8"));
@@ -43,6 +45,7 @@ public class TextOutputFormat extends OutputFormatBase {
           out.write(value.toString().getBytes("UTF-8"));
           out.writeByte('\n');
         }
+        @Override
         public synchronized void close(Reporter reporter) throws IOException {
           out.close();
         }

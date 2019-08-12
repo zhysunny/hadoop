@@ -32,33 +32,40 @@ public class LongWritable implements WritableComparable {
   /** Return the value of this LongWritable. */
   public long get() { return value; }
 
+  @Override
   public void readFields(DataInput in) throws IOException {
     value = in.readLong();
   }
 
+  @Override
   public void write(DataOutput out) throws IOException {
     out.writeLong(value);
   }
 
   /** Returns true iff <code>o</code> is a LongWritable with the same value. */
+  @Override
   public boolean equals(Object o) {
-    if (!(o instanceof LongWritable))
-      return false;
+    if (!(o instanceof LongWritable)) {
+        return false;
+    }
     LongWritable other = (LongWritable)o;
     return this.value == other.value;
   }
 
+  @Override
   public int hashCode() {
     return (int)value;
   }
 
   /** Compares two LongWritables. */
+  @Override
   public int compareTo(Object o) {
     long thisValue = this.value;
     long thatValue = ((LongWritable)o).value;
     return (thisValue<thatValue ? -1 : (thisValue==thatValue ? 0 : 1));
   }
 
+  @Override
   public String toString() {
     return Long.toString(value);
   }

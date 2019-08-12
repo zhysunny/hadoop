@@ -38,6 +38,7 @@ class ReduceTaskRunner extends TaskRunner {
   }
 
   /** Assemble all of the map output files. */
+  @Override
   public boolean prepare() throws IOException {
     ReduceTask task = ((ReduceTask)getTask());
     this.mapOutputFile.removeAll(task.getTaskId());    // cleanup from failures
@@ -89,6 +90,7 @@ class ReduceTaskRunner extends TaskRunner {
           (MapOutputProtocol)RPC.getProxy(MapOutputProtocol.class, addr, this.conf);
 
         this.mapOutputFile.setProgressReporter(new MapOutputFile.ProgressReporter() {
+            @Override
             public void progress(float progress) {
               copyPhase.phase().set(progress);
               try {
@@ -109,7 +111,7 @@ class ReduceTaskRunner extends TaskRunner {
           // Success: remove from 'needed'
           boolean foundit = false;
           for (Iterator it = needed.iterator(); it.hasNext() && !foundit; ) {
-              String idsForSingleMap[] = (String[]) it.next();
+              String[] idsForSingleMap = (String[]) it.next();
               for (int j = 0; j < idsForSingleMap.length; j++) {
                   if (idsForSingleMap[j].equals(loc.getMapTaskId())) {
                       it.remove();
@@ -135,6 +137,7 @@ class ReduceTaskRunner extends TaskRunner {
   }
 
   /** Delete all of the temporary map output files. */
+  @Override
   public void close() throws IOException {
     getTask().getProgress().setStatus("closed");
     this.mapOutputFile.removeAll(getTask().getTaskId());

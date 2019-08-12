@@ -28,7 +28,9 @@ public class NullWritable implements Writable {
   /** Returns the single instance of this class. */
   public static NullWritable get() { return THIS; }
 
+  @Override
   public void readFields(DataInput in) throws IOException {}
+  @Override
   public void write(DataOutput out) throws IOException {}
 }
 

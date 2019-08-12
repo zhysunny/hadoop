@@ -32,6 +32,7 @@ import java.net.*;
 class JobTrackerInfoServer {
 
     public static class RedirectHandler extends AbstractHttpHandler {
+        @Override
         public void handle(String pathInContext, String pathParams, HttpRequest request, HttpResponse response) throws HttpException, IOException {
             response.sendRedirect("/jobtracker");
             request.setHandled(true);
@@ -50,7 +51,7 @@ class JobTrackerInfoServer {
      */
     private static final boolean WINDOWS = System.getProperty("os.name").startsWith("Windows");
     public JobTrackerInfoServer(JobTracker jobTracker, int port) throws IOException {
-        this.jobTracker = jobTracker;
+        JobTrackerInfoServer.jobTracker = jobTracker;
         this.server = new org.mortbay.jetty.Server();
 	URL url = JobTrackerInfoServer.class.getClassLoader().getResource("webapps");
 	String path = url.getPath();
@@ -82,6 +83,7 @@ class JobTrackerInfoServer {
      * The thread class we need to kick off the HTTP server async-style.
      */
     class HTTPStarter implements Runnable {
+        @Override
         public void run() {
             try {
                 server.start();

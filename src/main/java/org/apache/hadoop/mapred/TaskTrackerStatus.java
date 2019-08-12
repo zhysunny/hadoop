@@ -122,6 +122,7 @@ class TaskTrackerStatus implements Writable {
     ///////////////////////////////////////////
     // Writable
     ///////////////////////////////////////////
+    @Override
     public void write(DataOutput out) throws IOException {
         UTF8.writeString(out, trackerName);
         UTF8.writeString(out, host);
@@ -135,6 +136,7 @@ class TaskTrackerStatus implements Writable {
 
     /**
      */     
+    @Override
     public void readFields(DataInput in) throws IOException {
         this.trackerName = UTF8.readString(in);
         this.host = UTF8.readString(in);

@@ -43,8 +43,9 @@ public class JobTracker implements MRConstants, InterTrackerProtocol, JobSubmiss
 
     private static JobTracker tracker = null;
     public static void startTracker(Configuration conf) throws IOException {
-      if (tracker != null)
-        throw new IOException("JobTracker already running.");
+      if (tracker != null) {
+          throw new IOException("JobTracker already running.");
+      }
       while (true) {
         try {
           tracker = new JobTracker(conf);
@@ -75,6 +76,7 @@ public class JobTracker implements MRConstants, InterTrackerProtocol, JobSubmiss
          * The run method lives for the life of the JobTracker, and removes TaskTrackers
          * that have not checked in for some time.
          */
+        @Override
         public void run() {
             while (shouldRun) {
                 //
@@ -144,6 +146,7 @@ public class JobTracker implements MRConstants, InterTrackerProtocol, JobSubmiss
          * and removes Jobs that are not still running, but which
          * finished a long time ago.
          */
+        @Override
         public void run() {
             while (shouldRun) {
                 try {
@@ -184,6 +187,7 @@ public class JobTracker implements MRConstants, InterTrackerProtocol, JobSubmiss
         boolean shouldRun = true;
         public JobInitThread() {
         }
+        @Override
         public void run() {
             while (shouldRun) {
                 JobInProgress job = null;
@@ -276,6 +280,7 @@ public class JobTracker implements MRConstants, InterTrackerProtocol, JobSubmiss
      * reinserted.  Otherwise, we assume the tracker has expired.
      */
     TreeSet trackerExpiryQueue = new TreeSet(new Comparator() {
+        @Override
         public int compare(Object o1, Object o2) {
             TaskTrackerStatus p1 = (TaskTrackerStatus) o1;
             TaskTrackerStatus p2 = (TaskTrackerStatus) o2;
@@ -515,6 +520,7 @@ public class JobTracker implements MRConstants, InterTrackerProtocol, JobSubmiss
     /**
      * Process incoming heartbeat messages from the task trackers.
      */
+    @Override
     public synchronized int emitHeartbeat(TaskTrackerStatus trackerStatus, boolean initialContact) {
         String trackerName = trackerStatus.getTrackerName();
         trackerStatus.setLastSeen(System.currentTimeMillis());
@@ -554,6 +560,7 @@ public class JobTracker implements MRConstants, InterTrackerProtocol, JobSubmiss
      * and incorporate knowledge of DFS file placement.  But for right now, it
      * just grabs a single item out of the pending task list and hands it back.
      */
+    @Override
     public synchronized Task pollForNewTask(String taskTracker) {
         //
         // Compute average map and reduce task numbers across pool
@@ -670,6 +677,7 @@ public class JobTracker implements MRConstants, InterTrackerProtocol, JobSubmiss
      * A tracker wants to know if any of its Tasks have been
      * closed (because the job completed, whether successfully or not)
      */
+    @Override
     public synchronized String pollForTaskWithClosedJob(String taskTracker) {
         TreeSet taskIds = (TreeSet) trackerToTaskMap.get(taskTracker);
         if (taskIds != null) {
@@ -694,6 +702,7 @@ public class JobTracker implements MRConstants, InterTrackerProtocol, JobSubmiss
      * yet closed, tasks.  This exists so the reduce task thread can locate
      * map task outputs.
      */
+    @Override
     public synchronized MapOutputLocation[] locateMapOutputs(String taskId, String[][] mapTasksNeeded) {
         ArrayList v = new ArrayList();
         for (int i = 0; i < mapTasksNeeded.length; i++) {
@@ -719,6 +728,7 @@ public class JobTracker implements MRConstants, InterTrackerProtocol, JobSubmiss
     /**
      * Grab the local fs name
      */
+    @Override
     public synchronized String getFilesystemName() throws IOException {
         return fs.getName();
     }
@@ -738,6 +748,7 @@ public class JobTracker implements MRConstants, InterTrackerProtocol, JobSubmiss
      * asynchronously to handle split-computation and build up
      * the right TaskTracker/Block mapping.
      */
+    @Override
     public synchronized JobStatus submitJob(String jobFile) throws IOException {
         totalSubmissions++;
         JobInProgress job = new JobInProgress(jobFile, this, this.conf);
@@ -754,6 +765,7 @@ public class JobTracker implements MRConstants, InterTrackerProtocol, JobSubmiss
         return job.getStatus();
     }
 
+    @Override
     public synchronized ClusterStatus getClusterStatus() {
         synchronized (taskTrackers) {
           return new ClusterStatus(taskTrackers.size(),
@@ -763,11 +775,13 @@ public class JobTracker implements MRConstants, InterTrackerProtocol, JobSubmiss
         }
     }
     
+    @Override
     public synchronized void killJob(String jobid) {
         JobInProgress job = (JobInProgress) jobs.get(jobid);
         job.kill();
     }
 
+    @Override
     public synchronized JobProfile getJobProfile(String jobid) {
         JobInProgress job = (JobInProgress) jobs.get(jobid);
         if (job != null) {
@@ -776,6 +790,7 @@ public class JobTracker implements MRConstants, InterTrackerProtocol, JobSubmiss
             return null;
         }
     }
+    @Override
     public synchronized JobStatus getJobStatus(String jobid) {
         JobInProgress job = (JobInProgress) jobs.get(jobid);
         if (job != null) {
@@ -784,6 +799,7 @@ public class JobTracker implements MRConstants, InterTrackerProtocol, JobSubmiss
             return null;
         }
     }
+    @Override
     public synchronized TaskReport[] getMapTaskReports(String jobid) {
         JobInProgress job = (JobInProgress) jobs.get(jobid);
         if (job == null) {
@@ -804,6 +820,7 @@ public class JobTracker implements MRConstants, InterTrackerProtocol, JobSubmiss
         }
     }
 
+    @Override
     public synchronized TaskReport[] getReduceTaskReports(String jobid) {
         JobInProgress job = (JobInProgress) jobs.get(jobid);
         if (job == null) {
@@ -897,7 +914,7 @@ public class JobTracker implements MRConstants, InterTrackerProtocol, JobSubmiss
      * Start the JobTracker process.  This is used only for debugging.  As a rule,
      * JobTracker should be run as part of the DFS Namenode process.
      */
-    public static void main(String argv[]) throws IOException, InterruptedException {
+    public static void main(String[] argv) throws IOException, InterruptedException {
         if (argv.length != 0) {
           System.out.println("usage: JobTracker");
           System.exit(-1);

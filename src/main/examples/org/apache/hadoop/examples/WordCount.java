@@ -55,9 +55,10 @@ public class WordCount {
     private final static IntWritable one = new IntWritable(1);
     private UTF8 word = new UTF8();
     
-    public void map(WritableComparable key, Writable value, 
-        OutputCollector output, 
-        Reporter reporter) throws IOException {
+    @Override
+    public void map(WritableComparable key, Writable value,
+                    OutputCollector output,
+                    Reporter reporter) throws IOException {
       String line = ((UTF8)value).toString();
       StringTokenizer itr = new StringTokenizer(line);
       while (itr.hasMoreTokens()) {
@@ -72,9 +73,10 @@ public class WordCount {
    */
   public static class Reduce extends MapReduceBase implements Reducer {
     
+    @Override
     public void reduce(WritableComparable key, Iterator values,
-        OutputCollector output, 
-        Reporter reporter) throws IOException {
+                       OutputCollector output,
+                       Reporter reporter) throws IOException {
       int sum = 0;
       while (values.hasNext()) {
         sum += ((IntWritable) values.next()).get();

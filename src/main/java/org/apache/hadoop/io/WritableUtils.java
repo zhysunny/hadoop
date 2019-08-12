@@ -25,7 +25,9 @@ public final class WritableUtils  {
 
   public static byte[] readCompressedByteArray(DataInput in) throws IOException {
     int length = in.readInt();
-    if (length == -1) return null;
+    if (length == -1) {
+        return null;
+    }
     byte[] buffer = new byte[length];
     in.readFully(buffer);      // could/should use readFully(buffer,0,length)?
     GZIPInputStream gzi = new GZIPInputStream(new ByteArrayInputStream(buffer, 0, buffer.length));
@@ -43,7 +45,9 @@ public final class WritableUtils  {
 
   public static void skipCompressedByteArray(DataInput in) throws IOException {
     int length = in.readInt();
-    if (length != -1) in.skipBytes(length);
+    if (length != -1) {
+        in.skipBytes(length);
+    }
   }
 
   public static int  writeCompressedByteArray(DataOutput out, byte[] bytes) throws IOException {
@@ -68,7 +72,9 @@ public final class WritableUtils  {
   /* Ugly utility, maybe someone else can do this better  */
   public static String readCompressedString(DataInput in) throws IOException {
     byte[] bytes = readCompressedByteArray(in);
-    if (bytes == null) return null;
+    if (bytes == null) {
+        return null;
+    }
     return new String(bytes, "UTF-8");
   }
 
@@ -103,7 +109,9 @@ public final class WritableUtils  {
    */
   public static String readString(DataInput in) throws IOException{
     int length = in.readInt();
-    if (length == -1) return null;
+    if (length == -1) {
+        return null;
+    }
     byte[] buffer = new byte[length];
     in.readFully(buffer);      // could/should use readFully(buffer,0,length)?
     return new String(buffer,"UTF-8");  
@@ -146,7 +154,9 @@ public final class WritableUtils  {
    */
   public static String[] readStringArray(DataInput in) throws IOException {
     int len = in.readInt();
-    if (len == -1) return null;
+    if (len == -1) {
+        return null;
+    }
     String[] s = new String[len];
     for(int i = 0; i < len; i++) {
       s[i] = readString(in);
@@ -162,7 +172,9 @@ public final class WritableUtils  {
    */
   public static  String[] readCompressedStringArray(DataInput in) throws IOException {
     int len = in.readInt();
-    if (len == -1) return null;
+    if (len == -1) {
+        return null;
+    }
     String[] s = new String[len];
     for(int i = 0; i < len; i++) {
       s[i] = readCompressedString(in);
@@ -207,6 +219,7 @@ public final class WritableUtils  {
    * Allocate a buffer for each thread that tries to clone objects.
    */
   private static ThreadLocal cloneBuffers = new ThreadLocal() {
+    @Override
     protected synchronized Object initialValue() {
       return new CopyInCopyOutBuffer();
     }

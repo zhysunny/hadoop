@@ -55,8 +55,9 @@ public class Grep {
 
     grepJob.setMapperClass(RegexMapper.class);
     grepJob.set("mapred.mapper.regex", args[2]);
-    if (args.length == 4)
-      grepJob.set("mapred.mapper.regex.group", args[3]);
+    if (args.length == 4) {
+        grepJob.set("mapred.mapper.regex.group", args[3]);
+    }
     
     grepJob.setCombinerClass(LongSumReducer.class);
     grepJob.setReducerClass(LongSumReducer.class);

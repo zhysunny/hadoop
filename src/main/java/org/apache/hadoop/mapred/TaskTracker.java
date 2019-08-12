@@ -184,6 +184,7 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol, MapOutpu
         // RPC timeout, which might be 10-30 seconds.)
         //
         new Thread() {
+            @Override
             public void run() {
                 if (taskReportServer != null) {
                     taskReportServer.stop();
@@ -326,6 +327,7 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol, MapOutpu
      * loops when the old TaskTracker has gone bad (its state is
      * stale somehow) and we need to reinitialize everything.
      */
+    @Override
     public void run() {
         try {
             while (running) {
@@ -577,6 +579,7 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol, MapOutpu
     /////////////////////////////////////////////////////////////////
     // MapOutputProtocol
     /////////////////////////////////////////////////////////////////
+    @Override
     public MapOutputFile getFile(String mapTaskId, String reduceTaskId,
                                  IntWritable partition) {
         MapOutputFile mapOutputFile = new MapOutputFile(mapTaskId, reduceTaskId,
@@ -592,6 +595,7 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol, MapOutpu
     /**
      * Called upon startup by the child process, to fetch Task data.
      */
+    @Override
     public synchronized Task getTask(String taskid) throws IOException {
         TaskInProgress tip = (TaskInProgress) tasks.get(taskid);
         if (tip != null) {
@@ -604,6 +608,7 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol, MapOutpu
     /**
      * Called periodically to report Task progress, from 0.0 to 1.0.
      */
+    @Override
     public synchronized void progress(String taskid, float progress, String state) throws IOException {
         TaskInProgress tip = (TaskInProgress) tasks.get(taskid);
         if (tip != null) {
@@ -617,6 +622,7 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol, MapOutpu
      * Called when the task dies before completion, and we want to report back
      * diagnostic info
      */
+    @Override
     public synchronized void reportDiagnosticInfo(String taskid, String info) throws IOException {
         TaskInProgress tip = (TaskInProgress) tasks.get(taskid);
         if (tip != null) {
@@ -627,6 +633,7 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol, MapOutpu
     }
 
     /** Child checking to see if we're alive.  Normally does nothing.*/
+    @Override
     public synchronized void ping(String taskid) throws IOException {
         if (tasks.get(taskid) == null) {
             throw new IOException("No such task id."); // force child exit
@@ -636,6 +643,7 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol, MapOutpu
     /**
      * The task is done.
      */
+    @Override
     public synchronized void done(String taskid) throws IOException {
         TaskInProgress tip = (TaskInProgress) tasks.get(taskid);
         if (tip != null) {
@@ -647,6 +655,7 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol, MapOutpu
 
     /** A child task had a local filesystem error.  Exit, so that no future
      * jobs are accepted. */
+    @Override
     public synchronized void fsError(String message) throws IOException {
         LOGGER.warn("FSError, exiting: " + message);
         running = false;
@@ -749,7 +758,7 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol, MapOutpu
     /**
      * Start the TaskTracker, point toward the indicated JobTracker
      */
-    public static void main(String argv[]) throws IOException {
+    public static void main(String[] argv) throws IOException {
         if (argv.length != 0) {
             System.out.println("usage: TaskTracker");
             System.exit(-1);

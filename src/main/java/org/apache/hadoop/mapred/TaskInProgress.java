@@ -47,12 +47,12 @@ class TaskInProgress {
     // Defines the TIP
     private String jobFile = null;
     private FileSplit split = null;
-    private String hints[][] = null;
-    private TaskInProgress predecessors[] = null;
+    private String[][] hints = null;
+    private TaskInProgress[] predecessors = null;
     private int partition;
     private JobTracker jobtracker;
     private String id;
-    private String totalTaskIds[];
+    private String[] totalTaskIds;
     private JobInProgress job;
 
     // Status of the TIP
@@ -87,7 +87,7 @@ class TaskInProgress {
     /**
      * Constructor for ReduceTask
      */
-    public TaskInProgress(String jobFile, TaskInProgress predecessors[], int partition, JobTracker jobtracker, JobConf conf, JobInProgress job) {
+    public TaskInProgress(String jobFile, TaskInProgress[] predecessors, int partition, JobTracker jobtracker, JobConf conf, JobInProgress job) {
         this.jobFile = jobFile;
         this.predecessors = predecessors;
         this.partition = partition;
@@ -432,7 +432,7 @@ class TaskInProgress {
             if (isMapTask()) {
                 t = new MapTask(jobFile, taskid, split);
             } else {
-                String mapIdPredecessors[][] = new String[predecessors.length][];
+                String[][] mapIdPredecessors = new String[predecessors.length][];
                 for (int i = 0; i < mapIdPredecessors.length; i++) {
                     mapIdPredecessors[i] = predecessors[i].getAllPossibleTaskIds();
                 }

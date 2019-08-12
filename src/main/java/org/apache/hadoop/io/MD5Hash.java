@@ -51,12 +51,14 @@ public class MD5Hash implements WritableComparable {
   
   /** Constructs an MD5Hash with a specified value. */
   public MD5Hash(byte[] digest) {
-    if (digest.length != MD5_LEN)
-      throw new IllegalArgumentException("Wrong length: " + digest.length);
+    if (digest.length != MD5_LEN) {
+        throw new IllegalArgumentException("Wrong length: " + digest.length);
+    }
     this.digest = digest;
   }
   
   // javadoc from Writable
+  @Override
   public void readFields(DataInput in) throws IOException {
     in.readFully(digest);
   }
@@ -69,6 +71,7 @@ public class MD5Hash implements WritableComparable {
   }
 
   // javadoc from Writable
+  @Override
   public void write(DataOutput out) throws IOException {
     out.write(digest);
   }
@@ -109,21 +112,25 @@ public class MD5Hash implements WritableComparable {
   /** Construct a half-sized version of this MD5.  Fits in a long **/
   public long halfDigest() {
     long value = 0;
-    for (int i = 0; i < 8; i++)
-      value |= ((digest[i] & 0xffL) << (8*(7-i)));
+    for (int i = 0; i < 8; i++) {
+        value |= ((digest[i] & 0xffL) << (8*(7-i)));
+    }
     return value;
   }
 
   /** Returns true iff <code>o</code> is an MD5Hash whose digest contains the
    * same values.  */
+  @Override
   public boolean equals(Object o) {
-    if (!(o instanceof MD5Hash))
-      return false;
+    if (!(o instanceof MD5Hash)) {
+        return false;
+    }
     MD5Hash other = (MD5Hash)o;
     return Arrays.equals(this.digest, other.digest);
   }
 
   /** Returns a hash code value for this object.*/
+  @Override
   public int hashCode() {
     return                                        // xor four ints
       (digest[ 0] | (digest[ 1]<<8) | (digest[ 2]<<16) | (digest[ 3]<<24)) ^
@@ -134,6 +141,7 @@ public class MD5Hash implements WritableComparable {
 
 
   /** Compares this object with the specified object for order.*/
+  @Override
   public int compareTo(Object o) {
     MD5Hash that = (MD5Hash)o;
     return WritableComparator.compareBytes(this.digest, 0, MD5_LEN,
@@ -161,6 +169,7 @@ public class MD5Hash implements WritableComparable {
   {'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};
 
   /** Returns a string representation of this object. */
+  @Override
   public String toString() {
     StringBuffer buf = new StringBuffer(MD5_LEN*2);
     for (int i = 0; i < MD5_LEN; i++) {
@@ -173,8 +182,9 @@ public class MD5Hash implements WritableComparable {
 
   /** Sets the digest value from a hex string. */
   public void setDigest(String hex) {
-    if (hex.length() != MD5_LEN*2)
-      throw new IllegalArgumentException("Wrong length: " + hex.length());
+    if (hex.length() != MD5_LEN*2) {
+        throw new IllegalArgumentException("Wrong length: " + hex.length());
+    }
     byte[] digest = new byte[MD5_LEN];
     for (int i = 0; i < MD5_LEN; i++) {
       int j = i << 1;

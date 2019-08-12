@@ -71,7 +71,7 @@ public class FileUtil {
             // 拷贝文件
             try {
                 FSOutputStream out = fs.createRaw(dst, true);
-                byte buf[] = new byte[Constants.IO_FILE_BUFFER_SIZE];
+                byte[] buf = new byte[Constants.IO_FILE_BUFFER_SIZE];
                 try {
                     int readBytes = in.read(buf);
                     while (readBytes >= 0) {
@@ -86,7 +86,7 @@ public class FileUtil {
             }
         } else {
             fs.mkdirs(dst);
-            File contents[] = fs.listFilesRaw(src);
+            File[] contents = fs.listFilesRaw(src);
             if (contents != null) {
                 for (int i = 0; i < contents.length; i++) {
                     File newDst = new File(dst, contents[i].getName());

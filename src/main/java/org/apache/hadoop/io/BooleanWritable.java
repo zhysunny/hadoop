@@ -50,18 +50,21 @@ public class BooleanWritable implements WritableComparable {
 
     /**
      */
+    @Override
     public void readFields(DataInput in) throws IOException {
         value = in.readBoolean();
     }
 
     /**
      */
+    @Override
     public void write(DataOutput out) throws IOException {
         out.writeBoolean(value);
     }
 
     /**
      */
+    @Override
     public boolean equals(Object o) {
         if (!(o instanceof BooleanWritable)) {
             return false;
@@ -70,6 +73,7 @@ public class BooleanWritable implements WritableComparable {
         return this.value == other.value;
     }
 
+    @Override
     public int hashCode() {
       return value ? 0 : 1;
     }
@@ -78,6 +82,7 @@ public class BooleanWritable implements WritableComparable {
 
     /**
      */
+    @Override
     public int compareTo(Object o) {
         boolean a = this.value;
         boolean b = ((BooleanWritable) o).value;

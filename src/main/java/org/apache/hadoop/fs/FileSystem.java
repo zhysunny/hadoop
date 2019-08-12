@@ -50,7 +50,7 @@ public abstract class FileSystem extends Configured {
      * @return
      * @throws IOException
      */
-    public static FileSystem parseArgs(String argv[], int i, Configuration conf) throws IOException {
+    public static FileSystem parseArgs(String[] argv, int i, Configuration conf) throws IOException {
         if (argv.length - i < 1) {
             throw new IOException("Must indicate filesystem type for DFS");
         }

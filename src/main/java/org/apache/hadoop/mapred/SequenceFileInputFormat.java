@@ -31,6 +31,7 @@ public class SequenceFileInputFormat extends InputFormatBase {
     setMinSplitSize(SequenceFile.SYNC_INTERVAL);
   }
 
+  @Override
   protected File[] listFiles(FileSystem fs, JobConf job)
     throws IOException {
 
@@ -44,6 +45,7 @@ public class SequenceFileInputFormat extends InputFormatBase {
     return files;
   }
 
+  @Override
   public RecordReader getRecordReader(FileSystem fs, FileSplit split,
                                       JobConf job, Reporter reporter)
     throws IOException {

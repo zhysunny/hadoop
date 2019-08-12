@@ -34,7 +34,7 @@ public class TwoDArrayWritable implements Writable {
   }
 
   public Object toArray() {
-      int dimensions[] = {values.length, 0};
+      int[] dimensions = {values.length, 0};
       Object result = Array.newInstance(valueClass, dimensions);
       for (int i = 0; i < values.length; i++) {
           Object resultRow = Array.newInstance(valueClass, values[i].length);
@@ -50,6 +50,7 @@ public class TwoDArrayWritable implements Writable {
 
   public Writable[][] get() { return values; }
 
+  @Override
   public void readFields(DataInput in) throws IOException {
     // construct matrix
     values = new Writable[in.readInt()][];          
@@ -74,6 +75,7 @@ public class TwoDArrayWritable implements Writable {
     }
   }
 
+  @Override
   public void write(DataOutput out) throws IOException {
     out.writeInt(values.length);                 // write values
     for (int i = 0; i < values.length; i++) {

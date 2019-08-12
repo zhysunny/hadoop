@@ -29,10 +29,12 @@ import org.apache.hadoop.mapred.JobConfigurable;
 public class MapReduceBase implements Closeable, JobConfigurable {
 
   /** Default implementation that does nothing. */
+  @Override
   public void close() throws IOException {
   }
 
   /** Default implementation that does nothing. */
+  @Override
   public void configure(JobConf job) {
   }
 
