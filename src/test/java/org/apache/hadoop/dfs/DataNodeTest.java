@@ -106,7 +106,8 @@ public class DataNodeTest {
      */
     @Test
     public void testMain() throws Exception {
-        DataNode.main(null);
+        String[] args = new String[0];
+        DataNode.main(args);
     }
 
 }

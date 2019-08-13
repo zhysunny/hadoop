@@ -81,7 +81,9 @@ public class DFSShell {
     }
 
     /**
-     * 获取DFS中指定名称的所有文件的列表
+     * 获取DFS中指定名称的所有文件的列表<br/>
+     * -ls时recursive为false，这时获取指定目录下的文件列表<br/>
+     * -lsr时recursive为true，这时获取指定目录下的所有文件，有目录就继续获取目录下的文件列表
      */
     public void ls(String src, boolean recursive) throws IOException {
         File[] items = fs.listFiles(new File(src));

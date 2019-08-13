@@ -85,22 +85,22 @@ public class Client {
         }
 
         /**
-         * Called by the connection thread when the call is complete and the
-         * value or error string are available.  Notifies by default.
+         * 当调用完成且值或错误字符串可用时，由连接线程调用。
+         * 默认情况下通知。
          */
         public synchronized void callComplete() {
-            notify();                                 // notify caller
+            notify();
         }
 
         /**
-         * Update lastActivity with the current time.
+         * 用当前时间更新lastActivity。
          */
         public synchronized void touch() {
             lastActivity = System.currentTimeMillis();
         }
 
         /**
-         * Update lastActivity with the current time.
+         * 设置结果
          */
         public synchronized void setResult(Writable value, String error) {
             this.value = value;
@@ -111,16 +111,16 @@ public class Client {
     }
 
     /**
-     * Thread that reads responses and notifies callers.  Each connection owns a
-     * socket connected to a remote address.  Calls are multiplexed through this
-     * socket: responses may be delivered out of order.
+     * 线程，读取响应并通知调用者。
+     * 每个连接都拥有一个套接字，该套接字连接到一个远程地址。
+     * 调用通过这个套接字进行多路复用:响应可能是无序传递的。
      */
     private class Connection extends Thread {
         private InetSocketAddress address;            // address of server
         private Socket socket;                        // connected socket
         private DataInputStream in;
         private DataOutputStream out;
-        private Hashtable calls = new Hashtable();    // currently active calls
+        private Hashtable<Integer, Call> calls = new Hashtable<Integer, Call>();    // currently active calls
         private Call readingCall;
         private Call writingCall;
 
@@ -128,29 +128,25 @@ public class Client {
             this.address = address;
             this.socket = new Socket(address.getAddress(), address.getPort());
             socket.setSoTimeout(timeout);
-            this.in = new DataInputStream
-                    (new BufferedInputStream
-                            (new FilterInputStream(socket.getInputStream()) {
-                                @Override
-                                public int read(byte[] buf, int off, int len) throws IOException {
-                                    int value = super.read(buf, off, len);
-                                    if (readingCall != null) {
-                                        readingCall.touch();
-                                    }
-                                    return value;
-                                }
-                            }));
-            this.out = new DataOutputStream
-                    (new BufferedOutputStream
-                            (new FilterOutputStream(socket.getOutputStream()) {
-                                @Override
-                                public void write(byte[] buf, int o, int len) throws IOException {
-                                    out.write(buf, o, len);
-                                    if (writingCall != null) {
-                                        writingCall.touch();
-                                    }
-                                }
-                            }));
+            this.in = new DataInputStream(new BufferedInputStream(new FilterInputStream(socket.getInputStream()) {
+                @Override
+                public int read(byte[] buf, int off, int len) throws IOException {
+                    int value = super.read(buf, off, len);
+                    if (readingCall != null) {
+                        readingCall.touch();
+                    }
+                    return value;
+                }
+            }));
+            this.out = new DataOutputStream(new BufferedOutputStream(new FilterOutputStream(socket.getOutputStream()) {
+                @Override
+                public void write(byte[] buf, int o, int len) throws IOException {
+                    out.write(buf, o, len);
+                    if (writingCall != null) {
+                        writingCall.touch();
+                    }
+                }
+            }));
             this.setDaemon(true);
             this.setName("Client connection to "
                     + address.getAddress().getHostAddress()
@@ -173,7 +169,7 @@ public class Client {
                         LOGGER.debug(getName() + " got value #" + id);
                     }
 
-                    Call call = (Call) calls.remove(new Integer(id));
+                    Call call = calls.remove(new Integer(id));
                     boolean isError = in.readBoolean();     // read if error
                     if (isError) {
                         UTF8 utf8 = new UTF8();
@@ -195,7 +191,7 @@ public class Client {
                     call.callComplete();                   // deliver result to caller
                 }
             } catch (EOFException eof) {
-                // This is what happens when the remote side goes down
+                // 这是远端下降时的情况
             } catch (Exception e) {
                 LOGGER.error(getName() + " caught: " + e, e);
             } finally {
@@ -204,9 +200,8 @@ public class Client {
         }
 
         /**
-         * Initiates a call by sending the parameter to the remote server.
-         * Note: this is not called from the Connection thread, but by other
-         * threads.
+         * 通过向远程服务器发送参数来启动调用。
+         * 注意:这不是从连接线程调用的，而是由其他线程调用的。
          */
         public void sendParam(Call call) throws IOException {
             boolean error = true;
@@ -234,7 +229,7 @@ public class Client {
         }
 
         /**
-         * Close the connection and remove it from the pool.
+         * 关闭连接并将其从池中移除。
          */
         public void close() {
             LOGGER.info(getName() + ": closing");
@@ -250,7 +245,7 @@ public class Client {
     }
 
     /**
-     * Call implementation used for parallel calls.
+     * 用于并行调用的调用实现。
      */
     private class ParallelCall extends Call {
         private ParallelResults results;
@@ -263,7 +258,7 @@ public class Client {
         }
 
         /**
-         * Deliver result to result collector.
+         * 将结果交付给结果收集器。
          */
         @Override
         public void callComplete() {
@@ -272,7 +267,7 @@ public class Client {
     }
 
     /**
-     * Result collector for parallel calls.
+     * 并行调用的结果收集器。
      */
     private static class ParallelResults {
         private Writable[] values;
@@ -285,7 +280,7 @@ public class Client {
         }
 
         /**
-         * Collect a result.
+         * 收集结果。
          */
         public synchronized void callComplete(ParallelCall call) {
             values[call.index] = call.value;            // store the value
@@ -298,8 +293,7 @@ public class Client {
     }
 
     /**
-     * Construct an IPC client whose values are of the given {@link Writable}
-     * class.
+     * 构造一个IPC客户机，其值属于给定的{@link Writable}类。
      */
     public Client(Class<? extends Writable> valueClass, Configuration conf) {
         this.valueClass = valueClass;
@@ -308,40 +302,38 @@ public class Client {
     }
 
     /**
-     * Stop all threads related to this client.  No further calls may be made
-     * using this client.
+     * 停止与此客户机相关的所有线程。使用此客户端不能再进行任何调用。
      */
     public void stop() {
         LOGGER.info("Stopping client");
         try {
-            Thread.sleep(timeout);                        // let all calls complete
+            // 让所有调用完成
+            Thread.sleep(timeout);
         } catch (InterruptedException e) {
         }
         running = false;
     }
 
     /**
-     * Sets the timeout used for network i/o.
+     * 设置用于网络i/o的超时。
      */
     public void setTimeout(int timeout) {
         this.timeout = timeout;
     }
 
     /**
-     * Make a call, passing <code>param</code>, to the IPC server running at
-     * <code>address</code>, returning the value.  Throws exceptions if there are
-     * network problems or if the remote code threw an exception.
+     * 调用，传递param，到运行在address的IPC服务器，返回值。
+     * 如果存在网络问题或远程代码抛出异常，则抛出异常。
      */
-    public Writable call(Writable param, InetSocketAddress address)
-            throws IOException {
+    public Writable call(Writable param, InetSocketAddress address) throws IOException {
         Connection connection = getConnection(address);
         Call call = new Call(param);
         synchronized (call) {
-            connection.sendParam(call);                 // send the parameter
+            connection.sendParam(call);
             long wait = timeout;
             do {
                 try {
-                    call.wait(wait);                       // wait for the result
+                    call.wait(wait);
                 } catch (InterruptedException e) {
                 }
                 wait = timeout - (System.currentTimeMillis() - call.lastActivity);
@@ -358,17 +350,15 @@ public class Client {
     }
 
     /**
-     * Makes a set of calls in parallel.  Each parameter is sent to the
-     * corresponding address.  When all values are available, or have timed out
-     * or errored, the collected results are returned in an array.  The array
-     * contains nulls for calls that timed out or errored.
+     * 并行执行一组调用。
+     * 每个参数都被发送到相应的地址。
+     * 当所有值都可用时，或者超时或出错时，收集的结果将以数组的形式返回。
+     * 数组包含超时或错误调用的空值。
      */
-    public Writable[] call(Writable[] params, InetSocketAddress[] addresses)
-            throws IOException {
+    public Writable[] call(Writable[] params, InetSocketAddress[] addresses) throws IOException {
         if (addresses.length == 0) {
             return new Writable[0];
         }
-
         ParallelResults results = new ParallelResults(params.length);
         synchronized (results) {
             for (int i = 0; i < params.length; i++) {
@@ -377,7 +367,7 @@ public class Client {
                     Connection connection = getConnection(addresses[i]);
                     connection.sendParam(call);             // send each parameter
                 } catch (IOException e) {
-                    LOGGER.info("Calling " + addresses[i] + " caught: " + e); // log errors
+                    LOGGER.error("Calling " + addresses[i] + " caught: " + e);
                     results.size--;                         //  wait for one fewer result
                 }
             }
@@ -395,14 +385,13 @@ public class Client {
     }
 
     /**
-     * Get a connection from the pool, or create a new one and add it to the
-     * pool.  Connections to a given host/port are reused.
+     * 从池中获取连接，或者创建一个新的连接并将其添加到池中。
+     * 到给定主机/端口的连接被重用。
      */
-    private Connection getConnection(InetSocketAddress address)
-            throws IOException {
+    private Connection getConnection(InetSocketAddress address) throws IOException {
         Connection connection;
         synchronized (connections) {
-            connection = (Connection) connections.get(address);
+            connection = connections.get(address);
             if (connection == null) {
                 connection = new Connection(address);
                 connections.put(address, connection);

@@ -31,33 +31,28 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A simple RPC mechanism.
- * <p>
- * A <i>protocol</i> is a Java interface.  All parameters and return types must
- * be one of:
- *
- * <ul> <li>a primitive type, <code>boolean</code>, <code>byte</code>,
- * <code>char</code>, <code>short</code>, <code>int</code>, <code>long</code>,
- * <code>float</code>, <code>double</code>, or <code>void</code>; or</li>
- *
- * <li>a {@link String}; or</li>
- *
- * <li>a {@link Writable}; or</li>
- *
- * <li>an array of the above types</li> </ul>
- * <p>
- * All methods in the protocol should throw only IOException.  No field data of
- * the protocol instance is transmitted.
+ * 一个简单的RPC机制。
+ * 一个<i>protocol</i>是一个Java接口。
+ * 所有参数和返回类型必须是：
+ * <li>基本数据类型或无返回</li>
+ * <li>String字符串</li>
+ * <li>{@link Writable}</li>
+ * <li>上述类型的数组/li>
+ * </ul>
+ * 协议中的所有方法都应该只抛出IOException。
+ * 没有传输协议实例的字段数据。
+ * @author 章云
+ * @date 2019/8/13 9:01
  */
 public class RPC {
     private static final Logger LOGGER = LoggerFactory.getLogger(RPC.class);
 
     private RPC() {
-    }                                  // no public ctor
+    }
 
 
     /**
-     * A method invocation, including the method name and its parameters.
+     * 方法调用，包括方法名称及其参数。
      */
     private static class Invocation implements Writable, Configurable {
         private String methodName;
@@ -75,21 +70,21 @@ public class RPC {
         }
 
         /**
-         * The name of the method invoked.
+         * 所调用方法的名称。
          */
         public String getMethodName() {
             return methodName;
         }
 
         /**
-         * The parameter classes.
+         * 参数类。
          */
         public Class[] getParameterClasses() {
             return parameterClasses;
         }
 
         /**
-         * The parameter instances.
+         * 参数实例。
          */
         public Object[] getParameters() {
             return parameters;
@@ -143,7 +138,6 @@ public class RPC {
 
     }
 
-    //TODO mb@media-style.com: static client or non-static client?
     private static Client CLIENT;
 
     private static class Invoker implements InvocationHandler {
@@ -159,29 +153,23 @@ public class RPC {
         }
 
         @Override
-        public Object invoke(Object proxy, Method method, Object[] args)
-                throws Throwable {
-            ObjectWritable value = (ObjectWritable)
-                    CLIENT.call(new Invocation(method, args), address);
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            ObjectWritable value = (ObjectWritable) CLIENT.call(new Invocation(method, args), address);
             return value.get();
         }
     }
 
     /**
-     * Construct a client-side proxy object that implements the named protocol,
-     * talking to a server at the named address.
+     * 构造实现指定协议的客户端代理对象，并在指定地址与服务器通信。
      */
     public static <T> T getProxy(Class<T> protocol, InetSocketAddress addr, Configuration conf) {
         return (T) Proxy.newProxyInstance(protocol.getClassLoader(), new Class[]{protocol}, new Invoker(addr, conf));
     }
 
     /**
-     * Expert: Make multiple, parallel calls to a set of servers.
+     * 专家:对一组服务器进行多个并行调用。
      */
-    public static Object[] call(Method method, Object[][] params,
-                                InetSocketAddress[] addrs, Configuration conf)
-            throws IOException {
-
+    public static Object[] call(Method method, Object[][] params, InetSocketAddress[] addrs, Configuration conf) throws IOException {
         Invocation[] invocations = new Invocation[params.length];
         for (int i = 0; i < params.length; i++) {
             invocations[i] = new Invocation(method, params[i]);
@@ -192,38 +180,30 @@ public class RPC {
             conf.setObject(Client.class.getName(), CLIENT);
         }
         Writable[] wrappedValues = CLIENT.call(invocations, addrs);
-
         if (method.getReturnType() == Void.TYPE) {
             return null;
         }
-
-        Object[] values =
-                (Object[]) Array.newInstance(method.getReturnType(), wrappedValues.length);
+        Object[] values = (Object[]) Array.newInstance(method.getReturnType(), wrappedValues.length);
         for (int i = 0; i < values.length; i++) {
             if (wrappedValues[i] != null) {
                 values[i] = ((ObjectWritable) wrappedValues[i]).get();
             }
         }
-
         return values;
     }
 
 
     /**
-     * Construct a server for a protocol implementation instance listening on a
-     * port.
+     * 为监听端口的协议实现实例构造服务器。
      */
     public static Server getServer(final Object instance, final int port, Configuration conf) {
         return getServer(instance, port, 1, false, conf);
     }
 
     /**
-     * Construct a server for a protocol implementation instance listening on a
-     * port.
+     * 为监听端口的协议实现实例构造服务器。
      */
-    public static Server getServer(final Object instance, final int port,
-                                   final int numHandlers,
-                                   final boolean verbose, Configuration conf) {
+    public static Server getServer(final Object instance, final int port, final int numHandlers, final boolean verbose, Configuration conf) {
         return new Server(instance, conf, port, numHandlers, verbose);
     }
 
@@ -236,25 +216,24 @@ public class RPC {
         private boolean verbose;
 
         /**
-         * Construct an RPC server.
-         * @param instance the instance whose methods will be called
-         * @param conf     the configuration to use
-         * @param port     the port to listen for connections on
+         * 构造RPC服务器。
+         * @param instance 将调用其方法的实例
+         * @param conf     要使用的配置
+         * @param port     监听连接的端口
          */
         public Server(Object instance, Configuration conf, int port) {
             this(instance, conf, port, 1, false);
         }
 
         /**
-         * Construct an RPC server.
-         * @param instance    the instance whose methods will be called
-         * @param conf        the configuration to use
-         * @param port        the port to listen for connections on
-         * @param numHandlers the number of method handler threads to run
-         * @param verbose     whether each call should be logged
+         * 构造RPC服务器。
+         * @param instance    将调用其方法的实例
+         * @param conf        要使用的配置
+         * @param port        监听连接的端口
+         * @param numHandlers 要运行的方法处理程序线程的数目
+         * @param verbose     是否应该记录每个调用
          */
-        public Server(Object instance, Configuration conf, int port,
-                      int numHandlers, boolean verbose) {
+        public Server(Object instance, Configuration conf, int port, int numHandlers, boolean verbose) {
             super(port, Invocation.class, numHandlers, conf);
             this.instance = instance;
             this.implementation = instance.getClass();
@@ -268,18 +247,12 @@ public class RPC {
                 if (verbose) {
                     log("Call: " + call);
                 }
-
-                Method method =
-                        implementation.getMethod(call.getMethodName(),
-                                call.getParameterClasses());
-
+                Method method = implementation.getMethod(call.getMethodName(), call.getParameterClasses());
                 Object value = method.invoke(instance, call.getParameters());
                 if (verbose) {
                     log("Return: " + value);
                 }
-
                 return new ObjectWritable(method.getReturnType(), value);
-
             } catch (InvocationTargetException e) {
                 Throwable target = e.getTargetException();
                 if (target instanceof IOException) {

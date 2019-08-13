@@ -102,7 +102,7 @@ public abstract class FileSystem extends Configured {
      * @return
      * @throws IOException
      */
-    public static FileSystem getNamed(String name, Configuration conf) throws IOException {
+    public static FileSystem getNamed(String name, Configuration conf) {
         FileSystem fs = NAME_TO_FS.get(name);
         if (fs == null) {
             if ("local".equals(name)) {

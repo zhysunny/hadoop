@@ -58,8 +58,10 @@ public class DistributedFileSystem extends FileSystem {
 
     private File makeAbsolute(File f) {
         if (isAbsolute(f)) {
+            // hdfs一般使用绝对路径
             return f;
         } else {
+            // 如果使用相对路径，默认在用户工作目录下
             return new File(workingDir, f.getPath());
         }
     }

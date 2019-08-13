@@ -377,7 +377,7 @@ public class NameNode implements ClientProtocol, DatanodeProtocol, FSConstants {
             // 格式化一个新的文件系统。销毁可能已经存在于此位置的任何文件系统。
             // 删除image和edits文件
             FSDirectory.format(dir, conf);
-            System.err.println("Formatted：" + dir);
+            System.out.println("Formatted：" + dir);
             System.exit(0);
         }
         NameNode namenode = new NameNode(conf);

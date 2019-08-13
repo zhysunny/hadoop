@@ -147,8 +147,11 @@ public class DFSShellTest {
     @Test
     public void testMain() throws Exception {
 //        String[] args = new String[]{"-mkdir", "/data/test"};
-        String[] args = new String[]{"-ls", "/data/test"};
 //        String[] args = new String[]{"-put", "dir.xml", "/data/test"};
+//        String[] args = new String[]{"-ls", "/data/test"};
+//        String[] args = new String[]{"-lsr", "/data"};
+//        String[] args = new String[]{"-cat", "/data/test/dir.xml"};
+        String[] args = new String[]{"-report"};
         DFSShell.main(args);
     }
 

@@ -505,7 +505,7 @@ public class DFSClient implements FSConstants {
         }
 
         private File newBackupFile() throws IOException {
-            File result = conf.getFile(Constants.DFS_DATA_DIR, "tmp" + File.separator + "client-" + Math.abs(r.nextLong()));
+            File result = conf.getFile("dfs.data.dir", "tmp" + File.separator + "client-" + Math.abs(r.nextLong()));
             result.deleteOnExit();
             return result;
         }

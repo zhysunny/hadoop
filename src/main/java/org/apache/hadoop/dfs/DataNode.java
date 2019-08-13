@@ -145,7 +145,7 @@ public class DataNode implements FSConstants, Runnable {
         long lastHeartbeat = 0, lastBlockReport = 0;
         long sendStart = System.currentTimeMillis();
         int heartbeatsSent = 0;
-        LOGGER.info("using BLOCKREPORT_INTERVAL of " + blockReportInterval + "msec");
+        LOGGER.info("using BLOCKREPORT_INTERVAL of " + blockReportInterval + " msec");
 
         // 现在循环很长时间…
         while (shouldRun) {
@@ -653,16 +653,15 @@ public class DataNode implements FSConstants, Runnable {
      * 如果这个线程被特别中断，它将停止等待。
      */
     private static void runAndWait(Configuration conf) throws IOException {
+        // 根据配置的data目录添加守护线程到subThreadList
         run(conf);
-
         //  等待子线程退出
-        for (Iterator iterator = subThreadList.iterator(); iterator.hasNext(); ) {
-            Thread threadDataNode = (Thread) iterator.next();
+        for (Iterator<Thread> iterator = subThreadList.iterator(); iterator.hasNext(); ) {
+            Thread threadDataNode = iterator.next();
             try {
                 threadDataNode.join();
             } catch (InterruptedException e) {
                 if (Thread.currentThread().isInterrupted()) {
-                    // did someone knock?
                     return;
                 }
             }

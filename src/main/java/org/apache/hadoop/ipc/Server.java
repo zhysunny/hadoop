@@ -36,26 +36,26 @@ import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.UTF8;
+import org.apache.hadoop.util.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An abstract IPC service.  IPC calls take a single {@link Writable} as a
- * parameter, and return a {@link Writable} as their value.  A service runs on
- * a port and is defined by a parameter class and a value class.
- * @author Doug Cutting
- * @see Client
+ * 一个抽象的IPC服务。
+ * IPC调用接受单个{@link Writable}作为参数，并返回一个{@link Writable}作为它们的值。
+ * 服务在端口上运行，由参数类和值类定义。
+ * @author 章云
+ * @date 2019/8/13 9:07
  */
 public abstract class Server {
-    private static final Logger LOGGER = LoggerFactory.getLogger(RPC.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Server.class);
 
     private static final ThreadLocal SERVER = new ThreadLocal();
 
     /**
-     * Returns the server instance called under or null.  May be called under
-     * {@link #call(Writable)} implementations, and under {@link Writable}
-     * methods of paramters and return values.  Permits applications to access
-     * the server context.
+     * 返回在or null下调用的服务器实例。
+     * 可以在{@link #call(Writable)}实现下调用，也可以在参数和返回值的{@link Writable}方法下调用。
+     * 允许应用程序访问服务器上下文。
      */
     public static Server get() {
         return (Server) SERVER.get();
@@ -74,7 +74,7 @@ public abstract class Server {
     private Object callDequeued = new Object();     // used by wait/notify
 
     /**
-     * A call queued for handling.
+     * 排队等待处理的调用。
      */
     private static class Call {
         private int id;                               // the client's call id
@@ -89,7 +89,7 @@ public abstract class Server {
     }
 
     /**
-     * Listens on the socket, starting new connection threads.
+     * 监听套接字，启动新的连接线程。
      */
     private class Listener extends Thread {
         private ServerSocket socket;
@@ -122,7 +122,7 @@ public abstract class Server {
     }
 
     /**
-     * Reads calls from a connection and queues them for handling.
+     * 从连接读取调用并对其进行排队处理。
      */
     private class Connection extends Thread {
         private Socket socket;
@@ -132,10 +132,8 @@ public abstract class Server {
         public Connection(Socket socket) throws IOException {
             this.socket = socket;
             socket.setSoTimeout(timeout);
-            this.in = new DataInputStream
-                    (new BufferedInputStream(socket.getInputStream()));
-            this.out = new DataOutputStream
-                    (new BufferedOutputStream(socket.getOutputStream()));
+            this.in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
+            this.out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
             this.setDaemon(true);
             this.setName("Server connection on port " + port + " from "
                     + socket.getInetAddress().getHostAddress());
@@ -153,21 +151,16 @@ public abstract class Server {
                     } catch (SocketTimeoutException e) {
                         continue;
                     }
-
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug(getName() + " got #" + id);
                     }
-
                     Writable param = makeParam();           // read param
                     param.readFields(in);
-
                     Call call = new Call(id, param, this);
-
                     synchronized (callQueue) {
                         callQueue.addLast(call);              // queue the call
                         callQueue.notify();                   // wake up a waiting handler
                     }
-
                     while (running && callQueue.size() >= maxQueuedCalls) {
                         synchronized (callDequeued) {         // queue is full
                             callDequeued.wait(timeout);         // wait for a dequeue
@@ -175,9 +168,9 @@ public abstract class Server {
                     }
                 }
             } catch (EOFException eof) {
-                // This is what happens on linux when the other side shuts down
+                // 这就是在linux上，当另一端关闭时所发生的事情
             } catch (SocketException eof) {
-                // This is what happens on Win32 when the other side shuts down
+                // 这就是在Win32上，当另一端关闭时所发生的事情
             } catch (Exception e) {
                 LOGGER.error(getName() + " caught: " + e, e);
             } finally {
@@ -192,7 +185,7 @@ public abstract class Server {
     }
 
     /**
-     * Handles queued calls .
+     * 处理排队的调用。
      */
     private class Handler extends Thread {
         public Handler(int instanceNumber) {
@@ -267,9 +260,9 @@ public abstract class Server {
     }
 
     /**
-     * Constructs a server listening on the named port.  Parameters passed must
-     * be of the named class.  The <code>handlerCount</handlerCount> determines
-     * the number of handler threads that will be used to process calls.
+     * 构造在指定端口上侦听的服务器。
+     * 传递的参数必须属于指定的类。
+     * handlerCount确定将用于处理调用的处理程序线程的数量。
      */
     protected Server(int port, Class paramClass, int handlerCount, Configuration conf) {
         this.conf = conf;
@@ -277,18 +270,18 @@ public abstract class Server {
         this.paramClass = paramClass;
         this.handlerCount = handlerCount;
         this.maxQueuedCalls = handlerCount;
-        this.timeout = conf.getInt("ipc.client.timeout", 10000);
+        this.timeout = Constants.IPC_CLIENT_TIMEOUT;
     }
 
     /**
-     * Sets the timeout used for network i/o.
+     * 设置用于网络i/o的超时。
      */
     public void setTimeout(int timeout) {
         this.timeout = timeout;
     }
 
     /**
-     * Starts the service.  Must be called before any calls will be handled.
+     * 启动服务。必须在处理任何调用之前调用。
      */
     public synchronized void start() throws IOException {
         Listener listener = new Listener();
@@ -301,23 +294,25 @@ public abstract class Server {
     }
 
     /**
-     * Stops the service.  No new calls will be handled after this is called.  All
-     * subthreads will likely be finished after this returns.
+     * 停止服务。
+     * 调用此函数后，将不处理任何新调用。
+     * 所有子线程都可能在这个返回之后完成。
      */
     public synchronized void stop() {
         LOGGER.info("Stopping server on " + port);
         running = false;
         try {
-            Thread.sleep(timeout);     //  inexactly wait for pending requests to finish
+            // 等待请求完成
+            Thread.sleep(timeout);
         } catch (InterruptedException e) {
         }
         notifyAll();
     }
 
     /**
-     * Wait for the server to be stopped.
-     * Does not wait for all subthreads to finish.
-     * See {@link #stop()}.
+     * 等待服务器停止。
+     * 不等待所有子线程完成。
+     * 看到{@link #stop()}。
      */
     public synchronized void join() throws InterruptedException {
         while (running) {
@@ -332,7 +327,7 @@ public abstract class Server {
 
 
     private Writable makeParam() {
-        Writable param;                               // construct param
+        Writable param;
         try {
             param = (Writable) paramClass.newInstance();
             if (param instanceof Configurable) {
