@@ -15,13 +15,20 @@
  */
 package org.apache.hadoop.dfs;
 
-import org.apache.hadoop.io.*;
+import org.apache.hadoop.io.Writable;
+import org.apache.hadoop.io.WritableFactories;
+import org.apache.hadoop.io.WritableFactory;
 
-import java.io.*;
-import java.util.*;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.File;
+import java.io.IOException;
+import java.util.Objects;
+import java.util.Random;
 
 /**
- * 块是Hadoop FS原语，由long标识。
+ * 块是Hadoop FS原语，由long标识。<br/>
+ * Block对象本身不存储文件内容，只是block文件的标识，记录blockid和文件大小
  * @author 章云
  * @date 2019/8/8 20:29
  */
@@ -36,26 +43,26 @@ public class Block implements Writable, Comparable {
         });
     }
 
-    static Random r = new Random();
+    private static final Random RANDOM = new Random();
 
     /**
      * 是否是block文件
-     * @param f
+     * @param file
      * @return
      */
-    public static boolean isBlockFilename(File f) {
-        if (f.getName().startsWith("blk_")) {
+    public static boolean isBlockFilename(File file) {
+        if (file.getName().startsWith("blk_")) {
             return true;
         } else {
             return false;
         }
     }
 
-    long blkid;
-    long len;
+    private long blkid;
+    private long len;
 
     public Block() {
-        this.blkid = r.nextLong();
+        this.blkid = RANDOM.nextLong();
         this.len = 0;
     }
 
@@ -66,14 +73,13 @@ public class Block implements Writable, Comparable {
 
     /**
      * 从给定的文件名中找到blockid
-     * @param f
-     * @param len f.length()
+     * @param file
      */
-    public Block(File f, long len) {
-        String name = f.getName();
+    public Block(File file) {
+        String name = file.getName();
         name = name.substring("blk_".length());
         this.blkid = Long.parseLong(name);
-        this.len = len;
+        this.len = file.length();
     }
 
     public long getBlockId() {

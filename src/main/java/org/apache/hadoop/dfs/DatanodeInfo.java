@@ -44,6 +44,9 @@ public class DatanodeInfo implements Writable, Comparable {
      * 总容量，剩余容量，上次更新时间
      */
     private long capacityBytes, remainingBytes, lastUpdate;
+    /**
+     * block集合
+     */
     private volatile TreeSet<Block> blocks;
 
     /**
@@ -119,7 +122,7 @@ public class DatanodeInfo implements Writable, Comparable {
         return blocks.toArray(new Block[blocks.size()]);
     }
 
-    public Iterator getBlockIterator() {
+    public Iterator<Block> getBlockIterator() {
         return blocks.iterator();
     }
 
@@ -143,7 +146,7 @@ public class DatanodeInfo implements Writable, Comparable {
      */
     @Override
     public int compareTo(Object o) {
-        // 使用host:port字符串比较
+        // 使用name比较
         DatanodeInfo d = (DatanodeInfo) o;
         return name.compareTo(d.getName());
     }
@@ -158,6 +161,20 @@ public class DatanodeInfo implements Writable, Comparable {
     @Override
     public int hashCode() {
         return Objects.hashCode(this.name);
+    }
+
+    /**
+     * 当前类信息拷贝一份给DataNodeReport
+     * @return
+     */
+    public DataNodeReport copyToReport() {
+        DataNodeReport dataNodeReport = new DataNodeReport();
+        dataNodeReport.setName(this.name.toString());
+        dataNodeReport.setHost(this.getHost().toString());
+        dataNodeReport.setCapacity(this.capacityBytes);
+        dataNodeReport.setRemaining(this.remainingBytes);
+        dataNodeReport.setLastUpdate(this.lastUpdate);
+        return dataNodeReport;
     }
 
     /////////////////////////////////////////////////

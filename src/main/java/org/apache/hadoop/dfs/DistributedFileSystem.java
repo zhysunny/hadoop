@@ -372,12 +372,7 @@ public class DistributedFileSystem extends FileSystem {
         DatanodeInfo[] dnReport = dfs.datanodeReport();
         DataNodeReport[] reports = new DataNodeReport[dnReport.length];
         for (int i = 0; i < dnReport.length; i++) {
-            reports[i] = new DataNodeReport();
-            reports[i].name = dnReport[i].getName().toString();
-            reports[i].host = dnReport[i].getHost().toString();
-            reports[i].capacity = dnReport[i].getCapacity();
-            reports[i].remaining = dnReport[i].getRemaining();
-            reports[i].lastUpdate = dnReport[i].lastUpdate();
+            reports[i] = dnReport[i].copyToReport();
         }
         return reports;
     }

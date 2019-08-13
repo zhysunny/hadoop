@@ -10,45 +10,65 @@ import org.apache.hadoop.io.UTF8;
  * @date 2019/8/8 21:02
  */
 public class DataNodeReport {
-    String name;
-    String host;
-    long capacity;
-    long remaining;
-    long lastUpdate;
+    private String name;
+    private String host;
+    private long capacity;
+    private long remaining;
+    private long lastUpdate;
 
     /**
-     * The name of the datanode.
+     * 数据节点hostname
      */
     public String getName() {
         return name;
     }
 
     /**
-     * The hostname of the datanode.
+     * 数据节点hostname
      */
     public String getHost() {
         return host;
     }
 
     /**
-     * The raw capacity.
+     * 总容量
      */
     public long getCapacity() {
         return capacity;
     }
 
     /**
-     * The raw free space.
+     * 可用容量
      */
     public long getRemaining() {
         return remaining;
     }
 
     /**
-     * The time when this information was accurate.
+     * 这个信息准确的时间。
      */
     public long getLastUpdate() {
         return lastUpdate;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setHost(String host) {
+        this.host = host;
+    }
+
+    public void setCapacity(long capacity) {
+        this.capacity = capacity;
+    }
+
+    public void setRemaining(long remaining) {
+        this.remaining = remaining;
+    }
+
+    public void setLastUpdate(long lastUpdate) {
+        this.lastUpdate = lastUpdate;
     }
 
     @Override

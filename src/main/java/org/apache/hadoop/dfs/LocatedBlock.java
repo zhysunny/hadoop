@@ -20,7 +20,8 @@ import org.apache.hadoop.io.*;
 import java.io.*;
 
 /**
- * LocatedBlock是一对Block DatanodeInfo[]对象。它告诉我们在哪里可以找到一个Block。
+ * LocatedBlock是一对Block DatanodeInfo[]对象。<br/>
+ * 它告诉我们在哪里可以找到一个Block。
  * @author 章云
  * @date 2019/8/9 8:45
  */
@@ -35,8 +36,8 @@ public class LocatedBlock implements Writable {
         });
     }
 
-    Block b;
-    DatanodeInfo[] locs;
+    private Block b;
+    private DatanodeInfo[] locs;
 
     public LocatedBlock() {
         this.b = new Block();

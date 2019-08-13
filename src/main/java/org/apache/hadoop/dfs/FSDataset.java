@@ -113,7 +113,7 @@ public class FSDataset implements FSConstants {
             File[] blockFiles = dir.listFiles();
             for (int i = 0; i < blockFiles.length; i++) {
                 if (Block.isBlockFilename(blockFiles[i])) {
-                    blockSet.add(new Block(blockFiles[i], blockFiles[i].length()));
+                    blockSet.add(new Block(blockFiles[i]));
                 }
             }
         }

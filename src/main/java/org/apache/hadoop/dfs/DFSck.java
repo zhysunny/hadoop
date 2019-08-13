@@ -314,8 +314,8 @@ public class DFSck {
                 in = new DataInputStream(new BufferedInputStream(s.getInputStream()));
                 long curBlockSize = in.readLong();
                 long amtSkipped = in.readLong();
-                if (curBlockSize != lblock.getBlock().len) {
-                    throw new IOException("Recorded block size is " + lblock.getBlock().len + ", but datanode reports size of " + curBlockSize);
+                if (curBlockSize != lblock.getBlock().getNumBytes()) {
+                    throw new IOException("Recorded block size is " + lblock.getBlock().getNumBytes() + ", but datanode reports size of " + curBlockSize);
                 }
                 if (amtSkipped != 0L) {
                     throw new IOException("Asked for offset of " + 0L + ", but only received offset of " + amtSkipped);

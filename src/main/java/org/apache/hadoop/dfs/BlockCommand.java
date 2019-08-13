@@ -48,6 +48,11 @@ public class BlockCommand implements Writable {
         this.targets = new DatanodeInfo[0][];
     }
 
+    /**
+     * 需要转移的block块
+     * @param blocks
+     * @param targets
+     */
     public BlockCommand(Block[] blocks, DatanodeInfo[][] targets) {
         this.transferBlocks = true;
         this.invalidateBlocks = false;
@@ -55,6 +60,10 @@ public class BlockCommand implements Writable {
         this.targets = targets;
     }
 
+    /**
+     * 过时的block块
+     * @param blocks
+     */
     public BlockCommand(Block[] blocks) {
         this.transferBlocks = false;
         this.invalidateBlocks = true;

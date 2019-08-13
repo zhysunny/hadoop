@@ -34,10 +34,10 @@ public class DFSFileInfo implements Writable {
         });
     }
 
-    UTF8 path;
-    long len;
-    long contentsLen;
-    boolean isDir;
+    private UTF8 path;
+    private long len;
+    private long contentsLen;
+    private boolean isDir;
 
     public DFSFileInfo() {
     }

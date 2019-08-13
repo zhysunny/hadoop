@@ -348,8 +348,8 @@ public class DFSClient implements FSConstants {
                     DataInputStream in = new DataInputStream(new BufferedInputStream(s.getInputStream()));
                     long curBlockSize = in.readLong();
                     long amtSkipped = in.readLong();
-                    if (curBlockSize != blocks[targetBlock].len) {
-                        throw new IOException("Recorded block size is " + blocks[targetBlock].len + ", but datanode reports size of " + curBlockSize);
+                    if (curBlockSize != blocks[targetBlock].getNumBytes()) {
+                        throw new IOException("Recorded block size is " + blocks[targetBlock].getNumBytes() + ", but datanode reports size of " + curBlockSize);
                     }
                     if (amtSkipped != offsetIntoBlock) {
                         throw new IOException("Asked for offset of " + offsetIntoBlock + ", but only received offset of " + amtSkipped);

@@ -301,7 +301,7 @@ public class DataNode implements FSConstants, Runnable {
                             DatanodeInfo curTarget = targets[0];
 
                             // 跟踪我们成功地编写了块的所有位置
-                            Vector mirrors = new Vector();
+                            Vector<DatanodeInfo> mirrors = new Vector<DatanodeInfo>();
 
                             // 打开本地磁盘
                             DataOutputStream out = new DataOutputStream(new BufferedOutputStream(data.writeToBlock(b)));
@@ -439,7 +439,7 @@ public class DataNode implements FSConstants, Runnable {
                             // 告诉客户任务已经完成，并使用新的LocatedBlock进行回复。
                             reply.writeLong(WRITE_COMPLETE);
                             mirrors.add(curTarget);
-                            LocatedBlock newLB = new LocatedBlock(b, (DatanodeInfo[]) mirrors.toArray(new DatanodeInfo[mirrors.size()]));
+                            LocatedBlock newLB = new LocatedBlock(b, mirrors.toArray(new DatanodeInfo[mirrors.size()]));
                             newLB.write(reply);
                         } finally {
                             reply.close();

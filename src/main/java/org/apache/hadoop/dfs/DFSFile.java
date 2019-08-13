@@ -18,7 +18,8 @@ package org.apache.hadoop.dfs;
 import java.io.*;
 
 /**
- * DFSFile是一个传统的java文件，它已经用一些额外的信息进行了注释。
+ * DFSFile是一个传统的java文件，它已经用一些额外的信息进行了注释。<br/>
+ * 对 {@link DFSFileInfo} 的封装
  * @author 章云
  * @date 2019/8/9 14:01
  */

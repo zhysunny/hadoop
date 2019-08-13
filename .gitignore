@@ -29,3 +29,4 @@ target
 *.iml
 logs
 tmp
+junit
