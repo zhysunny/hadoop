@@ -87,8 +87,7 @@ public class DistributedFileSystem extends FileSystem {
     }
 
     @Override
-    public FSOutputStream createRaw(File f, boolean overwrite)
-            throws IOException {
+    public FSOutputStream createRaw(File f, boolean overwrite) throws IOException {
         return dfs.create(getPath(f), overwrite);
     }
 

@@ -626,8 +626,7 @@ public class DFSClient implements FSConstants {
                 len -= toWrite;
                 filePos += toWrite;
 
-                if ((bytesWrittenToBlock + pos >= BLOCK_SIZE) ||
-                        (pos == BUFFER_SIZE)) {
+                if ((bytesWrittenToBlock + pos >= BLOCK_SIZE) || (pos == BUFFER_SIZE)) {
                     flush();
                 }
             }

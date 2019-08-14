@@ -262,8 +262,7 @@ public class FSNamesystem implements FSConstants {
                 // 获取复制目标数组
                 DatanodeInfo[] targets = chooseTargets(this.desiredReplication, null, clientMachine);
                 if (targets.length < this.minReplication) {
-                    LOGGER.warn("Target-length is " + targets.length +
-                            ", below MIN_REPLICATION (" + this.minReplication + ")");
+                    LOGGER.warn("Target-length is " + targets.length + ", below MIN_REPLICATION (" + this.minReplication + ")");
                     return null;
                 }
                 // 为这个挂起的文件保留空间
