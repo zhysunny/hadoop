@@ -140,6 +140,9 @@ public class RPC {
 
     private static Client CLIENT;
 
+    /**
+     * 动态代理模式
+     */
     private static class Invoker implements InvocationHandler {
         private InetSocketAddress address;
 

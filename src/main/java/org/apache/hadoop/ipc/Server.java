@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
 public abstract class Server {
     private static final Logger LOGGER = LoggerFactory.getLogger(Server.class);
 
-    private static final ThreadLocal SERVER = new ThreadLocal();
+    private static final ThreadLocal<Server> SERVER = new ThreadLocal<Server>();
 
     /**
      * 返回在or null下调用的服务器实例。
@@ -58,28 +58,63 @@ public abstract class Server {
      * 允许应用程序访问服务器上下文。
      */
     public static Server get() {
-        return (Server) SERVER.get();
+        return SERVER.get();
     }
 
-    private int port;                               // port we listen on
-    private int handlerCount;                       // number of handler threads
-    private int maxQueuedCalls;                     // max number of queued calls
-    private Class paramClass;                       // class of call parameters
+    /**
+     * namenode端口
+     */
+    private int port;
+    /**
+     * 处理器线程数
+     */
+    private int handlerCount;
+    /**
+     * 队列调用最大数
+     */
+    private int maxQueuedCalls;
+    /**
+     * 调用参数类
+     */
+    private Class paramClass;
+    /**
+     * 配置类
+     */
     private Configuration conf;
-
+    /**
+     * 超时时间，ipc.client.timeout配置项，默认60秒
+     */
     private int timeout;
 
-    private boolean running = true;                 // true while server runs
-    private LinkedList callQueue = new LinkedList(); // queued calls
-    private Object callDequeued = new Object();     // used by wait/notify
+    /**
+     * 服务器运行时为true
+     */
+    private boolean running = true;
+    /**
+     * 调用类队列
+     */
+    private LinkedList<Call> callQueue = new LinkedList<Call>();
+    /**
+     * used by wait/notify
+     */
+    private Object callDequeued = new Object();
 
     /**
      * 排队等待处理的调用。
      */
     private static class Call {
-        private int id;                               // the client's call id
-        private Writable param;                       // the parameter passed
-        private Connection connection;                // connection to client
+        /**
+         * 客户端调用id
+         */
+        private int id;
+        /**
+         * 传递的参数
+         */
+        private Writable param;
+        /**
+         * 连接客户端
+         */
+        private Connection connection;
 
         public Call(int id, Writable param, Connection connection) {
             this.id = id;
@@ -89,7 +124,8 @@ public abstract class Server {
     }
 
     /**
-     * 监听套接字，启动新的连接线程。
+     * 监听类，启动新的连接线程。<br/>
+     * socket.accept()为阻塞状态，当服务端接收到信息时，启动Connection线程
      */
     private class Listener extends Thread {
         private ServerSocket socket;
@@ -106,9 +142,12 @@ public abstract class Server {
             LOGGER.info(getName() + ": starting");
             while (running) {
                 try {
-                    new Connection(socket.accept()).start(); // start a new connection
-                } catch (SocketTimeoutException e) {      // ignore timeouts
-                } catch (Exception e) {                   // log all other exceptions
+                    // start a new connection
+                    new Connection(socket.accept()).start();
+                } catch (SocketTimeoutException e) {
+                    // ignore timeouts
+                } catch (Exception e) {
+                    // log all other exceptions
                     LOGGER.info(getName() + " caught: " + e, e);
                 }
             }
@@ -132,11 +171,12 @@ public abstract class Server {
         public Connection(Socket socket) throws IOException {
             this.socket = socket;
             socket.setSoTimeout(timeout);
+            // 服务端接收的输入流
             this.in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
+            // 服务端给客户端的输出流
             this.out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
             this.setDaemon(true);
-            this.setName("Server connection on port " + port + " from "
-                    + socket.getInetAddress().getHostAddress());
+            this.setName("Server connection on port " + port + " from " + socket.getInetAddress().getHostAddress());
         }
 
         @Override
@@ -147,19 +187,18 @@ public abstract class Server {
                 while (running) {
                     int id;
                     try {
-                        id = in.readInt();                    // try to read an id
+                        id = in.readInt();
                     } catch (SocketTimeoutException e) {
                         continue;
                     }
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug(getName() + " got #" + id);
-                    }
-                    Writable param = makeParam();           // read param
+                    LOGGER.info(getName() + " got #" + id);
+                    Writable param = makeParam();
                     param.readFields(in);
                     Call call = new Call(id, param, this);
                     synchronized (callQueue) {
-                        callQueue.addLast(call);              // queue the call
-                        callQueue.notify();                   // wake up a waiting handler
+                        callQueue.addLast(call);
+                        // 唤醒等待的处理线程
+                        callQueue.notify();
                     }
                     while (running && callQueue.size() >= maxQueuedCalls) {
                         synchronized (callDequeued) {         // queue is full
@@ -185,7 +224,7 @@ public abstract class Server {
     }
 
     /**
-     * 处理排队的调用。
+     * 处理队列的调用。
      */
     private class Handler extends Thread {
         public Handler(int instanceNumber) {
@@ -207,18 +246,13 @@ public abstract class Server {
                         if (!running) {
                             break;
                         }
-                        call = (Call) callQueue.removeFirst(); // pop the queue
+                        call = callQueue.removeFirst(); // pop the queue
                     }
 
                     synchronized (callDequeued) {           // tell others we've dequeued
                         callDequeued.notify();
                     }
-
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug(getName() + ": has #" + call.id + " from " +
-                                call.connection.socket.getInetAddress().getHostAddress());
-                    }
-
+                    LOGGER.info(getName() + ": has #" + call.id + " from " + call.connection.socket.getInetAddress().getHostAddress());
                     String error = null;
                     Writable value = null;
                     try {

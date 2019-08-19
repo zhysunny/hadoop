@@ -1,11 +1,11 @@
 package demo;
 
+import org.apache.hadoop.ipc.Client;
+
 public class Demo {
 
     public static void main(String[] args) {
-        for (int i = 2048; i < 65536; i++) {
-            System.out.println(i + "==" + (char) i);
-        }
+        System.out.println(Client.class.getName());
     }
 
 }

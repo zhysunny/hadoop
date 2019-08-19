@@ -148,9 +148,7 @@ public class Client {
                 }
             }));
             this.setDaemon(true);
-            this.setName("Client connection to "
-                    + address.getAddress().getHostAddress()
-                    + ":" + address.getPort());
+            this.setName("Client connection to " + address.getAddress().getHostAddress() + ":" + address.getPort());
         }
 
         @Override
@@ -164,11 +162,7 @@ public class Client {
                     } catch (SocketTimeoutException e) {
                         continue;
                     }
-
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug(getName() + " got value #" + id);
-                    }
-
+                    LOGGER.info(getName() + " got value #" + id);
                     Call call = calls.remove(new Integer(id));
                     boolean isError = in.readBoolean();     // read if error
                     if (isError) {
@@ -208,9 +202,7 @@ public class Client {
             try {
                 calls.put(new Integer(call.id), call);
                 synchronized (out) {
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug(getName() + " sending #" + call.id);
-                    }
+                    LOGGER.info(getName() + " sending #" + call.id);
                     try {
                         writingCall = call;
                         out.writeInt(call.id);
@@ -223,7 +215,7 @@ public class Client {
                 error = false;
             } finally {
                 if (error) {
-                    close();                                // close on error
+                    close();
                 }
             }
         }
@@ -402,7 +394,7 @@ public class Client {
     }
 
     private Writable makeValue() {
-        Writable value;                             // construct value
+        Writable value;
         try {
             value = valueClass.newInstance();
         } catch (InstantiationException e) {
