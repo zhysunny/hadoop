@@ -26,7 +26,7 @@
 
     <!-- ERROR级别日志 -->
     <appender name="FILE_ERROR" class="org.apache.log4j.DailyRollingFileAppender">
-        <param name="File" value="../logs/hadoop-server-error.log"/>
+        <param name="File" value="./logs/hadoop-server-error.log"/>
         <param name="DatePattern" value="yyyy-MM-dd"/>
         <layout class="org.apache.log4j.PatternLayout">
             <param name="ConversionPattern" value="%d %p [%l] - %m %n"/>
