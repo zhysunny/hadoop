@@ -86,13 +86,16 @@ public class DataNode implements FSConstants, Runnable {
      * “dataDir”是存储块的地方。
      */
     public DataNode(Configuration conf, String datadir) throws IOException {
-        this(InetAddress.getLocalHost().getHostName(),
-                new File(datadir),
-                createSocketAddr(Constants.FS_DEFAULT_NAME), conf);
+        this(InetAddress.getLocalHost().getHostName(), new File(datadir), createSocketAddr(Constants.FS_DEFAULT_NAME), conf);
     }
 
     /**
      * 还可以使用显式给定的配置信息创建DataNode。
+     * @param machineName  当前机器域名
+     * @param datadir      datanode存储目录(其中一个具体的目录)
+     * @param nameNodeAddr namenode地址
+     * @param conf         配置类
+     * @throws IOException
      */
     public DataNode(String machineName, File datadir, InetSocketAddress nameNodeAddr, Configuration conf) throws IOException {
         this.namenode = RPC.getProxy(DatanodeProtocol.class, nameNodeAddr, conf);
@@ -639,7 +642,6 @@ public class DataNode implements FSConstants, Runnable {
             DataNode dn = makeInstanceForDir(dataDirs[i], conf);
             if (dn != null) {
                 Thread t = new Thread(dn, "DataNode: " + dataDirs[i]);
-                // 需要JUnit测试
                 t.setDaemon(true);
                 t.start();
                 subThreadList.add(t);
