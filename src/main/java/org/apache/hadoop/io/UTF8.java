@@ -25,7 +25,7 @@ import java.io.DataOutput;
 
 /**
  * 使用UTF8编码的字符串的WritableComparable。<br/>
- * 还包括有效读写UTF-8的实用程序。
+ * 还包括有效读写UTF-8的实用程序。<br/>
  * 实际存储的是字符串的字节数组和长度
  * @author 章云
  * @date 2019/8/1 9:19

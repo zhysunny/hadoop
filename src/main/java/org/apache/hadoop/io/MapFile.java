@@ -314,7 +314,6 @@ public class MapFile {
                 }
                 while (data.next(key)) {
                 }
-
             } finally {
                 // 恢复的位置
                 data.seek(originalPosition);
@@ -344,7 +343,6 @@ public class MapFile {
                 if (seekIndex < 0) {
                     seekIndex = -seekIndex - 2;
                 }
-
                 if (seekIndex == -1) {
                     seekPosition = firstPosition; // 使用文件开头
                 } else {
@@ -352,7 +350,6 @@ public class MapFile {
                 }
             }
             data.seek(seekPosition);
-
             while ((nextKeyLen = data.next(nextBuf.reset())) != -1) {
                 int c = comparator.compare(keyBuf.getData(), 0, keyBuf.getLength(), nextBuf.getData(), 0, nextKeyLen);
                 if (c <= 0) {  // 达到或超过期望
@@ -372,7 +369,6 @@ public class MapFile {
                 int mid = (low + high) >> 1;
                 WritableComparable midVal = keys[mid];
                 int cmp = comparator.compare(midVal, key);
-
                 if (cmp < 0) {
                     low = mid + 1;
                 } else if (cmp > 0) {
@@ -395,8 +391,7 @@ public class MapFile {
         /**
          * 返回指定键的值，如果不存在，则返回null。
          */
-        public synchronized Writable get(WritableComparable key, Writable val)
-                throws IOException {
+        public synchronized Writable get(WritableComparable key, Writable val) throws IOException {
             if (seek(key)) {
                 next(getKey, val);
                 return val;

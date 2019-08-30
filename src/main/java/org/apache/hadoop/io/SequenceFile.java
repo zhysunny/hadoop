@@ -47,9 +47,7 @@ public class SequenceFile {
     /**
      * 版本
      */
-    private static byte[] VERSION = new byte[]{
-            (byte) 'S', (byte) 'E', (byte) 'Q', 3
-    };
+    private static byte[] VERSION = new byte[]{(byte) 'S', (byte) 'E', (byte) 'Q', 3};
     /**
      * 同步条目的“长度”
      */
@@ -87,14 +85,14 @@ public class SequenceFile {
         private DataOutputStream deflateOut =
                 new DataOutputStream(new BufferedOutputStream(deflateFilter));
 
-        // Insert a globally unique 16-byte value every few entries, so that one
-        // can seek into the middle of a file and then synchronize with record
-        // starts and ends by scanning for this value.
-        private long lastSyncPos;                     // position of last sync
-        private byte[] sync;                          // 16 random bytes
+        //每隔几个条目插入一个全局惟一的16字节值
+        //可以在文件中间查找，然后与记录同步
+        //通过扫描这个值开始和结束。
+        private long lastSyncPos;                     // 最后同步位置
+        private byte[] sync;                          // 16字节的随机数
 
         {
-            try {                                       // use hash of uid + host
+            try {
                 MessageDigest digester = MessageDigest.getInstance("MD5");
                 digester.update((new UID() + "@" + InetAddress.getLocalHost()).getBytes());
                 sync = digester.digest();
@@ -104,41 +102,33 @@ public class SequenceFile {
         }
 
         /**
-         * Create the named file.
+         * 创建命名文件。
          */
-        public Writer(FileSystem fs, String name,
-                      Class keyClass, Class valClass)
-                throws IOException {
+        public Writer(FileSystem fs, String name, Class keyClass, Class valClass) throws IOException {
             this(fs, name, keyClass, valClass, false);
         }
 
         /**
-         * Create the named file.
-         * @param compress if true, values are compressed.
+         * 创建命名文件。
+         * @param compress 如果为真，则压缩值。
          */
-        public Writer(FileSystem fs, String name,
-                      Class keyClass, Class valClass, boolean compress)
-                throws IOException {
+        public Writer(FileSystem fs, String name, Class keyClass, Class valClass, boolean compress) throws IOException {
             this.fs = fs;
             this.target = new File(name);
             init(fs.create(target), keyClass, valClass, compress);
         }
 
         /**
-         * Write to an arbitrary stream using a specified buffer size.
+         * 使用指定的缓冲区大小写入任意流。
          */
-        private Writer(FSDataOutputStream out,
-                       Class keyClass, Class valClass, boolean compress)
-                throws IOException {
+        private Writer(FSDataOutputStream out, Class keyClass, Class valClass, boolean compress) throws IOException {
             init(out, keyClass, valClass, compress);
         }
 
         /**
-         * Write and flush the file header.
+         * 写入并刷新文件头。
          */
-        private void init(FSDataOutputStream out,
-                          Class keyClass, Class valClass,
-                          boolean compress) throws IOException {
+        private void init(FSDataOutputStream out, Class keyClass, Class valClass, boolean compress) throws IOException {
             this.out = out;
             this.out.write(VERSION);
 
@@ -152,30 +142,21 @@ public class SequenceFile {
 
             this.out.writeBoolean(deflateValues);
 
-            out.write(sync);                            // write the sync bytes
+            out.write(sync);
 
-            this.out.flush();                           // flush header
+            this.out.flush();
         }
 
 
-        /**
-         * Returns the class of keys in this file.
-         */
         public Class getKeyClass() {
             return keyClass;
         }
 
-        /**
-         * Returns the class of values in this file.
-         */
         public Class getValueClass() {
             return valClass;
         }
 
 
-        /**
-         * Close the file.
-         */
         public synchronized void close() throws IOException {
             if (out != null) {
                 out.close();
@@ -184,7 +165,7 @@ public class SequenceFile {
         }
 
         /**
-         * Append a key/value pair.
+         * 添加键/值对。
          */
         public synchronized void append(Writable key, Writable val)
                 throws IOException {
@@ -216,7 +197,7 @@ public class SequenceFile {
         }
 
         /**
-         * Append a key/value pair.
+         * 添加键/值对。
          */
         public synchronized void append(byte[] data, int start, int length,
                                         int keyLength) throws IOException {
@@ -224,23 +205,18 @@ public class SequenceFile {
                 throw new IOException("zero length keys not allowed");
             }
 
-            if (sync != null &&
-                    out.getPos() >= lastSyncPos + SYNC_INTERVAL) { // time to emit sync
-                lastSyncPos = out.getPos();               // update lastSyncPos
-                //LOG.info("sync@"+lastSyncPos);
-                out.writeInt(SYNC_ESCAPE);                // escape it
-                out.write(sync);                          // write sync
+            if (sync != null && out.getPos() >= lastSyncPos + SYNC_INTERVAL) {
+                lastSyncPos = out.getPos();
+                out.writeInt(SYNC_ESCAPE);
+                out.write(sync);
             }
 
-            out.writeInt(length);                       // total record length
-            out.writeInt(keyLength);                    // key portion length
-            out.write(data, start, length);             // data
+            out.writeInt(length);
+            out.writeInt(keyLength);
+            out.write(data, start, length);
 
         }
 
-        /**
-         * Returns the current length of the output file.
-         */
         public synchronized long getLength() throws IOException {
             return out.getPos();
         }
@@ -248,7 +224,7 @@ public class SequenceFile {
     }
 
     /**
-     * Writes key/value pairs from a sequence-format file.
+     * 从序列格式文件中写入键/值对。
      */
     public static class Reader {
         private String file;
@@ -275,9 +251,6 @@ public class SequenceFile {
         private Inflater inflater = new Inflater();
         private Configuration conf;
 
-        /**
-         * Open the named file.
-         */
         public Reader(FileSystem fs, String file, Configuration conf) throws IOException {
             this(fs, file, conf.getInt("io.file.buffer.size", 4096));
             this.conf = conf;
@@ -292,8 +265,7 @@ public class SequenceFile {
             init();
         }
 
-        private Reader(FileSystem fs, String file, int bufferSize, long start, long length)
-                throws IOException {
+        private Reader(FileSystem fs, String file, int bufferSize, long start, long length) throws IOException {
             this.fs = fs;
             this.file = file;
             this.in = fs.open(new File(file), bufferSize);
@@ -318,52 +290,40 @@ public class SequenceFile {
 
             UTF8 className = new UTF8();
 
-            className.readFields(in);                   // read key class name
+            className.readFields(in);
             this.keyClass = WritableName.getClass(className.toString());
 
-            className.readFields(in);                   // read val class name
+            className.readFields(in);
             this.valClass = WritableName.getClass(className.toString());
 
-            if (version[3] > 2) {                       // if version > 2
-                this.inflateValues = in.readBoolean();    // is compressed?
+            if (version[3] > 2) {
+                this.inflateValues = in.readBoolean();
             }
 
-            if (version[3] > 1) {                       // if version > 1
-                in.readFully(sync);                       // read sync bytes
+            if (version[3] > 1) {
+                in.readFully(sync);
             }
         }
 
-        /**
-         * Close the file.
-         */
         public synchronized void close() throws IOException {
             in.close();
         }
 
-        /**
-         * Returns the class of keys in this file.
-         */
         public Class getKeyClass() {
             return keyClass;
         }
 
-        /**
-         * Returns the class of values in this file.
-         */
         public Class getValueClass() {
             return valClass;
         }
 
-        /**
-         * Returns true if values are compressed.
-         */
         public boolean isCompressed() {
             return inflateValues;
         }
 
         /**
-         * Read the next key in the file into <code>key</code>, skipping its
-         * value.  True if another entry exists, and false at end of file.
+         * 将文件中的下一个键读入key，跳过它的值。<br/>
+         * 如果存在其他条目，则为True，文件末尾为false。
          */
         public synchronized boolean next(Writable key) throws IOException {
             if (key.getClass() != keyClass) {
@@ -389,12 +349,10 @@ public class SequenceFile {
         }
 
         /**
-         * Read the next key/value pair in the file into <code>key</code> and
-         * <code>val</code>.  Returns true if such a pair exists and false when at
-         * end of file
+         * 将文件中的下一对键/值读入key和val。<br/>
+         * 如果存在这样一对，则返回true;如果存在，则返回false
          */
-        public synchronized boolean next(Writable key, Writable val)
-                throws IOException {
+        public synchronized boolean next(Writable key, Writable val) throws IOException {
             if (val.getClass() != valClass) {
                 throw new IOException("wrong value class: " + val + " is not " + valClass);
             }
@@ -434,10 +392,9 @@ public class SequenceFile {
         }
 
         /**
-         * Read the next key/value pair in the file into <code>buffer</code>.
-         * Returns the length of the key read, or -1 if at end of file.  The length
-         * of the value may be computed by calling buffer.getLength() before and
-         * after calls to this method.
+         * 将文件中的下一对键/值读入buffer。<br/>
+         * 返回读取的键的长度，如果在文件末尾，返回-1。<br/>
+         * 值的长度可以通过调用buffer.getLength()在调用此方法之前和之后计算。
          */
         public synchronized int next(DataOutputBuffer buffer) throws IOException {
             if (in.getPos() >= end) {
@@ -447,16 +404,13 @@ public class SequenceFile {
             try {
                 int length = in.readInt();
 
-                if (version[3] > 1 && sync != null &&
-                        length == SYNC_ESCAPE) {              // process a sync entry
-                    //LOG.info("sync@"+in.getPos());
-                    in.readFully(syncCheck);                // read syncCheck
-                    if (!Arrays.equals(sync, syncCheck))    // check it
-                    {
+                if (version[3] > 1 && sync != null && length == SYNC_ESCAPE) {
+                    in.readFully(syncCheck);
+                    if (!Arrays.equals(sync, syncCheck)) {
                         throw new IOException("File is corrupt!");
                     }
                     syncSeen = true;
-                    length = in.readInt();                  // re-read length
+                    length = in.readInt();
                 } else {
                     syncSeen = false;
                 }
@@ -465,7 +419,7 @@ public class SequenceFile {
                 buffer.write(in, length);
                 return keyLength;
 
-            } catch (ChecksumException e) {             // checksum failure
+            } catch (ChecksumException e) {
                 handleChecksumException(e);
                 return next(buffer);
             }
@@ -482,14 +436,14 @@ public class SequenceFile {
         }
 
         /**
-         * Set the current byte position in the input file.
+         * 设置输入文件中的当前字节位置。
          */
         public synchronized void seek(long position) throws IOException {
             in.seek(position);
         }
 
         /**
-         * Seek to the next sync mark past a given position.
+         * 寻找超过给定位置的下一个同步标记。
          */
         public synchronized void sync(long position) throws IOException {
             if (position + SYNC_SIZE >= end) {
@@ -498,7 +452,7 @@ public class SequenceFile {
             }
 
             try {
-                seek(position + 4);                         // skip escape
+                seek(position + 4);
                 in.readFully(syncCheck);
                 int syncLen = sync.length;
                 for (int i = 0; in.getPos() < end; i++) {
@@ -509,32 +463,32 @@ public class SequenceFile {
                         }
                     }
                     if (j == syncLen) {
-                        in.seek(in.getPos() - SYNC_SIZE);     // position before sync
+                        in.seek(in.getPos() - SYNC_SIZE);
                         return;
                     }
                     syncCheck[i % syncLen] = in.readByte();
                 }
-            } catch (ChecksumException e) {             // checksum failure
+            } catch (ChecksumException e) {
                 handleChecksumException(e);
             }
         }
 
         /**
-         * Returns true iff the previous call to next passed a sync mark.
+         * 如果前一个对next的调用传递了一个同步标记，则返回true。
          */
         public boolean syncSeen() {
             return syncSeen;
         }
 
         /**
-         * Return the current byte position in the input file.
+         * 返回输入文件中的当前字节位置。
          */
         public synchronized long getPosition() throws IOException {
             return in.getPos();
         }
 
         /**
-         * Returns the name of the file.
+         * 返回文件的名称。
          */
         @Override
         public String toString() {
@@ -544,23 +498,21 @@ public class SequenceFile {
     }
 
     /**
-     * Sorts key/value pairs in a sequence-format file.
-     *
-     * <p>For best performance, applications should make sure that the {@link
-     * Writable#readFields(DataInput)} implementation of their keys is
-     * very efficient.  In particular, it should avoid allocating memory.
+     * 在序列格式文件中对键/值对排序。<br/>
+     * 为了获得最佳性能，应用程序应该确保键的{@link Writable#readFields(DataInput)}实现非常高效。<br/>
+     * 特别是，它应该避免分配内存。
      */
     public static class Sorter {
 
         private WritableComparator comparator;
 
-        private String inFile;                        // when sorting
-        private String[] inFiles;                     // when merging
+        private String inFile;
+        private String[] inFiles;
 
         private String outFile;
 
-        private int memory; // bytes
-        private int factor; // merged per pass
+        private int memory;
+        private int factor;
 
         private FileSystem fs = null;
 
@@ -570,14 +522,14 @@ public class SequenceFile {
         private Configuration conf;
 
         /**
-         * Sort and merge files containing the named classes.
+         * 对包含指定类的文件进行排序和合并。
          */
         public Sorter(FileSystem fs, Class keyClass, Class valClass, Configuration conf) {
             this(fs, new WritableComparator(keyClass), valClass, conf);
         }
 
         /**
-         * Sort and merge using an arbitrary {@link WritableComparator}.
+         * 使用任意的{@link WritableComparator}进行排序和合并。
          */
         public Sorter(FileSystem fs, WritableComparator comparator, Class valClass, Configuration conf) {
             this.fs = fs;
@@ -590,35 +542,35 @@ public class SequenceFile {
         }
 
         /**
-         * Set the number of streams to merge at once.
+         * 设置要立即合并的流的数量。
          */
         public void setFactor(int factor) {
             this.factor = factor;
         }
 
         /**
-         * Get the number of streams to merge at once.
+         * 获取要立即合并的流的数量。
          */
         public int getFactor() {
             return factor;
         }
 
         /**
-         * Set the total amount of buffer memory, in bytes.
+         * 设置缓冲区内存的总量，以字节为单位。
          */
         public void setMemory(int memory) {
             this.memory = memory;
         }
 
         /**
-         * Get the total amount of buffer memory, in bytes.
+         * 获取以字节为单位的缓冲区内存总量。
          */
         public int getMemory() {
             return memory;
         }
 
         /**
-         * Perform a file sort.
+         * 执行文件排序。
          */
         public void sort(String inFile, String outFile) throws IOException {
             if (fs.exists(new File(outFile))) {
@@ -638,11 +590,11 @@ public class SequenceFile {
 
         private int sortPass() throws IOException {
             LOGGER.info("running sort pass");
-            SortPass sortPass = new SortPass(this.conf);         // make the SortPass
+            SortPass sortPass = new SortPass(this.conf);
             try {
-                return sortPass.run();                    // run it
+                return sortPass.run();
             } finally {
-                sortPass.close();                         // close it
+                sortPass.close();
             }
         }
 
@@ -673,7 +625,7 @@ public class SequenceFile {
                     buffer.reset();
                     while (!atEof && buffer.getLength() < limit) {
 
-                        int start = buffer.getLength();       // read an entry into buffer
+                        int start = buffer.getLength();
                         int keyLength = in.next(buffer);
                         int length = buffer.getLength() - start;
 
@@ -686,7 +638,7 @@ public class SequenceFile {
                             grow();
                         }
 
-                        starts[count] = start;                // update pointers
+                        starts[count] = start;
                         pointers[count] = count;
                         lengths[count] = length;
                         keyLengths[count] = keyLength;
@@ -694,7 +646,6 @@ public class SequenceFile {
                         count++;
                     }
 
-                    // buffer is full -- sort & flush it
                     LOGGER.info("flushing segment " + segments);
                     rawBuffer = buffer.getData();
                     sort(count);
@@ -733,21 +684,21 @@ public class SequenceFile {
                     out = fs.create(new File(outName));
                 }
 
-                if (!done) {                              // an intermediate file
+                if (!done) {
 
-                    long length = buffer.getLength();       // compute its size
-                    length += count * 8;                      // allow for length/keyLength
+                    long length = buffer.getLength();
+                    length += count * 8;
 
-                    out.writeLong(length);                  // write size
-                    out.writeLong(count);                   // write count
+                    out.writeLong(length);
+                    out.writeLong(count);
                 }
 
                 Writer writer = new Writer(out, keyClass, valClass, in.isCompressed());
                 if (!done) {
-                    writer.sync = null;                     // disable sync on temp files
+                    writer.sync = null;
                 }
 
-                for (int i = 0; i < count; i++) {         // write in sorted order
+                for (int i = 0; i < count; i++) {
                     int p = pointers[i];
                     writer.append(rawBuffer, starts[p], lengths[p], keyLengths[p]);
                 }
@@ -766,7 +717,7 @@ public class SequenceFile {
             private void mergeSort(int[] src, int[] dest, int low, int high) {
                 int length = high - low;
 
-                // Insertion sort on smallest arrays
+                // 最小数组上的插入排序
                 if (length < 7) {
                     for (int i = low; i < high; i++) {
                         for (int j = i; j > low && compare(dest[j - 1], dest[j]) > 0; j--) {
@@ -776,19 +727,19 @@ public class SequenceFile {
                     return;
                 }
 
-                // Recursively sort halves of dest into src
+                // 递归地将dest的一半排序为src
                 int mid = (low + high) >> 1;
                 mergeSort(dest, src, low, mid);
                 mergeSort(dest, src, mid, high);
 
-                // If list is already sorted, just copy from src to dest.  This is an
-                // optimization that results in faster sorts for nearly ordered lists.
+                //如果列表已经排序，只需从src复制到dest。
+                //这是一种优化，可以为几乎有序的列表提供更快的排序。
                 if (compare(src[mid - 1], src[mid]) <= 0) {
                     System.arraycopy(src, low, dest, low, length);
                     return;
                 }
 
-                // Merge sorted halves (now in src) into dest
+                // 合并排序的一半(现在在src)到dest
                 for (int i = low, p = low, q = mid; i < high; i++) {
                     if (q >= high || p < mid && compare(src[p], src[q]) <= 0) {
                         dest[i] = src[p++];
@@ -808,10 +759,10 @@ public class SequenceFile {
         private int mergePass(int pass, boolean last) throws IOException {
             LOGGER.info("running merge pass=" + pass);
             MergePass mergePass = new MergePass(pass, last);
-            try {                                       // make a merge pass
-                return mergePass.run();                  // run it
+            try {
+                return mergePass.run();
             } finally {
-                mergePass.close();                       // close it
+                mergePass.close();
             }
         }
 
@@ -835,10 +786,10 @@ public class SequenceFile {
             }
 
             public void close() throws IOException {
-                in.close();                               // close and delete input
+                in.close();
                 fs.delete(new File(inName));
 
-                queue.close();                            // close queue
+                queue.close();
             }
 
             public int run() throws IOException {
@@ -859,21 +810,21 @@ public class SequenceFile {
 
                         Reader reader = new Reader(fs, inName, memory / (factor + 1),
                                 in.getPos(), length);
-                        reader.sync = null;                   // disable sync on temp files
+                        reader.sync = null;
 
-                        MergeStream ms = new MergeStream(reader); // add segment to queue
+                        MergeStream ms = new MergeStream(reader);
                         if (ms.next()) {
                             queue.add(ms);
                         }
                         in.seek(reader.end);
                     }
 
-                    if (!last) {                             // intermediate file
-                        queue.out.writeLong(totalLength);     // write size
-                        queue.out.writeLong(totalCount);      // write count
+                    if (!last) {
+                        queue.out.writeLong(totalLength);
+                        queue.out.writeLong(totalCount);
                     }
 
-                    queue.merge();                          // do a merge
+                    queue.merge();
 
                     segments++;
                 }
@@ -883,7 +834,7 @@ public class SequenceFile {
         }
 
         /**
-         * Merge the provided files.
+         * 合并提供的文件。
          */
         public void merge(String[] inFiles, String outFile) throws IOException {
             this.inFiles = inFiles;
@@ -895,10 +846,10 @@ public class SequenceFile {
             }
 
             MergeFiles mergeFiles = new MergeFiles();
-            try {                                       // make a merge pass
-                mergeFiles.run();                         // run it
+            try {
+                mergeFiles.run();
             } finally {
-                mergeFiles.close();                       // close it
+                mergeFiles.close();
             }
 
         }
@@ -986,29 +937,29 @@ public class SequenceFile {
             public void merge() throws IOException {
                 Writer writer = new Writer(out, keyClass, valClass, compress);
                 if (!done) {
-                    writer.sync = null;                     // disable sync on temp files
+                    writer.sync = null;
                 }
 
                 while (size() != 0) {
                     MergeStream ms = (MergeStream) top();
-                    DataOutputBuffer buffer = ms.buffer;    // write top entry
+                    DataOutputBuffer buffer = ms.buffer;
                     writer.append(buffer.getData(), 0, buffer.getLength(), ms.keyLength);
 
-                    if (ms.next()) {                        // has another entry
+                    if (ms.next()) {
                         adjustTop();
                     } else {
-                        pop();                                // done with this file
+                        pop();
                         ms.in.close();
                     }
                 }
             }
 
             public void close() throws IOException {
-                MergeStream ms;                           // close inputs
+                MergeStream ms;
                 while ((ms = (MergeStream) pop()) != null) {
                     ms.in.close();
                 }
-                out.close();                              // close output
+                out.close();
             }
         }
     }
