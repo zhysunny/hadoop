@@ -1,12 +1,12 @@
 /**
  * Copyright 2006 The Apache Software Foundation
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,109 +23,100 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
+/**
+ * 样例测试主入口
+ * @author 章云
+ * @date 2019/9/26 11:49
+ */
 public class ExampleDriver {
-  
-  /**
-   * A description of an example program based on its class and a 
-   * human-readable description.
-   * @author Owen O'Malley
-   * @date feb 2006
-   */
-  static private class ProgramDescription {
-    
-    static final Class[] paramTypes = new Class[] {String[].class};
-    
+
     /**
-     * Create a description of an example program.
-     * @param mainClass the class with the main for the example program
-     * @param description a string to display to the user in help messages
-     * @throws SecurityException if we can't use reflection
-     * @throws NoSuchMethodException if the class doesn't have a main method
+     * 基于类和人类可读描述的示例程序的描述。
      */
-    public ProgramDescription(Class mainClass, 
-                              String description)
-    throws SecurityException, NoSuchMethodException {
-      this.main = mainClass.getMethod("main", paramTypes);
-      this.description = description;
+    static private class ProgramDescription {
+
+        private Method main;
+        private String description;
+
+        static final Class[] paramTypes = new Class[]{String[].class};
+
+        /**
+         * 创建示例程序的描述。
+         * @param mainClass   该类以main为例程序
+         * @param description 在帮助消息中显示给用户的字符串
+         * @throws SecurityException     如果我们不能使用反射
+         * @throws NoSuchMethodException 如果类没有主方法
+         */
+        public ProgramDescription(Class mainClass, String description) throws SecurityException, NoSuchMethodException {
+            this.main = mainClass.getMethod("main", paramTypes);
+            this.description = description;
+        }
+
+        /**
+         * 使用给定的参数调用示例应用程序
+         * @param args 应用程序的参数
+         * @throws Throwable 被调用方法引发的异常
+         */
+        public void invoke(String[] args) throws Throwable {
+            try {
+                main.invoke(null, new Object[]{args});
+            } catch (InvocationTargetException except) {
+                throw except.getCause();
+            }
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
     }
-    
+
+    private static void printUsage(Map<String, ProgramDescription> programs) {
+        System.out.println("Valid program names are:");
+        for (Iterator<Entry<String, ProgramDescription>> itr = programs.entrySet().iterator(); itr.hasNext(); ) {
+            Map.Entry<String, ProgramDescription> item = itr.next();
+            System.out.println("  " + item.getKey() + ": " + item.getValue().getDescription());
+        }
+    }
+
     /**
-     * Invoke the example application with the given arguments
-     * @param args the arguments for the application
-     * @throws Throwable The exception thrown by the invoked method
+     * 这是示例程序的驱动程序。
+     * 它查看第一个命令行参数，并试图找到一个具有该名称的示例程序。
+     * 如果找到它，它将使用其余的命令行参数调用该类中的main方法。
+     * @param args 从用户处获取参数。args[0]是要运行的命令。
+     * @throws NoSuchMethodException
+     * @throws SecurityException
+     * @throws IllegalAccessException
+     * @throws IllegalArgumentException
+     * @throws Throwable                由示例程序的主程序抛出的任何内容
      */
-    public void invoke(String[] args)
-    throws Throwable {
-      try {
-        main.invoke(null, new Object[]{args});
-      } catch (InvocationTargetException except) {
-        throw except.getCause();
-      }
+    public static void main(String[] args) throws Throwable {
+        Map<String, ProgramDescription> programs = new TreeMap();
+
+        // 将新程序添加到此列表中
+        programs.put("wordcount", new ProgramDescription(WordCount.class, "A map/reduce program that counts the words in the input files."));
+        programs.put("grep", new ProgramDescription(Grep.class, "A map/reduce program that counts the matches of a regex in the input."));
+
+        // 确保他们给了我们一个程序名。
+        if (args.length == 0) {
+            System.out.println("An example program must be given as the first argument.");
+            printUsage(programs);
+            return;
+        }
+
+        ProgramDescription pgm = programs.get(args[0]);
+        if (pgm == null) {
+            System.out.println("Unknown program '" + args[0] + "' chosen.");
+            printUsage(programs);
+            return;
+        }
+
+        // 删除前导参数并调用main
+        String[] new_args = new String[args.length - 1];
+        for (int i = 1; i < args.length; ++i) {
+            new_args[i - 1] = args[i];
+        }
+        pgm.invoke(new_args);
     }
-    
-    public String getDescription() {
-      return description;
-    }
-    
-    private Method main;
-    private String description;
-  }
-  
-  private static void printUsage(Map programs) {
-    System.out.println("Valid program names are:");
-    for(Iterator itr=programs.entrySet().iterator(); itr.hasNext();) {
-      Map.Entry item = (Entry) itr.next();
-      System.out.println("  " + (String) item.getKey() + ": " +
-          ((ProgramDescription) item.getValue()).getDescription());
-    }   
-  }
-  
-  /**
-   * This is a driver for the example programs.
-   * It looks at the first command line argument and tries to find an
-   * example program with that name.
-   * If it is found, it calls the main method in that class with the rest 
-   * of the command line arguments.
-   * @param args The argument from the user. args[0] is the command to run.
-   * @throws NoSuchMethodException 
-   * @throws SecurityException 
-   * @throws IllegalAccessException 
-   * @throws IllegalArgumentException 
-   * @throws Throwable Anything thrown by the example program's main
-   */
-  public static void main(String[] args) 
-  throws Throwable 
-  {
-    Map programs = new TreeMap();
-    
-    // Add new programs to this list
-    programs.put("wordcount", new ProgramDescription(WordCount.class,
-    "A map/reduce program that counts the words in the input files."));
-    programs.put("grep", new ProgramDescription(Grep.class,
-    "A map/reduce program that counts the matches of a regex in the input."));
-    
-    // Make sure they gave us a program name.
-    if (args.length == 0) {
-      System.out.println("An example program must be given as the" + 
-          " first argument.");
-      printUsage(programs);
-      return;
-    }
-    
-    // And that it is good.
-    ProgramDescription pgm = (ProgramDescription) programs.get(args[0]);
-    if (pgm == null) {
-      System.out.println("Unknown program '" + args[0] + "' chosen.");
-      printUsage(programs);
-      return;
-    }
-    
-    // Remove the leading argument and call main
-    String[] new_args = new String[args.length - 1];
-    for(int i=1; i < args.length; ++i) {
-      new_args[i-1] = args[i];
-    }
-    pgm.invoke(new_args);
-  }
-  
+
 }

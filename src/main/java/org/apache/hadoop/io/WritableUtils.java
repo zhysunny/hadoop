@@ -23,6 +23,11 @@ import org.apache.hadoop.mapred.JobConf;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+/**
+ * 工具类
+ * @author 章云
+ * @date 2019/9/26 11:32
+ */
 public final class WritableUtils {
 
     public static byte[] readCompressedByteArray(DataInput in) throws IOException {
