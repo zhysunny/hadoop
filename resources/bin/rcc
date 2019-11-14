@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+
+# 当前文件所在目录，这里是相对路径
+parent=`dirname $0`
+# 当前文件所在目录转为绝对路径
+parent=`cd $parent;pwd`
+# this为当前文件名
+this=`basename $0`
+# 当前文件所在目录，一般是安装路径
+basedir=`cd ${parent}/../;pwd`
+# 当前文件全路径
+this=${parent}/${this}
+# 当前文件所在目录为bin目录
+bin=${parent}
+if [[ -e "$basedir/conf/hadoop-config.sh" ]]; then
+  # source过程中将--config和--hosts去掉了
+  . ${basedir}/conf/hadoop-config.sh
+else
+  echo "$basedir/conf/hadoop-config.sh is not found"
+  exit 1
+fi
+# 加载环境变量
+if [[ -f "${HADOOP_CONF_DIR}/hadoop-env.sh" ]]; then
+  . "${HADOOP_CONF_DIR}/hadoop-env.sh"
+fi
+  
+if [[ "$JAVA_HOME" = "" ]]; then
+  echo "Error: JAVA_HOME is not set."
+  exit 1
+fi
+
+JAVA=${JAVA_HOME}/bin/java
+JAVA_HEAP_MAX=-Xmx1000m 
+
+# CLASSPATH initially contains $HADOOP_CONF_DIR
+CLASSPATH="${HADOOP_CONF_DIR}"
+CLASSPATH=${CLASSPATH}:${JAVA_HOME}/lib/tools.jar
+
+# for developers, add Hadoop classes to CLASSPATH
+if [[ -d "$HADOOP_HOME/build/classes" ]]; then
+  CLASSPATH=${CLASSPATH}:${HADOOP_HOME}/build/classes
+fi
+if [[ -d "$HADOOP_HOME/build/webapps" ]]; then
+  CLASSPATH=${CLASSPATH}:${HADOOP_HOME}/build
+fi
+if [[ -d "$HADOOP_HOME/build/test/classes" ]]; then
+  CLASSPATH=${CLASSPATH}:${HADOOP_HOME}/build/test/classes
+fi
+
+# so that filenames w/ spaces are handled correctly in loops below
+IFS=
+
+# for releases, add core hadoop jar & webapps to CLASSPATH
+if [[ -d "$HADOOP_HOME/webapps" ]]; then
+  CLASSPATH=${CLASSPATH}:${HADOOP_HOME}
+fi
+for f in ${HADOOP_HOME}/hadoop-core-*.jar; do
+  CLASSPATH=${CLASSPATH}:${f};
+done
+
+# add libs to CLASSPATH
+for f in ${HADOOP_HOME}/lib/*.jar; do
+  CLASSPATH=${CLASSPATH}:${f};
+done
+
+for f in ${HADOOP_HOME}/lib/jetty-ext/*.jar; do
+  CLASSPATH=${CLASSPATH}:${f};
+done
+
+# restore ordinary behaviour
+unset IFS
+
+CLASS='org.apache.hadoop.record.compiler.generated.Rcc'
+
+# cygwin path translation
+if expr `uname` : 'CYGWIN*' > /dev/null; then
+  CLASSPATH=`cygpath -p -w "$CLASSPATH"`
+fi
+
+# run it
+exec "$JAVA" ${HADOOP_OPTS} -classpath "$CLASSPATH" ${CLASS} "$@"
